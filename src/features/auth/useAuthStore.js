@@ -18,6 +18,7 @@ export const useAuthStore = create((set) => ({
         localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('userId', id);
         localStorage.setItem('username', username);
+        localStorage.setItem('role', finalRole);
         if (img && img !== 'null') localStorage.setItem('userImg', img);
 
         set({
