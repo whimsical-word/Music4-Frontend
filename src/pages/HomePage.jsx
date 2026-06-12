@@ -197,7 +197,7 @@ const HomePage = () => {
                     renderItem={(artist) => (
                         <div
                             key={artist.id}
-                            onClick={() => navigate(`/artists/${artist.id}`)}
+                            onClick={() => navigate(`/artist/${artist.id}`)}
                             className="min-w-[160px] md:min-w-[200px] flex-shrink-0 snap-start bg-[#181818] p-5 rounded-xl hover:bg-[#282828] transition-all duration-300 group cursor-pointer border border-transparent hover:border-[#3e3e3e] text-center"
                         >
                             {/* Khung hình tròn đặc trưng cho Nghệ sĩ */}
