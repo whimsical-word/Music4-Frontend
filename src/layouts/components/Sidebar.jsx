@@ -1,8 +1,12 @@
 import React from 'react';
-import { Home, Search, Library, PlusSquare, Heart, Music } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Home, Search, Library, PlusSquare, Heart, Music, Mic2, Disc } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../features/auth/useAuthStore';
 
 const Sidebar = ({ playlists = [] }) => {
+    const { role } = useAuthStore(); // Lấy role từ Zustand
+    const navigate = useNavigate();
+
     return (
         <div className="w-64 bg-black p-6 flex flex-col h-full border-r border-[#282828] hidden md:flex font-sans text-gray-400">
             <Link to="/" className="flex items-center gap-3 mb-8 cursor-pointer group">
@@ -24,29 +28,52 @@ const Sidebar = ({ playlists = [] }) => {
             </nav>
 
             <div className="mt-8 pt-6 border-t border-[#282828] flex flex-col gap-4 font-medium">
-                <button className="flex items-center gap-4 hover:text-white transition-all group w-full text-left bg-transparent border-none outline-none cursor-pointer p-0">
-                    <div className="bg-[#282828] group-hover:bg-[#3e3e3e] p-1 rounded-sm text-white transition-colors">
-                        <PlusSquare size={20} />
-                    </div>
-                    Tạo Playlist
-                </button>
-                <Link to="/favorites" className="flex items-center gap-4 hover:text-white transition-all group">
-                    <div className="bg-[#282828] p-1 rounded-sm text-white transition-all">
-                        <Heart size={20} />
-                    </div>
-                    Bài hát đã thích
-                </Link>
+                {/* 🟢 KIỂM TRA ROLE ĐỂ HIỂN THỊ MENU KHÁC NHAU */}
+                {role === 'artist' ? (
+                    <>
+                        <button onClick={() => navigate('/studio/upload')} className="flex items-center gap-4 hover:text-white transition-all group w-full text-left bg-transparent border-none outline-none cursor-pointer p-0">
+                            <div className="bg-[#282828] group-hover:bg-[#3e3e3e] p-1 rounded-sm text-white transition-colors">
+                                <Mic2 size={20} />
+                            </div>
+                            Tạo Bài hát mới
+                        </button>
+                        <button onClick={() => navigate('/studio/album')} className="flex items-center gap-4 hover:text-white transition-all group w-full text-left bg-transparent border-none outline-none cursor-pointer p-0">
+                            <div className="bg-[#282828] group-hover:bg-[#3e3e3e] p-1 rounded-sm text-white transition-colors">
+                                <Disc size={20} />
+                            </div>
+                            Tạo Album mới
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <button className="flex items-center gap-4 hover:text-white transition-all group w-full text-left bg-transparent border-none outline-none cursor-pointer p-0">
+                            <div className="bg-[#282828] group-hover:bg-[#3e3e3e] p-1 rounded-sm text-white transition-colors">
+                                <PlusSquare size={20} />
+                            </div>
+                            Tạo Playlist
+                        </button>
+                        <Link to="/favorites" className="flex items-center gap-4 hover:text-white transition-all group">
+                            <div className="bg-[#282828] p-1 rounded-sm text-white transition-all">
+                                <Heart size={20} />
+                            </div>
+                            Bài hát đã thích
+                        </Link>
+                    </>
+                )}
             </div>
 
-            <div className="mt-6 flex-1 overflow-y-auto custom-scrollbar">
-                <ul className="flex flex-col gap-3 text-sm text-[#a7a7a7]">
-                    {playlists.map((pl) => (
-                        <li key={pl.id} className="hover:text-blue-500 cursor-pointer transition-colors truncate">
-                            <Link to={`/playlist/${pl.id}`}>{pl.name}</Link>
-                        </li>
-                    ))}
-                </ul>
-            </div>
+            {/* Danh sách Playlist (Chỉ có ý nghĩa nhiều với User bình thường) */}
+            {role !== 'artist' && (
+                <div className="mt-6 flex-1 overflow-y-auto custom-scrollbar">
+                    <ul className="flex flex-col gap-3 text-sm text-[#a7a7a7]">
+                        {playlists.map((pl) => (
+                            <li key={pl.id} className="hover:text-white cursor-pointer transition-colors truncate">
+                                <Link to={`/playlist/${pl.id}`}>{pl.name}</Link>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
         </div>
     );
 };

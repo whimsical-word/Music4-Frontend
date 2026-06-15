@@ -3,7 +3,7 @@ import { Play, Pause, SkipForward, SkipBack, Volume2, VolumeX } from 'lucide-rea
 import { usePlayerStore } from '../../features/player/usePlayerStore';
 import { useAuthStore } from '../../features/auth/useAuthStore';
 import axiosClient from '../../app/axios/axiosClient';
-
+import MusicImage from './MusicImage.jsx'
 const MusicPlayer = () => {
     // 1. Rút thêm playNext, playPrev từ Store
     const { currentTrack, isPlaying, togglePlay, playNext, playPrev } = usePlayerStore();
@@ -84,9 +84,11 @@ const MusicPlayer = () => {
             {/* KHU VỰC 1: THÔNG TIN BÀI HÁT */}
             <div className="flex items-center gap-4 w-1/4">
                 <div className="w-14 h-14 rounded-md overflow-hidden bg-[#282828] flex-shrink-0 shadow-md">
-                    <img
-                        src={currentTrack.img && currentTrack.img.startsWith('http') ? currentTrack.img : 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=100&auto=format'}
-                        alt={currentTrack.name} className="w-full h-full object-cover"
+                    <MusicImage
+                        src={currentTrack.img}
+                        type='track'
+                        alt={currentTrack.name}
+                        className="w-full h-full object-cover"
                     />
                 </div>
                 <div className="min-w-0">
