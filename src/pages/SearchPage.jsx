@@ -4,14 +4,16 @@ import React, { useState, useEffect } from 'react';
     import axiosClient from '../app/axios/axiosClient';
     import { usePlayerStore } from '../features/player/usePlayerStore';
     import MusicImage from '../layouts/components/MusicImage';
-    const SearchPage = () => {
+    import {AppPagination} from "../layouts/components/AppPagination.jsx";
+
+const SearchPage = () => {
         const [searchParams] = useSearchParams();
         const navigate = useNavigate();
     const playTrack = usePlayerStore((state) => state.playTrack);
     // 1. ĐỌC THAM SỐ TỪ URL (Mặc định query rỗng và type là 'all')
     const query = searchParams.get('q') || '';
     const currentType = searchParams.get('type') || 'all';
-
+    const currentPage = parseInt(searchParams.get('page')) || 0;
     // 2. QUẢN LÝ TRẠNG THÁI DỮ LIỆU & LOADING
     const [searchResults, setSearchResults] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -31,8 +33,8 @@ import React, { useState, useEffect } from 'react';
                     params: {
                         q: query,
                         type: currentType,
-                        page: 0,  // Mặc định lấy trang đầu tiên
-                        size: 20  // Cấu hình kích thước trang
+                        page: currentPage,
+                        size: 5  // Cấu hình kích thước trang
                     }
                 });
                 setSearchResults(response.data);
@@ -44,23 +46,39 @@ import React, { useState, useEffect } from 'react';
         };
 
         fetchResults();
-    }, [query, currentType]);
+    }, [query, currentType,currentPage]);
 
     useEffect(() => {
         if (searchResults) {
             console.log("Dữ liệu BE trả về:", searchResults);
         }
     }, [searchResults]);
+
+
     // 4. BÓC TÁCH MẢNG DỮ LIỆU TỪ ĐỐI TƯỢNG PAGE (.content)
     const tracks = searchResults?.tracks?.content || [];
     const artists = searchResults?.artists?.content || [];
     const albums = searchResults?.albums?.content || [];
     const playlists = searchResults?.playlists?.content || [];
     const categories = searchResults?.categories?.content || [];
+    let totalPages = 0;
+    if (searchResults) {
+        if (currentType === 'track') totalPages = searchResults.tracks?.totalPages || 0;
+        else if (currentType === 'artist') totalPages = searchResults.artists?.totalPages || 0;
+        else if (currentType === 'album') totalPages = searchResults.albums?.totalPages || 0;
+        else if (currentType === 'playlist') totalPages = searchResults.playlists?.totalPages || 0;
+        else if (currentType === 'category') totalPages = searchResults.categories?.totalPages || 0;
+        // Lưu ý: Nếu type là 'all', ta thường không hiển thị phân trang vì có nhiều list chạy song song.
+    }
 
-    // Hàm thay đổi Tab bộ lọc bằng cách cập nhật URL
+    const handlePageChange = (newPage) => {
+        navigate(`/search?q=${encodeURIComponent(query)}&type=${currentType}&page=${newPage}`);
+        // Tùy chọn: Cuộn lên đầu trang sau khi chuyển trang
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     const handleTypeChange = (newType) => {
-        navigate(`/search?q=${encodeURIComponent(query)}&type=${newType}`);
+        navigate(`/search?q=${encodeURIComponent(query)}&type=${newType}&page=0`);
     };
 
 
@@ -112,7 +130,6 @@ import React, { useState, useEffect } from 'react';
                 ))}
             </div>
 
-            {/* KHU VỰC ĐỔ DỮ LIỆU KẾT QUẢ */}
             {/* KHU VỰC ĐỔ DỮ LIỆU KẾT QUẢ */}
             {searchResults && (tracks.length > 0 || artists.length > 0 || albums.length > 0 || playlists.length > 0 || categories.length > 0) ? (
                 <div className="space-y-12 animate-fadeIn">
@@ -238,7 +255,13 @@ import React, { useState, useEffect } from 'react';
                             </div>
                         </section>
                     )}
-
+                    {currentType !== 'all' && totalPages > 1 && (
+                        <AppPagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={handlePageChange}
+                        />
+                    )}
                 </div>
             ) : (
                 // TRẠNG THÁI KHÔNG TÌM THẤY DỮ LIỆU
