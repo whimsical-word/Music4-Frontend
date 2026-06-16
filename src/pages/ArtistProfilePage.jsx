@@ -13,7 +13,6 @@ const ArtistProfilePage = () => {
 
     const { id: loggedInId, role } = useAuthStore();
     const isOwner = role === 'artist' && Number(loggedInId) === Number(id);
-
     const [artistInfo, setArtistInfo] = useState(null);
     const [albums, setAlbums] = useState([]);
     const [stats, setStats] = useState(null);
@@ -39,10 +38,9 @@ const ArtistProfilePage = () => {
                 const albumsRes = await axiosClient.get(`/albums/artist/${id}`);
                 setAlbums(albumsRes.data || []);
 
-                if (isOwner) {
                     const statsRes = await axiosClient.get(`/analytics/artist/${id}/overview`);
                     setStats(statsRes.data);
-                }
+
             } catch (error) {
                 console.error("Lỗi tải thông tin nghệ sĩ:", error);
             } finally {
@@ -119,6 +117,14 @@ const ArtistProfilePage = () => {
                             Nghệ sĩ xác thực
                         </div>
                         <h1 className="text-6xl md:text-8xl font-black mb-4 tracking-tighter">{artistInfo.name}</h1>
+                        <div className="flex items-center gap-6">
+
+                            {!isOwner && (
+                                <button className="px-4 py-1.5 border border-[#a7a7a7] text-white rounded-full font-bold uppercase text-xs hover:border-white hover:scale-105 transition-all bg-transparent cursor-pointer">
+                                    Theo dõi
+                                </button>
+                            )}
+                        </div>
                         <p className="text-sm text-[#a7a7a7] font-medium">
                             {artistInfo.trackTotal} Bài hát • {artistInfo.albumTotal} Album
                         </p>
@@ -129,7 +135,7 @@ const ArtistProfilePage = () => {
             <div className="p-8 relative z-10 space-y-12">
 
                 {/* 2. CHỈ HIỂN THỊ DÀNH RIÊNG CHO CHÍNH CHỦ: BẢNG THỐNG KÊ */}
-                {isOwner && stats && (
+
                     <section className="bg-[#181818] border border-[#282828] p-6 rounded-2xl shadow-lg">
                         <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                             <Activity className="text-blue-500" /> Tổng quan dữ liệu của bạn
@@ -149,19 +155,11 @@ const ArtistProfilePage = () => {
                             </div>
                         </div>
                     </section>
-                )}
 
                 {/* 3. NÚT PLAY ALL */}
-                <div className="flex items-center gap-6">
-                    <button className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center hover:scale-105 transition-transform cursor-pointer border-none shadow-lg">
-                        <Play size={24} fill="currentColor" className="text-black ml-1" />
-                    </button>
-                    {!isOwner && (
-                        <button className="px-4 py-1.5 border border-[#a7a7a7] text-white rounded-full font-bold uppercase text-xs hover:border-white hover:scale-105 transition-all bg-transparent cursor-pointer">
-                            Theo dõi
-                        </button>
-                    )}
-                </div>
+                <button className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center hover:scale-105 transition-transform cursor-pointer border-none shadow-lg">
+                    <Play size={24} fill="currentColor" className="text-black ml-1" />
+                </button>
 
                 {/* 4. DANH SÁCH ALBUM CỦA NGHỆ SĨ */}
                 <section>
