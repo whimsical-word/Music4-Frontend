@@ -10,6 +10,7 @@ import ProfilePage from "./pages/ProfilePage.jsx";
 import PlaylistPage from "./pages/PlaylistPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
 import ArtistProfilePage from "./pages/ArtistProfilePage.jsx";
+import { CreateTrackPage } from "./pages/CreateTrackPage";
 
 function App() {
     return (
@@ -20,12 +21,13 @@ function App() {
                     <Route path="/login" element={<LoginPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="tracks" element={<AllTracksPage />} />
-                    <Route path="artists" element={<AllArtistsPage />} />
+                    <Route path="/artists" element={<AllArtistsPage />} />
                     <Route path="/search" element={<SearchPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route path="/playlist/:id" element={<PlaylistPage />} />
                     <Route path="/history" element={<HistoryPage />} />
                     <Route path="/artist/:id" element={<ArtistProfilePage />} />
+                    <Route path="/studio/upload" element={<CreateTrackPage />} />
                     {/* Thêm các Route khác vào đây, ví dụ: */}
                     {/* <Route path="search" element={<SearchPage />} /> */}
                 </Route>
