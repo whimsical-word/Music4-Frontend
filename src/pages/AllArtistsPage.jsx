@@ -25,7 +25,7 @@ const AllArtistsPage = () => {
                 setArtists(res.data.content || []);
                 setTotalPages(res.data.totalPages || 0);
             } catch (error) {
-                console.error("Lỗi tải danh sách nghệ sĩ: ", error);
+                console.error("Lỗi tải danh sách Artist: ", error);
             } finally {
                 setIsLoading(false);
             }
