@@ -192,7 +192,7 @@ const HomePage = () => {
                 {/* 2. BĂNG CHUYỀN NGHỆ SĨ (ARTISTS CAROUSEL) */}
                 <AutoScrollCarousel
                     title="Nghệ Sĩ Nổi Bật"
-                    items={artists}
+                    items={Array.isArray(artists) ? artists : (artists?.content || [])}
                     onViewAll={() => navigate('/artists')} // Điều hướng sang trang xem tất cả
                     renderItem={(artist) => (
                         <div
