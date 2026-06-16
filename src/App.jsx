@@ -10,6 +10,7 @@ import ProfilePage from "./pages/ProfilePage.jsx";
 import PlaylistPage from "./pages/PlaylistPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
 import ArtistProfilePage from "./pages/ArtistProfilePage.jsx";
+import AdminDashboardPage from "./pages/AdminDashboardPage.jsx";
 
 function App() {
     return (
@@ -26,6 +27,7 @@ function App() {
                     <Route path="/playlist/:id" element={<PlaylistPage />} />
                     <Route path="/history" element={<HistoryPage />} />
                     <Route path="/artist/:id" element={<ArtistProfilePage />} />
+                    <Route path="/admin" element={<AdminDashboardPage />} />
                     {/* Thêm các Route khác vào đây, ví dụ: */}
                     {/* <Route path="search" element={<SearchPage />} /> */}
                 </Route>
