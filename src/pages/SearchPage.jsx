@@ -161,6 +161,27 @@ const SearchPage = () => {
                                             </div>
                                         </div>
                                         <h4 className="font-bold text-white truncate text-sm mb-1">{track.name}</h4>
+                                        <p className="text-xs text-[#a7a7a7] truncate flex gap-1 items-center">
+                                            {track.artists && track.artists.length > 0 ? (
+                                                track.artists.map((artist, idx) => (
+                                                    <span key={artist.id}>
+                            <span
+                                onClick={(e) => {
+                                    e.stopPropagation(); // Ngăn chặn sự kiện click lan ra thẻ cha (làm phát nhạc ngoài ý muốn)
+                                    navigate(`/artist/${artist.id}`); // Chuyển hướng đến trang nghệ sĩ bằng ID
+                                }}
+                                className="hover:text-blue-500 hover:underline cursor-pointer transition-colors text-gray-400 font-medium"
+                            >
+                                {artist.name}
+                            </span>
+                                                        {/* Nếu bài hát có nhiều nghệ sĩ, thêm dấu phẩy ngăn cách ở giữa */}
+                                                        {idx < track.artists.length - 1 && ", "}
+                        </span>
+                                                ))
+                                            ) : (
+                                                "Nghệ sĩ hệ thống"
+                                            )}
+                                        </p>
                                         <p className="text-xs text-[#a7a7a7] truncate">{track.viewCount?.toLocaleString() || 0} lượt nghe</p>
                                     </div>
                                 ))}
@@ -176,7 +197,7 @@ const SearchPage = () => {
                             </h3>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
                                 {artists.map((artist) => (
-                                    <div key={artist.id} onClick={() => navigate(`/artists/${artist.id}`)} className="bg-[#181818] p-5 rounded-xl hover:bg-[#282828] transition-all duration-300 group cursor-pointer border border-transparent hover:border-[#3e3e3e] text-center">
+                                    <div key={artist.id} onClick={() => navigate(`/artist/${artist.id}`)} className="bg-[#181818] p-5 rounded-xl hover:bg-[#282828] transition-all duration-300 group cursor-pointer border border-transparent hover:border-[#3e3e3e] text-center">
                                         <div className="w-24 h-24 md:w-28 md:h-28 mx-auto mb-4 rounded-full overflow-hidden border border-[#282828] relative bg-[#282828] shadow-md">
                                             <MusicImage src={artist.img}
                                                 type='artist' alt={artist.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 object-top" />
