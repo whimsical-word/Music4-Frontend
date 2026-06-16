@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import trackService from '../features/tracks/trackService';
+import { Play } from "lucide-react";
 
 const AllTracksPage = () => {
     const [tracks, setTracks] = useState([]);
@@ -66,7 +67,12 @@ const AllTracksPage = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 bg-zinc-900 border border-zinc-800 rounded-full text-sm text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
                     />
-                    <span className="absolute left-3.5 top-2.5 text-zinc-500 text-sm">🔍</span>
+                    <span className="absolute left-3.5 top-2.5 text-zinc-500 text-sm"><svg
+                        xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                        className="lucide lucide-search-icon lucide-search"><path d="m21 21-4.34-4.34"/><circle cx="11"
+                                                                                                                cy="11"
+                                                                                                                r="8"/></svg></span>
                 </div>
             </div>
 
@@ -98,10 +104,9 @@ const AllTracksPage = () => {
                                 className="hover:bg-zinc-800/30 transition-colors duration-150 group"
                             >
                                 {/* 1. Số thứ tự / Nút Play giả lập khi hover */}
-                                <td className="p-4 text-center font-medium text-zinc-500 group-hover:text-indigo-400 transition-colors">
+                                <td className="p-4 text-center font-medium text-zinc-500 group-hover:text-blue-800 transition-colors">
                                     <span className="group-hover:hidden">{index + 1}</span>
-                                    <span className="hidden group-hover:inline-block cursor-pointer">▶️</span>
-                                </td>
+                                    <Play className="hidden group-hover:inline-block cursor-pointer w-5 h-5 text-blue-800 hover:scale-110 transition-transform" />                                </td>
 
                                 {/* 2. Ảnh & Tên bài hát */}
                                 <td className="p-4">
@@ -118,7 +123,7 @@ const AllTracksPage = () => {
                                             }}
                                         />
                                         <div className="max-w-[180px] md:max-w-[240px]">
-                                            <div className="font-semibold text-zinc-100 truncate group-hover:text-indigo-400 transition-colors" title={track.name}>
+                                            <div className="font-semibold text-zinc-100 truncate group-hover:text-blue-700 transition-colors" title={track.name}>
                                                 {track.name}
                                             </div>
                                         </div>
@@ -146,7 +151,7 @@ const AllTracksPage = () => {
                                         </div>
                                     ) : (
                                         <span className="inline-block px-2 py-0.5 bg-zinc-800/60 text-zinc-500 text-xs rounded border border-zinc-700/50 italic">
-                                                Single (Bài lẻ)
+                                                Single
                                             </span>
                                     )}
                                 </td>

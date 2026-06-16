@@ -11,6 +11,15 @@ const trackService = {
     getTop5MostViewed: async () => {
         const response = await axiosClient.get('/tracks/top5-views');
         return response.data;
+    },
+
+    createTrack: async (formData) => {
+        const response = await axiosClient.post('/tracks', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data', // Bắt buộc để Spring Boot bóc tách file
+            },
+        });
+        return response.data;
     }
 };
 
