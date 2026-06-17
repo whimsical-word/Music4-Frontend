@@ -192,12 +192,12 @@ const HomePage = () => {
                 {/* 2. BĂNG CHUYỀN NGHỆ SĨ (ARTISTS CAROUSEL) */}
                 <AutoScrollCarousel
                     title="Nghệ Sĩ Nổi Bật"
-                    items={artists}
+                    items={Array.isArray(artists) ? artists : (artists?.content || [])}
                     onViewAll={() => navigate('/artists')} // Điều hướng sang trang xem tất cả
                     renderItem={(artist) => (
                         <div
                             key={artist.id}
-                            onClick={() => navigate(`/artists/${artist.id}`)}
+                            onClick={() => navigate(`/artist/${artist.id}`)}
                             className="min-w-[160px] md:min-w-[200px] flex-shrink-0 snap-start bg-[#181818] p-5 rounded-xl hover:bg-[#282828] transition-all duration-300 group cursor-pointer border border-transparent hover:border-[#3e3e3e] text-center"
                         >
                             {/* Khung hình tròn đặc trưng cho Nghệ sĩ */}

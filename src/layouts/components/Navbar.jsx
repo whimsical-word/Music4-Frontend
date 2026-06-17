@@ -1,13 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Bell, User, LogOut, ChevronDown } from 'lucide-react';
+import { Search, Bell, User, LogOut, ChevronDown, LayoutDashboard } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../features/auth/useAuthStore';
+import MusicImage from './MusicImage.jsx'
 
 const Navbar = () => {
     const navigate = useNavigate();
 
     // Đồng bộ thêm trường dẫn 'img' đại diện từ kho lưu trữ Zustand toàn cục
-    const { username, role, img, logout, isAuthenticated } = useAuthStore();
+    // Thêm 'id' vào danh sách rút trích
+    const { id, username, role, img, logout, isAuthenticated } = useAuthStore();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -63,7 +65,7 @@ const Navbar = () => {
                             className="w-10 h-10 rounded-full overflow-hidden border-2 border-transparent hover:border-blue-500 focus:border-blue-500 transition-all duration-300 bg-[#282828] flex items-center justify-center cursor-pointer p-0 shadow-md"
                             title={username || 'User Profile'}
                         >
-                            <img
+                            <MusicImage
                                 // Nếu DB trống hoặc null, nạp ảnh chữ cái đầu thông minh tự động để làm dày UI phẳng
                                 src={img && img !== 'null' ? img : `https://ui-avatars.com/api/?name=${username || 'U'}&background=0D8BFF&color=fff&bold=true&size=128`}
                                 alt="User Avatar"
@@ -92,16 +94,39 @@ const Navbar = () => {
                                 <>
                                     <div className="px-4 py-3 border-b border-[#3e3e3e] mb-1 bg-[#1e1e1e]/50 rounded-t-lg">
                                         <p className="text-sm font-bold text-white truncate">{username}</p>
-                                        <p className="text-[10px] text-[#a7a7a7] uppercase tracking-widest mt-0.5">{role === 'artist' ? 'Nghệ sĩ' : 'Người nghe'}</p>
+                                        <p className="text-[10px] text-[#a7a7a7] uppercase tracking-widest mt-0.5">
+                                            {role === 'admin' ? 'Quản trị viên' : (role === 'artist' ? 'Nghệ sĩ' : 'Người nghe')}
+                                        </p>
                                     </div>
 
-                                    <button
-                                        onClick={() => { setDropdownOpen(false); navigate('/profile'); }}
-                                        className="w-full text-left px-4 py-2.5 text-sm font-medium text-white hover:bg-[#3e3e3e] flex items-center gap-2.5 transition-colors bg-transparent border-none cursor-pointer"
-                                    >
-                                        <User size={16} className="text-[#a7a7a7]" />
-                                        <span>Account</span>
-                                    </button>
+                                    {/* 🟢 NẾU LÀ ADMIN, HIỆN NÚT VÀO DASHBOARD */}
+                                    {role === 'admin' && (
+                                        <button
+                                            onClick={() => {
+                                                setDropdownOpen(false);
+                                                navigate('/admin');
+                                            }}
+                                            className="w-full text-left px-4 py-2.5 text-sm font-medium text-yellow-500 hover:bg-[#3e3e3e] flex items-center gap-2.5 transition-colors bg-transparent border-none cursor-pointer"
+                                        >
+                                            <LayoutDashboard size={16} />
+                                            <span>Admin Dashboard</span>
+                                        </button>
+                                    )}
+
+                                    {/* Nút Account (Chuyển hướng profile cho Artist/Listener) */}
+                                    {role !== 'admin' && (
+                                        <button
+                                            onClick={() => {
+                                                setDropdownOpen(false);
+                                                if (role === 'artist') navigate(`/artist/${id}`);
+                                                else navigate('/profile');
+                                            }}
+                                            className="w-full text-left px-4 py-2.5 text-sm font-medium text-white hover:bg-[#3e3e3e] flex items-center gap-2.5 transition-colors bg-transparent border-none cursor-pointer"
+                                        >
+                                            <User size={16} className="text-[#a7a7a7]" />
+                                            <span>Account</span>
+                                        </button>
+                                    )}
 
                                     <div className="border-t border-[#3e3e3e] my-1"></div>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Music, Lock, User, Eye, EyeOff } from 'lucide-react';
 import axiosClient from '../app/axios/axiosClient';
@@ -52,7 +52,11 @@ const LoginPage = () => {
 
             // Đồng bộ trạng thái kiên cố vào Zustand Store
             loginSuccess(accessToken, refreshToken, id, finalUsername, img, finalRole);
-            navigate('/');
+            if (finalRole === 'admin') {
+                navigate('/admin'); // Nếu là admin, đẩy thẳng vào Dashboard
+            } else {
+                navigate('/');      // Listener hoặc Artist thì về trang chủ Music
+            }
         } catch (err) {
             const errorMsg = err.response?.data?.message || 'Tài khoản hoặc mật khẩu không chính xác!';
             setAuthError(errorMsg);
