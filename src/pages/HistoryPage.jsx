@@ -59,11 +59,27 @@ const HistoryPage = () => {
                                     <Play size={16} fill="currentColor" className="text-white ml-0.5" />
                                 </div>
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-white truncate group-hover:text-blue-400 transition-colors">{track.name}</h4>
-                                {/* History đang dùng TrackResponseDTO (không có artists), nên tạm để hiển thị Artist hệ thống */}
-                                <p className="text-xs truncate">Nghệ sĩ hệ thống</p>
-                            </div>
+                            <p className="text-xs text-[#a7a7a7] truncate flex gap-1 items-center">
+                                {track.artists && track.artists.length > 0 ? (
+                                    track.artists.map((artist, idx) => (
+                                        <span key={artist.id}>
+                            <span
+                                onClick={(e) => {
+                                    e.stopPropagation(); // Ngăn chặn sự kiện click lan ra thẻ cha (làm phát nhạc ngoài ý muốn)
+                                    navigate(`/artist/${artist.id}`); // Chuyển hướng đến trang nghệ sĩ bằng ID
+                                }}
+                                className="hover:text-blue-500 hover:underline cursor-pointer transition-colors text-gray-400 font-medium"
+                            >
+                                {artist.name}
+                            </span>
+                                            {/* Nếu bài hát có nhiều nghệ sĩ, thêm dấu phẩy ngăn cách ở giữa */}
+                                            {idx < track.artists.length - 1 && ", "}
+                        </span>
+                                    ))
+                                ) : (
+                                    "Nghệ sĩ hệ thống"
+                                )}
+                            </p>
                             <div className="text-right">
                                 <span className="bg-[#282828] px-2.5 py-1 rounded-full text-xs border border-[#3e3e3e]">
                                     {track.viewCount || 0} views
