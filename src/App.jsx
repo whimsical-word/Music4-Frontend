@@ -6,6 +6,7 @@ import LoginPage from "./pages/LoginPage.jsx";
 import AllTracksPage from "./pages/AllTracksPage.jsx";
 import AllArtistsPage from "./pages/AllArtistsPage.jsx";
 import SearchPage from "./pages/SearchPage.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
 
 function App() {
     return (
@@ -18,6 +19,7 @@ function App() {
                     <Route path="tracks" element={<AllTracksPage />} />
                     <Route path="artists" element={<AllArtistsPage />} />
                     <Route path="/search" element={<SearchPage />} />
+                    <Route path={"/forgot-password"} element={<ForgotPassword />} />
                     {/* Thêm các Route khác vào đây, ví dụ: */}
                     {/* <Route path="search" element={<SearchPage />} /> */}
                 </Route>

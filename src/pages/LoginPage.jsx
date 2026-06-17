@@ -107,7 +107,7 @@ const LoginPage = () => {
                                 required
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
+                                placeholder=""
                                 className="bg-transparent border-none outline-none text-sm text-white w-full placeholder-[#535353]"
                                 style={autofillStyle}
                             />
@@ -141,6 +141,16 @@ const LoginPage = () => {
                         Đăng ký ngay
                     </button>
                 </div>
+
+                <div className="mt-4 text-center text-xs text-[#a7a7a7]">
+                    <button
+                        onClick={() => navigate('/forgot-password')}
+                        className="text-white hover:text-blue-400 hover:underline bg-transparent border-none p-0 cursor-pointer transition-colors"
+                    >
+                        Quên mật khẩu?
+                    </button>
+                </div>
+
             </div>
         </div>
     );
