@@ -9,7 +9,7 @@ export const useAuthStore = create((set) => ({
     isLoading: false,
     error: null,
 
-    // 🟢 Hứng thêm id và img từ file LoginPage truyền sang
+
     loginSuccess: (accessToken, refreshToken, id, username, img, role) => {
         let finalRole = role.replace('ROLE_', '').toLowerCase();
         if (finalRole === 'user') finalRole = 'listener';

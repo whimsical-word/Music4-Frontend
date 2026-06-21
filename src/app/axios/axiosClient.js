@@ -18,7 +18,6 @@ axiosClient.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// 🟢 BIẾN QUẢN LÝ HÀNG ĐỢI (MUTEX LOCK)
 let isRefreshing = false;
 let failedQueue = [];
 

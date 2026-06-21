@@ -54,7 +54,7 @@ const TrackEngagementModal = ({ track, onClose }) => {
             // Gọi API gửi lên Backend
             await engagementService.addComment(track.id, newComment.trim(), currentUserId);
 
-            // 🌟 TỰ TẠO OBJECT COMMENT HOÀN CHỈNH ĐỂ HIỂN THỊ NGAY TRÊN GIAO DIỆN
+
             const newCommentObj = {
                 id: Date.now(), // Tạo key tạm thời tránh trùng lặp log React
                 content: newComment.trim(),

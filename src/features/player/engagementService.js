@@ -7,7 +7,7 @@ export const engagementService = {
         return res.data || res || [];
     },
 
-    // 2. THÊM BÌNH LUẬN MỚI (🌟 ĐÃ SỬA: Nhận thêm tham số userId)
+    // 2. THÊM BÌNH LUẬN MỚI
     addComment: async (trackId, content, userId) => {
         // Gửi Object đúng cấu hình CommentRequest mà Backend đang yêu cầu
         const res = await axiosClient.post('/comments', {
@@ -24,6 +24,7 @@ export const engagementService = {
         const res = await axiosClient.post(`/favorites/toggle/${trackId}`);
         return res.data || res;
     },
+
 
     // 4. KIỂM TRA TRẠNG THÁI TIM HIỆN TẠI
     checkIsLiked: async (trackId) => {
@@ -42,5 +43,9 @@ export const engagementService = {
             console.error("Lỗi kiểm tra trạng thái tim:", error);
             return { liked: false };
         }
+    },
+    getFavoritesMeRaw: async () => {
+        const res = await axiosClient.get('/favorites/me');
+        return res.data || res || []; // Trả về mảng chứa danh sách bài hát đã thích
     }
 };
