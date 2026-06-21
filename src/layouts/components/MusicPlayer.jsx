@@ -17,6 +17,12 @@ const MusicPlayer = () => {
     usePlayerStore();
   const { isAuthenticated, id: userId } = useAuthStore();
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      usePlayerStore.getState().stop();
+    }
+  }, [isAuthenticated]);
+
   const audioRef = useRef(null);
   const [progress, setProgress] = useState(0);
   const [volume, setVolume] = useState(1); // Mặc định âm lượng 100% (1.0)
@@ -61,7 +67,7 @@ const MusicPlayer = () => {
           // Chỉ gửi nếu đã nghe
           if (currentPosition > 0) {
             try {
-              await axiosClient.post("/tracking/sync-time", {
+              await axiosClient.put("/tracking/sync-time", {
                 userId: userId,
                 trackId: currentTrack.id,
                 position: currentPosition,

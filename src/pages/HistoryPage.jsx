@@ -25,7 +25,7 @@ const HistoryPage = () => {
       try {
         // Gọi API lấy lịch sử nghe nhạc của User
         const response = await axiosClient.get(
-          `/api/tracking/history/1?page=${page}&size=20`,
+          `/tracking/history/${userId}?page=${page}&size=20`,
         );
         setHistoryTracks(response.data.content);
         setTotalPages(response.data.totalPages);
