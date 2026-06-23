@@ -117,7 +117,7 @@ const HomePage = () => {
             {/* BANNER CHÀO MỪNG */}
             <div className="mb-10 p-8 rounded-xl bg-[#181818] border border-[#282828] shadow-md relative overflow-hidden">
                 <h2 className="text-4xl font-extrabold mb-2 text-white relative z-10 tracking-tight">
-                    Chào buổi chiều, <span className="text-blue-500">{username || 'Listener'}</span>
+                    Chào buổi chiều, <span className="text-emerald-600">{username || 'Listener'}</span>
                 </h2>
                 <p className="text-[#a7a7a7] relative z-10 text-sm">
                     Hệ thống gợi ý đã sẵn sàng. Khám phá những giai điệu dành riêng cho bạn hôm nay.
