@@ -59,7 +59,6 @@ const ArtistProfilePage = () => {
                 }
                 setTracks(Array.isArray(trackList) ? trackList : []);
 
-                // 4. Lấy thống kê dữ liệu tổng quan
                 const statsRes = await axiosClient.get(`/analytics/artist/${id}/overview`);
                 setStats(statsRes.data);
 
