@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import trackService from "../features/tracks/trackService";
 import categoryService from "../features/categories/categoryService";
 import artistService from "../features/artists/artistService";
+import {useAuthStore} from "../features/auth/useAuthStore.js";
 
 export function CreateTrackPage() {
     const navigate = useNavigate();
@@ -19,20 +20,32 @@ export function CreateTrackPage() {
     const [audioFile, setAudioFile] = useState(null);
     const [coverImage, setCoverImage] = useState(null);
     const [loading, setLoading] = useState(false);
+    const { username } = useAuthStore();
 
     // --- 3. USEEFFECT: GỌI API LẤY DATA THẬT KHI MỞ TRANG ---
     useEffect(() => {
+
         const fetchInitialData = async () => {
             try {
                 // Gọi đồng thời cả 2 API lấy Thể loại và Ca sĩ
                 const [categoriesRes, artistsRes] = await Promise.all([
                     categoryService.getAllCategories(),
-                    artistService.getAllArtists()
+                    artistService.getAllArtists() // 💡 Nếu bồ làm xong API /all thì đổi thành artistService.getAllArtistsWithoutPagination() nha
                 ]);
 
-                // Gán dữ liệu thật vào state (bồ linh hoạt kiểm tra .data tùy cấu trúc response nhé)
+                // Gán dữ liệu thật vào state categories
                 setDbCategories(categoriesRes.data || categoriesRes);
-                setDbArtists(artistsRes.data || artistsRes);
+
+                let artistList = [];
+
+                // 🔥 XỬ LÝ LỖI SẬP MAP Ở ĐÂY:
+                // Nếu artistsRes.data là Object phân trang, lấy mảng nằm trong .content, nếu không thì lấy mảng thuần
+                if (artistsRes.data) {
+                    artistList = artistsRes.data.content || artistsRes.data;
+                } else {
+                    artistList = artistsRes.content || artistsRes;
+                }
+                setDbArtists(Array.isArray(artistList) ? artistList : []);
             } catch (error) {
                 console.error("Lỗi khi tải dữ liệu từ hệ thống:", error);
             }
@@ -124,6 +137,14 @@ export function CreateTrackPage() {
                     Upload new track
                 </h2>
 
+                {/* Hiển thị thông tin nghệ sĩ đang đăng nhập */}
+                <p className="text-zinc-500 text-sm text-center mb-6">
+                    Nghệ sĩ đang đăng nhập:{" "}
+                    <span className="text-emerald-400 font-semibold bg-zinc-800/50 px-2.5 py-1 rounded-md border border-zinc-800 ml-1">
+                        {username ? username : "Đang tải..."}
+                    </span>
+                </p>
+
                 <form onSubmit={handleSubmit} className="space-y-5">
                     {/* 1. Tên bài hát */}
                     <div>
@@ -147,7 +168,7 @@ export function CreateTrackPage() {
                             className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-4 py-2.5 text-zinc-100 focus:outline-none focus:border-emerald-500 transition-colors cursor-pointer"
                         >
                             <option value="" disabled>-- Chọn ca sĩ hợp tác (nếu có) --</option>
-                            {dbArtists.map(artist => (
+                            {Array.isArray(dbArtists) && dbArtists.map(artist => (
                                 <option key={artist.id} value={artist.id}>{artist.name}</option>
                             ))}
                         </select>

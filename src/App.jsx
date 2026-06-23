@@ -12,6 +12,9 @@ import HistoryPage from "./pages/HistoryPage.jsx";
 import ArtistProfilePage from "./pages/ArtistProfilePage.jsx";
 import { CreateTrackPage } from "./pages/CreateTrackPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage.jsx";
+import CreateAlbumPage from "./pages/CreateAlbumPage.jsx";
+import AlbumDetailPage from "./pages/AlbumDetailPage.jsx";
+
 
 function App() {
     return (
@@ -29,6 +32,8 @@ function App() {
                     <Route path="/history" element={<HistoryPage />} />
                     <Route path="/artist/:id" element={<ArtistProfilePage />} />
                     <Route path="/studio/upload" element={<CreateTrackPage />} />
+                    <Route path="/studio/album" element={<CreateAlbumPage />} />
+                    <Route path="/albums/:albumId" element={<AlbumDetailPage />} />
                     <Route path="/admin" element={<AdminDashboardPage />} />
                     {/* Thêm các Route khác vào đây, ví dụ: */}
                     {/* <Route path="search" element={<SearchPage />} /> */}
