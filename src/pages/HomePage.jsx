@@ -4,7 +4,6 @@ import { Play, Music, Layers, UploadCloud, BarChart3, User as UserIcon } from 'l
 import axiosClient from '../app/axios/axiosClient';
 import { useAuthStore } from '../features/auth/useAuthStore';
 import { usePlayerStore } from '../features/player/usePlayerStore';
-import MusicPlayer from "../layouts/components/MusicPlayer.jsx";
 import MusicImage from '../layouts/components/MusicImage';
 // =====================================================================
 // COMPONENT PHỤ: BĂNG CHUYỀN TỰ ĐỘNG TRƯỢT (AUTO-SCROLL CAROUSEL)
