@@ -158,7 +158,6 @@ const MusicPlayer = () => {
         onError={(e) => {
           console.error("Lỗi không thể tải nguồn nhạc:", e.target.error);
         }}
-        // autoPlay={false}
       />
 
       {/* KHU VỰC 1: THÔNG TIN BÀI HÁT */}
