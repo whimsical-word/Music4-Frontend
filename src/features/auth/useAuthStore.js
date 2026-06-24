@@ -22,7 +22,7 @@ export const useAuthStore = create((set) => ({
         if (img && img !== 'null') localStorage.setItem('userImg', img);
 
         set({
-            id: id,
+            userId: id,
             username: username,
             img: img && img !== 'null' ? img : null,
             role: finalRole,
@@ -33,7 +33,14 @@ export const useAuthStore = create((set) => ({
 
     logout: () => {
         localStorage.clear();
-        set({ id: null, username: null, img: null, role: 'listener', isAuthenticated: false, error: null });
+        set({
+            userId: null,
+            username: null,
+            img: null,
+            role: 'listener',
+            isAuthenticated: false,
+            error: null
+        });
     },
 
     setAuthError: (errorMsg) => set({ error: errorMsg }),
