@@ -9,7 +9,7 @@ const Navbar = () => {
 
     // Đồng bộ thêm trường dẫn 'img' đại diện từ kho lưu trữ Zustand toàn cục
     // Thêm 'id' vào danh sách rút trích
-    const { userId, username, role, img, logout, isAuthenticated } = useAuthStore();
+    const { id, username, role, img, logout, isAuthenticated } = useAuthStore();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -118,7 +118,8 @@ const Navbar = () => {
                                         <button
                                             onClick={() => {
                                                 setDropdownOpen(false);
-                                                if (role === 'artist') navigate(`/artist/${userId}`);
+                                                // 🔥 SỬA TẠI ĐÂY: Điều hướng theo đường dẫn dùng `id` mới đồng bộ
+                                                if (role === 'artist') navigate(`/artist/${id}`);
                                                 else navigate('/profile');
                                             }}
                                             className="w-full text-left px-4 py-2.5 text-sm font-medium text-white hover:bg-[#3e3e3e] flex items-center gap-2.5 transition-colors bg-transparent border-none cursor-pointer"
