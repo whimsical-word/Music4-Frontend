@@ -1,6 +1,6 @@
-import {BrowserRouter, Routes, Route} from 'react-router-dom';
-import MainLayout from './layouts/MainLayout';
-import HomePage from './pages/HomePage';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import MainLayout from "./layouts/MainLayout";
+import HomePage from "./pages/HomePage";
 import RegisterPage from "./pages/RegisterPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import AllTracksPage from "./pages/AllTracksPage.jsx";
@@ -14,6 +14,9 @@ import ArtistProfilePage from "./pages/ArtistProfilePage.jsx";
 import {CreateTrackPage} from "./pages/CreateTrackPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage.jsx";
 import {ResetPassword} from "./pages/ResetPassword.jsx";
+import CreateAlbumPage from "./pages/CreateAlbumPage.jsx";
+import AlbumDetailPage from "./pages/AlbumDetailPage.jsx";
+
 
 function App() {
     return (
@@ -33,6 +36,7 @@ function App() {
                     <Route path="/history" element={<HistoryPage/>}/>
                     <Route path="/artist/:id" element={<ArtistProfilePage/>}/>
                     <Route path="/studio/upload" element={<CreateTrackPage/>}/>
+                    <Route path="/albums/:albumId" element={<AlbumDetailPage />} />
                     <Route path="/admin" element={<AdminDashboardPage/>}/>
                     {/* Thêm các Route khác vào đây, ví dụ: */}
                     {/* <Route path="search" element={<SearchPage />} /> */}

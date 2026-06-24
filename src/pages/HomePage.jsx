@@ -4,7 +4,6 @@ import { Play, Music, Layers, UploadCloud, BarChart3, User as UserIcon } from 'l
 import axiosClient from '../app/axios/axiosClient';
 import { useAuthStore } from '../features/auth/useAuthStore';
 import { usePlayerStore } from '../features/player/usePlayerStore';
-import MusicPlayer from "../layouts/components/MusicPlayer.jsx";
 import MusicImage from '../layouts/components/MusicImage';
 // =====================================================================
 // COMPONENT PHỤ: BĂNG CHUYỀN TỰ ĐỘNG TRƯỢT (AUTO-SCROLL CAROUSEL)
@@ -124,7 +123,7 @@ const HomePage = () => {
             {/* KHỐI BANNER CHÀO MỪNG */}
             <div className="mb-10 p-8 rounded-xl bg-[#181818] border border-[#282828] shadow-md relative overflow-hidden">
                 <h2 className="text-4xl font-extrabold mb-2 text-white relative z-10 tracking-tight">
-                    Chào buổi chiều, <span className="text-blue-500">{username || 'Listener'}</span>
+                    Chào buổi chiều, <span className="text-emerald-600">{username || 'Listener'}</span>
                 </h2>
                 <p className="text-[#a7a7a7] relative z-10 text-sm">
                     Hệ thống gợi ý đã sẵn sàng. Khám phá những giai điệu dành riêng cho bạn hôm nay.
