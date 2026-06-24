@@ -21,6 +21,7 @@ axiosClient.interceptors.request.use(
 let isRefreshing = false;
 let failedQueue = [];
 
+// 🛠️ ĐÃ SỬA: Format chuẩn lại hàm xử lý hàng đợi
 const processQueue = (error, token = null) => {
     failedQueue.forEach(prom => {
         if (error) {
@@ -37,7 +38,7 @@ axiosClient.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-        // 🌟 CHỈ BẮT LỖI 500 (Server Error). KHÔNG BẮT LỖI NETWORK ERROR DO CHUYỂN TRANG NỮA!
+        // Chỉ bắt lỗi 500 (hoặc đổi thành 401 tùy cấu hình của bạn) và chưa từng retry
         if (error.response && error.response.status === 500 && !originalRequest._retry) {
 
             // Nếu đang có 1 luồng khác đi xin Token rồi, luồng này phải xếp hàng chờ
@@ -87,6 +88,8 @@ axiosClient.interceptors.response.use(
                 isRefreshing = false;
             }
         }
+
+        // Trả về lỗi nếu không rơi vào trường hợp intercept hoặc hết lượt retry
         return Promise.reject(error);
     }
 );
