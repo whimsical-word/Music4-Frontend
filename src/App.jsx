@@ -6,12 +6,14 @@ import LoginPage from "./pages/LoginPage.jsx";
 import AllTracksPage from "./pages/AllTracksPage.jsx";
 import AllArtistsPage from "./pages/AllArtistsPage.jsx";
 import SearchPage from "./pages/SearchPage.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import PlaylistPage from "./pages/PlaylistPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
 import ArtistProfilePage from "./pages/ArtistProfilePage.jsx";
-import { CreateTrackPage } from "./pages/CreateTrackPage";
+import {CreateTrackPage} from "./pages/CreateTrackPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage.jsx";
+import {ResetPassword} from "./pages/ResetPassword.jsx";
 import CreateAlbumPage from "./pages/CreateAlbumPage.jsx";
 import AlbumDetailPage from "./pages/AlbumDetailPage.jsx";
 import LikedSongsPage from "./pages/LikedSongsPage.jsx";
@@ -36,7 +38,7 @@ function App() {
                     <Route path="/studio/upload" element={<CreateTrackPage />} />
                     <Route path="/studio/album" element={<CreateAlbumPage />} />
                     <Route path="/albums/:albumId" element={<AlbumDetailPage />} />
-                    <Route path="/admin" element={<AdminDashboardPage />} />
+                    <Route path="/admin" element={<AdminDashboardPage/>}/>
                     {/* Thêm các Route khác vào đây, ví dụ: */}
                     {/* <Route path="search" element={<SearchPage />} /> */}
                 </Route>

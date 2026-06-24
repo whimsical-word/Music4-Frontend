@@ -1,15 +1,15 @@
 import { create } from 'zustand';
 
 export const useAuthStore = create((set) => ({
-    id: localStorage.getItem('userId') || null,
+    userId: localStorage.getItem('userId') || null,
     username: localStorage.getItem('username') || null,
-    img: localStorage.getItem('userImg') || null, // 🟢 Bổ sung lưu ảnh
+    img: localStorage.getItem('userImg') || null,
     role: localStorage.getItem('role') || 'listener',
     isAuthenticated: !!localStorage.getItem('accessToken'),
     isLoading: false,
     error: null,
 
-
+    // Hứng thêm id và img từ file LoginPage truyền sang
     loginSuccess: (accessToken, refreshToken, id, username, img, role) => {
         let finalRole = role.replace('ROLE_', '').toLowerCase();
         if (finalRole === 'user') finalRole = 'listener';
@@ -39,3 +39,4 @@ export const useAuthStore = create((set) => ({
     setAuthError: (errorMsg) => set({ error: errorMsg }),
     setLoading: (isLoading) => set({ isLoading }),
 }));
+
