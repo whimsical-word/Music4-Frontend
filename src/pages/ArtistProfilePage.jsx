@@ -11,7 +11,7 @@ const ArtistProfilePage = () => {
     const navigate = useNavigate();
     const playTrack = usePlayerStore(state => state.playTrack);
 
-    const { userId: loggedInId, role } = useAuthStore();
+    const { id: loggedInId, role } = useAuthStore();
     const isOwner = role === 'artist' && Number(loggedInId) === Number(id);
 
     const [artistInfo, setArtistInfo] = useState(null);
