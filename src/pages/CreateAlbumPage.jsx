@@ -211,48 +211,50 @@ const CreateAlbumPage = () => {
     };
 
     return (
-        <div className="bg-[#121212] min-h-screen text-white p-8 font-sans">
+        <div className="bg-[#0d131a] min-h-screen text-slate-100 p-8 font-sans">
             <div className="max-w-6xl mx-auto">
 
                 {/* Tiêu đề trang */}
-                <div className="flex items-center gap-3 mb-8 border-b border-[#232323] pb-4">
-                    <FolderPlus size={36} className="text-emerald-500" />
+                <div className="flex items-center gap-3 mb-8 border-b border-white/[0.05] pb-4">
+                    <FolderPlus size={36} className="text-sky-400 drop-shadow-[0_0_10px_rgba(56,189,248,0.2)]" />
                     <div>
-                        <h1 className="text-3xl font-black tracking-tight">Studio Phát Hành Album</h1>
-                        <p className="text-xs text-[#a7a7a7]">Luồng lưu trữ thông minh: Tiết kiệm băng thông, chống file rác AWS S3</p>
+                        <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                            Studio Phát Hành Album
+                        </h1>
+                        <p className="text-xs text-slate-400 mt-1">Luồng lưu trữ thông minh: Tiết kiệm băng thông, chống file rác AWS S3</p>
                     </div>
                 </div>
 
                 <form onSubmit={handlePublishAlbum} className="space-y-8">
 
                     {/* KHỐI THÔNG TIN ALBUM VÀ ẢNH BÌA */}
-                    <div className="bg-[#181818] p-6 rounded-2xl border border-[#282828] grid grid-cols-1 md:grid-cols-4 gap-6 items-center">
+                    <div className="bg-[#0f1722] p-6 rounded-2xl border border-white/[0.05] grid grid-cols-1 md:grid-cols-4 gap-6 items-center shadow-xl">
 
                         <div className="flex flex-col items-center">
-                            <div className="w-40 aspect-square bg-[#282828] rounded-xl border-2 border-dashed border-[#404040] relative overflow-hidden group flex items-center justify-center cursor-pointer">
+                            <div className="w-40 aspect-square bg-white/[0.02] rounded-xl border-2 border-dashed border-white/[0.1] focus-within:border-sky-500 relative overflow-hidden group flex items-center justify-center cursor-pointer transition-all">
                                 {albumCoverPreview ? (
                                     <>
                                         <img src={albumCoverPreview} alt="Preview" className="w-full h-full object-cover" />
                                         {isSubmitting && albumCoverProgress < 100 && (
-                                            <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-xs font-bold">
+                                            <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-xs font-bold text-sky-400 backdrop-blur-sm">
                                                 Đang tải... {albumCoverProgress}%
                                             </div>
                                         )}
                                     </>
                                 ) : (
-                                    <div className="text-center p-2 text-gray-400">
-                                        <ImageIcon size={32} className="mx-auto mb-1 text-emerald-500" />
-                                        <span className="text-[11px] block">Chọn ảnh bìa Album</span>
+                                    <div className="text-center p-2 text-slate-400 group-hover:text-slate-200 transition-colors">
+                                        <ImageIcon size={32} className="mx-auto mb-1 text-sky-400" />
+                                        <span className="text-[11px] block font-medium">Chọn ảnh bìa Album</span>
                                     </div>
                                 )}
                                 <input type="file" accept="image/*" disabled={isSubmitting} onChange={handleAlbumCoverChange} className="absolute inset-0 opacity-0 cursor-pointer" />
                             </div>
-                            {albumCoverProgress === 100 && <span className="text-[10px] text-emerald-500 font-bold mt-1">✓ Đã lên Cloud</span>}
+                            {albumCoverProgress === 100 && <span className="text-[10px] text-sky-400 font-bold mt-2 flex items-center gap-1">✓ Đã lên Cloud</span>}
                         </div>
 
-                        <div className="md:col-span-3 space-y-4">
+                        <div className="md:col-span-3 space-y-5">
                             <div>
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1.5 block">Tên Album</label>
+                                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block">Tên Album</label>
                                 <input
                                     type="text"
                                     required
@@ -260,13 +262,13 @@ const CreateAlbumPage = () => {
                                     placeholder="Nhập tên đĩa nhạc của bồ..."
                                     value={albumName}
                                     onChange={(e) => setAlbumName(e.target.value)}
-                                    className="w-full bg-[#282828] border border-transparent focus:border-emerald-500 rounded-xl px-4 py-3 text-white text-lg font-bold outline-none transition-all disabled:opacity-50"
+                                    className="w-full bg-white/[0.04] border border-white/[0.05] focus:border-sky-500 rounded-xl px-4 py-3 text-white text-lg font-bold outline-none transition-all disabled:opacity-50 placeholder-slate-600"
                                 />
                             </div>
 
                             {/* NÚT CHỌN FILE NHẠC */}
                             <div className="relative inline-block">
-                                <button type="button" disabled={isSubmitting} className="bg-emerald-600 hover:bg-emerald-700 font-bold px-5 py-2.5 rounded-full text-sm flex items-center gap-2 cursor-pointer transition-transform active:scale-95 disabled:opacity-50">
+                                <button type="button" disabled={isSubmitting} className="bg-sky-500 hover:bg-sky-600 font-bold px-6 py-3 rounded-full text-sm flex items-center gap-2 cursor-pointer transition-all active:scale-95 disabled:opacity-50 text-white shadow-[0_4px_14px_rgba(14,165,233,0.3)] border-none">
                                     <Plus size={16} /> Chọn bài hát từ máy (Giữ Ctrl chọn nhiều file)
                                 </button>
                                 <input
@@ -283,40 +285,40 @@ const CreateAlbumPage = () => {
 
                     {/* DANH SÁCH BÀI HÁT TRONG HÀNG ĐỢI THIẾT LẬP */}
                     <div className="space-y-4">
-                        <h3 className="text-xl font-bold flex items-center gap-2">
-                            <Music size={22} className="text-emerald-500" /> Bản ghi trong hàng đợi thiết lập ({tracks.length})
+                        <h3 className="text-xl font-bold flex items-center gap-2 text-slate-200">
+                            <Music size={22} className="text-sky-400" /> Bản ghi trong hàng đợi thiết lập ({tracks.length})
                         </h3>
 
                         {tracks.length === 0 && (
-                            <div className="border border-[#282828] bg-[#181818] p-12 text-center rounded-2xl text-gray-500">
-                                <Music size={48} className="mx-auto mb-2 opacity-20" />
+                            <div className="border border-white/[0.05] bg-[#0f1722] p-12 text-center rounded-2xl text-slate-500 shadow-inner">
+                                <Music size={48} className="mx-auto mb-2 opacity-10 text-sky-400" />
                                 <p className="text-sm">Chưa có bài hát nào được nạp. Hãy chọn file nhạc ở phía trên bồ nhé!</p>
                             </div>
                         )}
 
                         <div className="space-y-4">
                             {tracks.map((track, index) => (
-                                <div key={track.id} className="bg-[#181818] border border-[#282828] rounded-xl p-5 space-y-4 shadow-lg relative group">
+                                <div key={track.id} className="bg-[#0f1722] border border-white/[0.05] rounded-xl p-5 space-y-4 shadow-lg relative group transition-all hover:border-white/[0.1]">
 
                                     {/* Hàng thanh trạng thái tiến trình (Chỉ thực sự chạy % khi bấm nút Phát hành) */}
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#282828] pb-2.5">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/[0.05] pb-3">
                                         <div className="flex items-center gap-2 min-w-0">
-                                            <span className="bg-[#282828] w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs text-emerald-400">{index + 1}</span>
-                                            <p className="text-xs text-gray-400 font-mono truncate">Tệp: {track.fileName}</p>
+                                            <span className="bg-white/[0.06] w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs text-sky-400 border border-white/[0.05]">{index + 1}</span>
+                                            <p className="text-xs text-slate-400 font-mono truncate">Tệp: {track.fileName}</p>
                                         </div>
 
                                         <div className="flex items-center gap-3 w-full sm:w-64">
-                                            <div className="w-full bg-[#282828] h-2 rounded-full overflow-hidden">
+                                            <div className="w-full bg-white/[0.06] h-2 rounded-full overflow-hidden border border-white/[0.02]">
                                                 <div
-                                                    className={`h-full transition-all duration-300 ${track.status === 'success' ? 'bg-emerald-500' : track.status === 'error' ? 'bg-red-500' : track.status === 'uploading' ? 'bg-blue-500' : 'bg-gray-600'}`}
+                                                    className={`h-full transition-all duration-300 ${track.status === 'success' ? 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.4)]' : track.status === 'error' ? 'bg-red-500' : track.status === 'uploading' ? 'bg-blue-500 animate-pulse' : 'bg-slate-700'}`}
                                                     style={{ width: `${track.status === 'idle' ? 0 : track.progress}%` }}
                                                 />
                                             </div>
-                                            <span className="text-xs font-mono font-bold whitespace-nowrap min-w-[36px] text-right">
-                                                {track.status === 'idle' && <span className="text-gray-500 text-[10px]">Đang chờ...</span>}
-                                                {track.status === 'uploading' && `${track.progress}%`}
-                                                {track.status === 'success' && <CheckCircle size={14} className="inline text-emerald-500" />}
-                                                {track.status === 'error' && <AlertCircle size={14} className="inline text-red-500" />}
+                                            <span className="text-xs font-mono font-bold whitespace-nowrap min-w-[40px] text-right">
+                                                {track.status === 'idle' && <span className="text-slate-500 text-[10px]">Đang chờ...</span>}
+                                                {track.status === 'uploading' && <span className="text-blue-400">{track.progress}%</span>}
+                                                {track.status === 'success' && <CheckCircle size={14} className="inline text-sky-400" />}
+                                                {track.status === 'error' && <AlertCircle size={14} className="inline text-red-400" />}
                                             </span>
                                         </div>
                                     </div>
@@ -324,27 +326,27 @@ const CreateAlbumPage = () => {
                                     {/* Điền thông tin Meta Data (Người dùng điền thoải mái lúc nào cũng được) */}
                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div>
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Tiêu đề hiển thị</label>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Tiêu đề hiển thị</label>
                                             <input
                                                 type="text"
                                                 disabled={isSubmitting}
                                                 value={track.title}
                                                 onChange={(e) => updateTrackMetadata(track.id, 'title', e.target.value)}
-                                                className="w-full bg-[#282828] border border-transparent focus:border-emerald-500 rounded-lg px-3 py-2 text-white text-sm outline-none transition-all disabled:opacity-50"
+                                                className="w-full bg-white/[0.04] border border-white/[0.05] focus:border-sky-500 rounded-lg px-3 py-2 text-white text-sm outline-none transition-all disabled:opacity-50"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Ca Sĩ Hợp Tác (Feat)</label>
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Ca Sĩ Hợp Tác (Feat)</label>
                                             <select
                                                 multiple
                                                 disabled={isSubmitting}
                                                 value={track.artistIds.map(String)}
                                                 onChange={(e) => handleFeatArtistsChange(track.id, e.target.selectedOptions)}
-                                                className="w-full bg-[#282828] border border-transparent focus:border-emerald-500 rounded-lg px-2 py-1 text-white text-xs outline-none h-[38px] overflow-y-auto disabled:opacity-50"
+                                                className="w-full bg-white/[0.04] border border-white/[0.05] focus:border-sky-500 rounded-lg px-2 py-1 text-white text-xs outline-none h-[38px] overflow-y-auto disabled:opacity-50 custom-scrollbar"
                                             >
                                                 {dbArtists.map(art => (
-                                                    <option key={art.id} value={art.id} className="py-0.5">
+                                                    <option key={art.id} value={art.id} className="py-1 px-1 rounded hover:bg-white/[0.06] bg-[#0f1722]">
                                                         {art.name || art.stageName}
                                                     </option>
                                                 ))}
@@ -352,8 +354,8 @@ const CreateAlbumPage = () => {
                                         </div>
 
                                         <div>
-                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 block">Thể loại phân phối</label>
-                                            <div className="flex flex-wrap gap-2 pt-1">
+                                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Thể loại phân phối</label>
+                                            <div className="flex flex-wrap gap-2 pt-0.5">
                                                 {mockCategories.map(cat => {
                                                     const isChecked = track.categoryIds.includes(cat.id);
                                                     return (
@@ -362,7 +364,7 @@ const CreateAlbumPage = () => {
                                                             type="button"
                                                             disabled={isSubmitting}
                                                             onClick={() => handleCategoryToggle(track.id, cat.id)}
-                                                            className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all border-none cursor-pointer disabled:opacity-50 ${isChecked ? 'bg-emerald-500 text-black font-bold' : 'bg-[#282828] text-gray-400 hover:bg-[#333]'}`}
+                                                            className={`px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all border-none cursor-pointer disabled:opacity-50 ${isChecked ? 'bg-sky-500 text-white font-bold shadow-[0_2px_8px_rgba(14,165,233,0.3)]' : 'bg-white/[0.04] text-slate-400 border border-white/[0.02] hover:bg-white/[0.08] hover:text-slate-200'}`}
                                                         >
                                                             {cat.name}
                                                         </button>
@@ -377,7 +379,7 @@ const CreateAlbumPage = () => {
                                         <button
                                             type="button"
                                             onClick={() => removeTrackRow(track.id)}
-                                            className="absolute top-2 right-2 text-gray-500 hover:text-red-500 p-1.5 rounded-lg hover:bg-[#282828] transition-colors border-none bg-transparent cursor-pointer"
+                                            className="absolute top-2 right-2 text-slate-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors border-none bg-transparent cursor-pointer"
                                             title="Hủy bài hát này"
                                         >
                                             <Trash2 size={16} />
@@ -389,11 +391,11 @@ const CreateAlbumPage = () => {
                     </div>
 
                     {/* NÚT PHÁT HÀNH CUỐI CÙNG */}
-                    <div className="flex justify-end pt-4 border-t border-[#232323]">
+                    <div className="flex justify-end pt-4 border-t border-white/[0.05]">
                         <button
                             type="submit"
                             disabled={isSubmitting || tracks.length === 0}
-                            className="bg-emerald-500 hover:bg-emerald-600 text-black font-black px-10 py-4 rounded-full text-base tracking-wide transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:scale-100 disabled:cursor-not-allowed flex items-center gap-2 border-none cursor-pointer"
+                            className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-black px-10 py-4 rounded-full text-base tracking-wide transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:scale-100 disabled:cursor-not-allowed flex items-center gap-2 border-none cursor-pointer shadow-[0_4px_20px_rgba(14,165,233,0.3)]"
                         >
                             {isSubmitting ? (
                                 <>
