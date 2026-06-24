@@ -6,7 +6,7 @@ import { useAuthStore } from "../features/auth/useAuthStore";
 
 const CreateAlbumPage = () => {
     const navigate = useNavigate();
-    const { id } = useAuthStore();
+    const { userId } = useAuthStore();
 
     // --- State quản lý thông tin Album ---
     const [albumName, setAlbumName] = useState('');
@@ -62,7 +62,7 @@ const CreateAlbumPage = () => {
                 title: file.name.replace(/\.[^/.]+$/, ""), // Tự lấy tên file làm tiêu đề gốc
                 file: file, // 🔥 GIỮ LẠI FILE GỐC Ở ĐÂY ĐỂ DÀNH UPLOAD SAU
                 duration: 0,
-                artistId: id || 7, // Lấy ID nghệ sĩ đang đăng nhập
+                artistId: userId || 7, // Lấy ID nghệ sĩ đang đăng nhập
                 artistIds: [],
                 categoryIds: [],
                 fileName: file.name,
@@ -182,7 +182,7 @@ const CreateAlbumPage = () => {
             // 1. Tạo Album lấy albumId
             const albumFormData = new FormData();
             albumFormData.append('albumTitle', albumName);
-            albumFormData.append('artistId', id);
+            albumFormData.append('artistId', userId);
             albumFormData.append('coverImageKey', finalCoverKey);
 
             const albumRes = await axiosClient.post('/albums', albumFormData, {
@@ -200,7 +200,7 @@ const CreateAlbumPage = () => {
             await axiosClient.post('/tracks/bulk-json', finalBulkPayload);
 
             alert("🎉 Đỉnh cao bồ ơi! Album và toàn bộ danh sách nhạc đã được phát hành thành công mà không tốn 1MB bộ nhớ rác nào!");
-            navigate('/artists');
+            navigate(`/artist/${userId}`);
 
         } catch (error) {
             console.error("Lỗi trong quá trình phát hành:", error);

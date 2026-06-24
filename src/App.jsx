@@ -36,6 +36,7 @@ function App() {
                     <Route path="/history" element={<HistoryPage/>}/>
                     <Route path="/artist/:id" element={<ArtistProfilePage/>}/>
                     <Route path="/studio/upload" element={<CreateTrackPage/>}/>
+                    <Route path="/studio/album" element={<CreateAlbumPage />} />
                     <Route path="/albums/:albumId" element={<AlbumDetailPage />} />
                     <Route path="/admin" element={<AdminDashboardPage/>}/>
                     {/* Thêm các Route khác vào đây, ví dụ: */}
