@@ -7,29 +7,27 @@ import { usePlayerStore } from '../features/player/usePlayerStore';
 import MusicImage from '../layouts/components/MusicImage';
 
 // =====================================================================
-// COMPONENT PHỤ: BĂNG CHUYỀN TỰ ĐỘNG TRƯỢT (AUTO-SCROLL CAROUSEL)
+// COMPONENT PHỤ: BĂNG CHUYỀN ĐIỀU HƯỚNG TAY (ĐÃ BỎ HOÀN TOÀN AUTO-SCROLL)
 // =====================================================================
 const AutoScrollCarousel = ({ title, items, renderItem, onViewAll }) => {
     const scrollRef = useRef(null);
-    useEffect(() => {
-        if (!items || items.length === 0) return;
 
-        const interval = setInterval(() => {
-            if (scrollRef.current) {
-                const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+    // Hàm thực hiện cuộn thủ công khi bấm nút điều hướng
+    const scroll = (direction) => {
+        if (scrollRef.current) {
+            const scrollAmount = 240; // Khoảng cách cuộn tương đương kích thước 1 card
+            scrollRef.current.scrollBy({
+                left: direction === 'left' ? -scrollAmount : scrollAmount,
+                behavior: 'smooth'
+            });
+        }
+    };
 
-                // Nếu thanh cuộn đã đi đến tận cùng bên phải -> Trượt mượt mà về lại vị trí số 0
-                if (Math.ceil(scrollLeft + clientWidth) >= scrollWidth) {
-                    scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
-                } else {
-                    // Nếu chưa, tiếp tục cuộn sang phải một khoảng bằng độ rộng của 1 Card (~240px)
-                    scrollRef.current.scrollBy({ left: 240, behavior: 'smooth' });
-                }
-            }
-        }, 3500); // Tự động trượt sau mỗi 3.5 giây
+    const validItems = Array.isArray(items)
+        ? items
+        : (items && Array.isArray(items.content) ? items.content : []);
 
-        return () => clearInterval(interval);
-    }, [items]);
+    if (validItems.length === 0) return null;
 
     return (
         <section className="mb-12">
@@ -46,18 +44,30 @@ const AutoScrollCarousel = ({ title, items, renderItem, onViewAll }) => {
                 </button>
             </div>
 
-            {/* Lớp bọc Carousel ẩn thanh cuộn nhưng vẫn cho trượt */}
-            <div className="relative group">
+            {/* Lớp bọc có thêm nút chuyển dữ liệu thủ công qua Hover */}
+            <div className="relative group/carousel">
+                {/* Nút bấm dịch trái */}
+                <button
+                    onClick={() => scroll('left')}
+                    className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 bg-slate-900/80 border border-white/10 text-white w-9 h-9 rounded-full opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 hover:bg-sky-500 flex items-center justify-center shadow-lg animate-fadeIn"
+                >
+                    &#10094;
+                </button>
+
                 <div
                     ref={scrollRef}
                     className="flex gap-6 overflow-x-auto scroll-smooth snap-x pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                 >
-                    {items.length > 0 ? items.map(renderItem) : (
-                        <div className="w-full text-center text-sm text-slate-500 py-8 border border-dashed border-white/[0.05] rounded-xl bg-[#0f1722]">
-                            Chưa có dữ liệu hệ thống.
-                        </div>
-                    )}
+                    {validItems.map(renderItem)}
                 </div>
+
+                {/* Nút bấm dịch phải */}
+                <button
+                    onClick={() => scroll('right')}
+                    className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 bg-slate-900/80 border border-white/10 text-white w-9 h-9 rounded-full opacity-0 group-hover/carousel:opacity-100 transition-all duration-300 hover:bg-sky-500 flex items-center justify-center shadow-lg animate-fadeIn"
+                >
+                    &#10095;
+                </button>
             </div>
         </section>
     );
@@ -79,12 +89,11 @@ const HomePage = () => {
     const [albums, setAlbums] = useState([]);
     const [top5Tracks, setTop5Tracks] = useState([]);
 
-    // --- FETCH DATA TỪ SPRING BOOT ---
+    // --- FETCH DATA TỪ SPRING BOOT (GIỮ NGUYÊN HOÀN TOÀN LOGIC CŨ) ---
     useEffect(() => {
         const fetchHomeData = async () => {
             setIsLoading(true);
             try {
-                // Gọi API lấy toàn bộ Track, Artist, Album và Top 5
                 const [tracksRes, artistsRes, albumRes, top5TrackRes] =
                     await Promise.all([
                         axiosClient.get('/tracks'),
@@ -138,7 +147,7 @@ const HomePage = () => {
                     renderItem={(track) => (
                         <div
                             key={track.id}
-                            className="min-w-[160px] md:min-w-[200px] flex-shrink-0 snap-start bg-[#0f1722] p-4 rounded-xl hover:bg-white/[0.04] transition-all duration-300 group cursor-pointer border border-transparent hover:border-white/[0.1] relative"
+                            className="w-[160px] md:w-[200px] flex-shrink-0 snap-start bg-[#0f1722] p-4 rounded-xl hover:bg-white/[0.04] transition-all duration-300 group cursor-pointer border border-transparent hover:border-white/[0.1] relative"
                         >
                             <div className="relative w-full h-[150px] md:h-[168px] mb-4 rounded-md overflow-hidden bg-white/[0.02] shadow-md flex-shrink-0">
                                 <MusicImage
@@ -159,11 +168,12 @@ const HomePage = () => {
                                     </button>
                                 </div>
                             </div>
-                            <h4 className="font-bold text-white truncate text-sm mb-1">{track.name}</h4>
-                            <p className="text-xs text-slate-400 truncate flex gap-1 items-center">
+                            {/* Ép kích thước chữ tự động hiển thị ... khi tên quá dài */}
+                            <h4 className="font-bold text-white truncate text-sm mb-1 w-full">{track.name}</h4>
+                            <p className="text-xs text-slate-400 truncate flex gap-1 items-center w-full">
                                 {track.artists && track.artists.length > 0 ? (
                                     track.artists.map((artist, idx) => (
-                                        <span key={artist.id}>
+                                        <span key={artist.id} className="inline-block max-w-full truncate">
                                             <span
                                                 onClick={(e) => {
                                                     e.stopPropagation();
@@ -187,15 +197,15 @@ const HomePage = () => {
                 {/* 2. BĂNG CHUYỀN NGHỆ SĨ (ARTISTS CAROUSEL) */}
                 <AutoScrollCarousel
                     title="Nghệ Sĩ Nổi Bật"
-                    items={Array.isArray(artists) ? artists : (artists?.content || [])}
+                    items={artists}
                     onViewAll={() => navigate('/artists')}
                     renderItem={(artist) => (
                         <div
                             key={artist.id}
                             onClick={() => navigate(`/artist/${artist.id}`)}
-                            className="min-w-[160px] md:min-w-[200px] flex-shrink-0 snap-start bg-[#0f1722] p-5 rounded-xl hover:bg-white/[0.04] transition-all duration-300 group cursor-pointer border border-transparent hover:border-white/[0.1] text-center"
+                            className="w-[160px] md:w-[200px] flex-shrink-0 snap-start bg-[#0f1722] p-5 rounded-xl hover:bg-white/[0.04] transition-all duration-300 group cursor-pointer border border-transparent hover:border-white/[0.1] text-center"
                         >
-                            <div className="w-28 h-28 md:w-32 md:h-32 mx-auto mb-4 rounded-full overflow-hidden border border-white/[0.05] relative bg-white/[0.02] shadow-md">
+                            <div className="w-28 h-28 md:w-32 md:h-32 mx-auto mb-4 rounded-full overflow-hidden border border-white/[0.05] relative bg-white/[0.02] shadow-md flex-shrink-0">
                                 <MusicImage
                                     src={artist.img}
                                     type="artist"
@@ -208,13 +218,13 @@ const HomePage = () => {
                                     </div>
                                 </div>
                             </div>
-                            <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors">{artist.name}</h4>
+                            <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors w-full">{artist.name}</h4>
                             <p className="text-[11px] text-slate-400 font-medium tracking-wider uppercase">Artist</p>
                         </div>
                     )}
                 />
 
-                {/* 3. BĂNG CHUYỀN ALBUM (ALBUMS CAROUSEL) */}
+                {/* 3. BĂNG CHUYỀN ALBUM (HÌNH VUÔNG GỐC - ĐÃ FIX KÍCH THƯỚC TRÀN MÀN) */}
                 <AutoScrollCarousel
                     title="Album Nổi Bật"
                     items={albums}
@@ -223,14 +233,15 @@ const HomePage = () => {
                         <div
                             key={album.id}
                             onClick={() => navigate(`/albums/${album.id}`)}
-                            className="min-w-[160px] md:min-w-[200px] flex-shrink-0 snap-start bg-[#0f1722] p-4 rounded-xl hover:bg-white/[0.04] transition-all duration-300 group cursor-pointer border border-transparent hover:border-white/[0.1]"
+                            className="w-[160px] md:w-[200px] flex-shrink-0 snap-start bg-[#0f1722] p-4 rounded-xl hover:bg-white/[0.04] transition-all duration-300 group cursor-pointer border border-transparent hover:border-white/[0.1]"
                         >
-                            <div className="relative aspect-square w-full mb-4 rounded-md overflow-hidden bg-white/[0.02] shadow-md">
+                            {/* Giới hạn khung chứa ảnh album tương ứng với độ rộng card */}
+                            <div className="relative aspect-square w-full h-[150px] md:h-[168px] mb-4 overflow-hidden bg-white/[0.02] shadow-md flex-shrink-0">
                                 <MusicImage
                                     src={album.img}
-                                    type={"album"}
+                                    type="album"
                                     alt={album.name}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                    className="group-hover:scale-105 transition-transform duration-500"
                                 />
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                                     <button className="w-11 h-11 bg-gradient-to-r from-sky-500 to-blue-600 rounded-full flex items-center justify-center shadow-md transform translate-y-3 group-hover:translate-y-0 transition-all duration-300 border-none cursor-pointer">
@@ -238,7 +249,7 @@ const HomePage = () => {
                                     </button>
                                 </div>
                             </div>
-                            <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors">{album.name}</h4>
+                            <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors w-full">{album.name}</h4>
                             <p className="text-[11px] text-slate-400 font-medium tracking-wider uppercase">Album</p>
                         </div>
                     )}
@@ -257,10 +268,10 @@ const HomePage = () => {
                         {top5Tracks.length > 0 ? (
                             <div className="flex flex-col gap-2">
                                 {top5Tracks.map((track, index) => {
-                                    let rankColor = "text-slate-600"; // Mặc định top 4, 5
-                                    if (index === 0) rankColor = "text-[#FFD700]"; // Gold
-                                    if (index === 1) rankColor = "text-[#C0C0C0]"; // Silver
-                                    if (index === 2) rankColor = "text-[#CD7F32]"; // Bronze
+                                    let rankColor = "text-slate-600";
+                                    if (index === 0) rankColor = "text-[#FFD700]";
+                                    if (index === 1) rankColor = "text-[#C0C0C0]";
+                                    if (index === 2) rankColor = "text-[#CD7F32]";
 
                                     return (
                                         <div
@@ -269,16 +280,16 @@ const HomePage = () => {
                                             className="grid grid-cols-12 items-center gap-4 p-3 rounded-xl hover:bg-white/[0.04] transition-all duration-300 group cursor-pointer"
                                         >
                                             {/* CỘT 1: THỨ HẠNG */}
-                                            <div className={`col-span-1 flex items-center justify-center font-black text-xl w-10 h-10 ${rankColor}`}>
+                                            <div className={`col-span-1 flex items-center justify-center font-black text-xl w-10 h-10 flex-shrink-0 ${rankColor}`}>
                                                 {index + 1 < 10 ? `0${index + 1}` : index + 1}
                                             </div>
 
                                             {/* CỘT 2: HÌNH ẢNH BÀI HÁT */}
-                                            <div className="col-span-1 flex items-center justify-center">
-                                                <div className="w-12 h-12 rounded-md overflow-hidden bg-white/[0.02] relative shadow-md flex-shrink-0">
+                                            <div className="col-span-1 flex items-center justify-center flex-shrink-0 min-w-[48px]">
+                                                <div className="w-12 h-12 rounded-md overflow-hidden bg-white/[0.02] relative shadow-md flex-shrink-0 min-w-[48px] min-h-[48px]">
                                                     <MusicImage
                                                         src={track.img}
-                                                        type={'track'}
+                                                        type="track"
                                                         alt={track.name}
                                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                                     />
@@ -290,15 +301,15 @@ const HomePage = () => {
 
                                             {/* CỘT 3: TÊN BÀI HÁT & NGHỆ SĨ */}
                                             <div className="col-span-7 flex flex-col justify-center min-w-0 px-2">
-                                                <div className="truncate mb-1.5">
-                                                    <h4 className="text-sm font-bold text-white group-hover:text-sky-400 transition-colors truncate">
+                                                <div className="truncate mb-1.5 min-w-0">
+                                                    <h4 className="text-sm font-bold text-white group-hover:text-sky-400 transition-colors truncate w-full">
                                                         {track.name}
                                                     </h4>
 
-                                                    <p className="text-xs text-slate-400 truncate flex gap-1 items-center">
+                                                    <p className="text-xs text-slate-400 truncate flex gap-1 items-center min-w-0 w-full">
                                                         {track.artists && track.artists.length > 0 ? (
                                                             track.artists.map((artist, idx) => (
-                                                                <span key={artist.id}>
+                                                                <span key={artist.id} className="inline-block max-w-full truncate">
                                                                     <span
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
@@ -319,8 +330,8 @@ const HomePage = () => {
                                             </div>
 
                                             {/* CỘT 4: SỐ LƯỢT NGHE */}
-                                            <div className="col-span-3 text-right flex flex-col items-end justify-center">
-                                                <span className="text-sm font-semibold text-white font-mono bg-white/[0.04] px-3 py-1.5 rounded-full border border-white/[0.05] group-hover:border-sky-500/30 transition-colors">
+                                            <div className="col-span-3 text-right flex flex-col items-end justify-center flex-shrink-0">
+                                                <span className="text-sm font-semibold text-white font-mono bg-white/[0.04] px-3 py-1.5 rounded-full border border-white/[0.05] group-hover:border-sky-500/30 transition-colors whitespace-nowrap">
                                                     {track.viewCount?.toLocaleString() || 0} <span className="text-xs text-slate-400 font-sans font-normal ml-0.5">lượt nghe</span>
                                                 </span>
                                             </div>
