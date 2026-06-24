@@ -16,14 +16,16 @@ const AllArtistsPage = () => {
 
     useEffect(() => {
         const fetchAllArtists = async () => {
-            setIsLoading(true); // Bật loading mỗi khi bồ bấm chuyển trang
+            setIsLoading(true);
             try {
                 // Gửi kèm tham số page và size lên API Back-end
                 const res = await axiosClient.get(`/artists?page=${currentPage}&size=${pageSize}`);
 
                 // Vì Back-end trả về Page nên data thật nằm trong mảng `content`
                 setArtists(res.data.content || []);
-                setTotalPages(res.data.totalPages || 0);
+
+                setTotalPages(res.data.page?.totalPages || 0);
+
             } catch (error) {
                 console.error("Lỗi tải danh sách Artist: ", error);
             } finally {
@@ -31,7 +33,7 @@ const AllArtistsPage = () => {
             }
         };
         fetchAllArtists();
-    }, [currentPage]); // 💡 Mỗi lần currentPage thay đổi, useEffect sẽ tự động gọi lại API
+    }, [currentPage]);
 
     // --- 2. CÁC HÀM XỬ LÝ CHUYỂN TRANG ---
     const handlePrevPage = () => {
@@ -106,7 +108,7 @@ const AllArtistsPage = () => {
             </div>
 
             {/* --- 3. GIAO DIỆN THANH PHÂN TRANG (PAGINATION BAR) --- */}
-            {totalPages > 1 && (
+            {totalPages >= 1 && (
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-16 pt-6 border-t border-zinc-800">
                     <div className="flex items-center gap-2">
                         {/* Nút Trang trước */}

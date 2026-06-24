@@ -6,7 +6,7 @@ import { useAuthStore } from "../features/auth/useAuthStore";
 
 const CreateAlbumPage = () => {
     const navigate = useNavigate();
-    const { userId } = useAuthStore();
+    const { id: userId } = useAuthStore();
 
     // --- State quản lý thông tin Album ---
     const [albumName, setAlbumName] = useState('');
