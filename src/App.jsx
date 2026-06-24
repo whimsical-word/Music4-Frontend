@@ -14,6 +14,7 @@ import { CreateTrackPage } from "./pages/CreateTrackPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage.jsx";
 import CreateAlbumPage from "./pages/CreateAlbumPage.jsx";
 import AlbumDetailPage from "./pages/AlbumDetailPage.jsx";
+import LikedSongsPage from "./pages/LikedSongsPage.jsx";
 
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
                     <Route path="/playlist/:id" element={<PlaylistPage />} />
                     <Route path="/history" element={<HistoryPage />} />
                     <Route path="/artist/:id" element={<ArtistProfilePage />} />
+                    <Route path="/favorites" element={<LikedSongsPage />} />
                     <Route path="/studio/upload" element={<CreateTrackPage />} />
                     <Route path="/studio/album" element={<CreateAlbumPage />} />
                     <Route path="/albums/:albumId" element={<AlbumDetailPage />} />
