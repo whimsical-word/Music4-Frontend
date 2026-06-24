@@ -239,9 +239,7 @@ const MusicPlayer = () => {
             </div>
           </div>
           <span className="text-[11px] font-mono text-[#a7a7a7] min-w-[35px]">
-            {audioRef.current && !isNaN(audioRef.current.duration)
-              ? formatTime(audioRef.current.duration)
-              : "0:00"}
+            {formatTime}
           </span>
         </div>
       </div>
