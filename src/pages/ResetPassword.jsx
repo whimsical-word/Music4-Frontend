@@ -1,57 +1,46 @@
 import { useState } from "react";
 import { authService } from "../features/auth/authService";
-import {useNavigate} from "react-router-dom";
-import {NotificationModal} from "../layouts/components/Modal";
+import {useNavigate, useSearchParams} from "react-router-dom";
 
-const ForgotPassword = () => {
-    const [email, setEmail] = useState('');
+export const ResetPassword = () => {
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [isFocused, setIsFocused] = useState(false);
+
+    const [focusedField, setFocusedField] = useState(null);
+
+    // Error state để thông báo nếu mật khẩu không khớp hoặc có lỗi từ API
+    const [error, setError] = useState('');
+
     const navigate = useNavigate();
-
-    const [modalConfig, setModalConfig] = useState({
-        isOpen: false,
-        type: "info",
-        title: "",
-        message: ""
-    });
-
-    const handleCloseModal = () => {
-        setModalConfig(prev => ({ ...prev, isOpen: false }));
-        // Nếu là thành công, có thể chuyển hướng user đi nơi khác sau khi họ bấm đóng modal
-        if (modalConfig.type === "success") {
-            navigate("/login");
-        }
-    };
-
+    const [searchParams] = useSearchParams();
+    const token = searchParams.get('token');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
+
+        // Kiểm tra mật khẩu khớp nhau ở client trước khi gửi API
+        if (password !== confirmPassword) {
+            setError('Mật khẩu xác nhận không trùng khớp.');
+            return;
+        }
 
         try {
             setIsLoading(true);
 
-            const response = await authService.createForgotPwRequest({
-                email,
+            // Gọi API dịch vụ reset password (truyền token và password mới)
+            const response = await authService.resetPassword({
+                token: token,
+                newPassword: password,
             });
 
             console.log(response);
-
-            setModalConfig({
-                isOpen: true,
-                type: "success",
-                title: "Thành công!",
-                message: response?.data?.response || response?.data || "Nếu email tồn tại, bạn sẽ nhận được hướng dẫn khôi phục mật khẩu trong hộp thư đến."
-            });
+            // Sau khi thành công, chuyển hướng về trang đăng nhập
+            navigate('/login');
         } catch (err) {
             console.log(err);
-
-            setModalConfig({
-                isOpen: true,
-                type: "error",
-                title: "Đã xảy ra lỗi",
-                message: err?.response?.data?.message || "Đường dẫn hết hạn hoặc không hợp lệ."
-            });
+            setError(err?.response?.data?.message || 'Đã có lỗi xảy ra. Vui lòng thử lại.');
         } finally {
             setIsLoading(false);
         }
@@ -69,7 +58,6 @@ const ForgotPassword = () => {
                 }}
             />
 
-
             {/* Main Form Canvas */}
             <main className="flex-grow flex items-center justify-center px-5 z-10">
                 <div className="w-full max-w-md space-y-8 animate-[fadeInUp_0.7s_ease-out]">
@@ -77,37 +65,73 @@ const ForgotPassword = () => {
                     {/* Tiêu đề biểu mẫu */}
                     <div className="text-center space-y-3">
                         <h2 className="text-[28px] md:text-[32px] font-bold text-white">
-                            Quên mật khẩu?
+                            Đặt lại mật khẩu
                         </h2>
                         <p className="text-neutral-400 text-base">
-                            Nhập địa chỉ email của bạn để nhận hướng dẫn khôi phục mật khẩu.
+                            Vui lòng nhập mật khẩu mới cho tài khoản của bạn.
                         </p>
                     </div>
 
                     {/* Form nhập liệu */}
                     <form className="space-y-6" onSubmit={handleSubmit}>
+
+                        {/* Hiển thị lỗi nếu có */}
+                        {error && (
+                            <div className="bg-red-950/30 border border-red-500/50 text-red-400 p-3 rounded-lg text-sm text-center animate-pulse">
+                                {error}
+                            </div>
+                        )}
+
+                        {/* Input: Mật khẩu mới */}
                         <div className="space-y-2">
-                            <label className="text-sm font-medium text-neutral-300 ml-1" htmlFor="email">
-                                Email
+                            <label className="text-sm font-medium text-neutral-300 ml-1" htmlFor="password">
+                                Mật khẩu mới
                             </label>
                             <div
                                 className={`bg-[#1A1A1A] border rounded-lg overflow-hidden transition-all duration-200 ${
-                                    isFocused
+                                    focusedField === 'password'
                                         ? 'border-[#e2e2e2] shadow-[0_0_15px_rgba(255,255,255,0.05)]'
                                         : 'border-[#333333]'
                                 }`}
                             >
                                 <input
                                     className="w-full bg-transparent border-none text-white placeholder:text-neutral-600 p-4 focus:ring-0 text-base focus:outline-none"
-                                    id="email"
-                                    name="email"
-                                    type="email"
-                                    placeholder="username@example.com"
+                                    id="password"
+                                    name="password"
+                                    type="password"
+                                    placeholder="••••••••"
                                     required
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    onFocus={() => setIsFocused(true)}
-                                    onBlur={() => setIsFocused(false)}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    onFocus={() => setFocusedField('password')}
+                                    onBlur={() => setFocusedField(null)}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Input: Xác nhận mật khẩu mới */}
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium text-neutral-300 ml-1" htmlFor="confirmPassword">
+                                Xác nhận mật khẩu mới
+                            </label>
+                            <div
+                                className={`bg-[#1A1A1A] border rounded-lg overflow-hidden transition-all duration-200 ${
+                                    focusedField === 'confirmPassword'
+                                        ? 'border-[#e2e2e2] shadow-[0_0_15px_rgba(255,255,255,0.05)]'
+                                        : 'border-[#333333]'
+                                }`}
+                            >
+                                <input
+                                    className="w-full bg-transparent border-none text-white placeholder:text-neutral-600 p-4 focus:ring-0 text-base focus:outline-none"
+                                    id="confirmPassword"
+                                    name="confirmPassword"
+                                    type="password"
+                                    placeholder="••••••••"
+                                    required
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    onFocus={() => setFocusedField('confirmPassword')}
+                                    onBlur={() => setFocusedField(null)}
                                 />
                             </div>
                         </div>
@@ -122,7 +146,7 @@ const ForgotPassword = () => {
                             type="submit"
                             disabled={isLoading}
                         >
-                            {isLoading ? 'Sending...' : 'Send Reset Link'}
+                            {isLoading ? 'Updating...' : 'Reset Password'}
                         </button>
                     </form>
 
@@ -135,7 +159,6 @@ const ForgotPassword = () => {
                             <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-1 transition-transform">
                                Quay lại đăng nhập
                             </span>
-
                         </button>
 
                         <div className="w-full h-[1px] bg-neutral-800 opacity-50"></div>
@@ -151,18 +174,6 @@ const ForgotPassword = () => {
                     </div>
                 </div>
             </main>
-
-
-            <NotificationModal
-                isOpen={modalConfig.isOpen}
-                onClose={handleCloseModal}
-                type={modalConfig.type}
-                title={modalConfig.title}
-                message={modalConfig.message}
-                confirmText="Đồng ý"
-            />
         </div>
     );
 };
-
-export default ForgotPassword;

@@ -1,12 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import  { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Play, Activity, Camera, Edit2, X } from 'lucide-react'; // 🟢 Bổ sung Edit2 và X
+import { Play, Activity, Camera, Edit2, X } from 'lucide-react';
 import axiosClient from '../app/axios/axiosClient';
 import { useAuthStore } from '../features/auth/useAuthStore';
 import { usePlayerStore } from '../features/player/usePlayerStore';
 import MusicImage from '../layouts/components/MusicImage';
 
 const ArtistProfilePage = () => {
+    const IMAGE_URL = "https://music4-v3-storage-kenz.s3.ap-southeast-1.amazonaws.com/";
     const { id } = useParams();
     const navigate = useNavigate();
     const playTrack = usePlayerStore(state => state.playTrack);
