@@ -24,7 +24,6 @@ const AllArtistsPage = () => {
                 // Vì Back-end trả về Page nên data thật nằm trong mảng `content`
                 setArtists(res.data.content || []);
 
-                // 🔥 SỬA DÒNG NÀY: Thêm ".page?" để chọc đúng vào object chứa dữ liệu phân trang
                 setTotalPages(res.data.page?.totalPages || 0);
 
             } catch (error) {
