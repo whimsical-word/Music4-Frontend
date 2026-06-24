@@ -11,7 +11,12 @@ import { usePlayerStore } from "../../features/player/usePlayerStore";
 import { useAuthStore } from "../../features/auth/useAuthStore";
 import axiosClient from "../../app/axios/axiosClient";
 import MusicImage from "./MusicImage.jsx";
+import { useNavigate } from "react-router-dom";
+
 const MusicPlayer = () => {
+  const navigate = useNavigate();
+  const [currentTime, setCurrentTime] = useState(0);
+
   // 1. Rút thêm playNext, playPrev từ Store
   const { currentTrack, isPlaying, togglePlay, playNext, playPrev } =
     usePlayerStore();
@@ -28,6 +33,7 @@ const MusicPlayer = () => {
   const [volume, setVolume] = useState(1); // Mặc định âm lượng 100% (1.0)
 
   const getStreamUrl = (trackId) => {
+    if (!trackId) return "";
     const baseUrl = "http://localhost:8080/api/tracks";
     return isAuthenticated
       ? `${baseUrl}/stream/${trackId}`
@@ -90,9 +96,10 @@ const MusicPlayer = () => {
 
   const handleTimeUpdate = () => {
     if (audioRef.current) {
-      const current = audioRef.current.currentTime;
+      setCurrentTime(audioRef.current.currentTime);
       const duration = audioRef.current.duration;
-      if (duration) setProgress((current / duration) * 100);
+      if (duration)
+        setProgress((audioRef.current.currentTime / duration) * 100);
     }
   };
 
@@ -119,11 +126,14 @@ const MusicPlayer = () => {
   };
 
   const handleSeek = (e) => {
-    if (audioRef.current) {
+    if (audioRef.current && isFinite(audioRef.current.duration)) {
       const rect = e.currentTarget.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
-      audioRef.current.currentTime =
-        (clickX / rect.width) * audioRef.current.duration;
+      const newTime = (clickX / rect.width) * audioRef.current.duration;
+
+      if (isFinite(newTime)) {
+        audioRef.current.currentTime = newTime;
+      }
     }
   };
 
@@ -141,16 +151,18 @@ const MusicPlayer = () => {
     <div className="fixed bottom-0 left-0 right-0 h-24 bg-[#181818] border-t border-[#282828] flex items-center justify-between px-6 z-[100] animate-fadeIn">
       <audio
         ref={audioRef}
-        src={getStreamUrl(currentTrack.id)}
+        src={currentTrack?.id ? getStreamUrl(currentTrack.id) : ""}
         onTimeUpdate={handleTimeUpdate}
         onEnded={handleTrackEnded}
         onLoadedMetadata={handleLoadedMetadata}
-        autoPlay
+        onError={(e) => {
+          console.error("Lỗi không thể tải nguồn nhạc:", e.target.error);
+        }}
       />
 
       {/* KHU VỰC 1: THÔNG TIN BÀI HÁT */}
       <div className="flex items-center gap-4 w-1/4">
-        <div className="w-14 h-14 rounded-md overflow-hidden bg-[#282828] flex-shrink-0 shadow-md">
+        <div className="w-14 h-14 rounded-md overflow-hidden bg-[#282828] shrink shadow-md">
           <MusicImage
             src={currentTrack.img}
             type="track"
@@ -212,10 +224,8 @@ const MusicPlayer = () => {
         </div>
 
         <div className="w-full max-w-md flex items-center gap-3 group">
-          <span className="text-[11px] font-mono text-[#a7a7a7] min-w-[35px] text-right">
-            {audioRef.current
-              ? formatTime(audioRef.current.currentTime)
-              : "0:00"}
+          <span className="text-[11px] font-mono text-[#a7a7a7] min-w-8.75 text-right">
+            {formatTime(currentTime)}
           </span>
           <div
             className="h-1.5 flex-1 bg-[#3e3e3e] rounded-full overflow-hidden cursor-pointer relative"
