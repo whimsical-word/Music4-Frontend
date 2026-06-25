@@ -4,7 +4,7 @@ import { engagementService } from "../../features/player/engagementService";
 import { useAuthStore } from "../../features/auth/useAuthStore";
 
 const TrackEngagementModal = ({ track, onClose }) => {
-    const { id: currentUserId } = useAuthStore();
+    const { userId, role } = useAuthStore();
 
     const [isLiked, setIsLiked] = useState(false);
     const [comments, setComments] = useState([]);
@@ -46,7 +46,12 @@ const TrackEngagementModal = ({ track, onClose }) => {
 
         setIsSubmitting(true);
         try {
-            await engagementService.addComment(track.id, newComment.trim(), currentUserId);
+            await engagementService.addComment(
+                track.id,
+                newComment.trim(),
+                role === "listener" ? userId : null,
+                role === "artist" ? userId : null
+            );
 
             const newCommentObj = {
                 commentId: Date.now(), // Thay đổi từ id thành commentId
