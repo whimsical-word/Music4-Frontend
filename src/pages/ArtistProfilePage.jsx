@@ -11,8 +11,8 @@ const ArtistProfilePage = () => {
     const navigate = useNavigate();
     const playTrack = usePlayerStore(state => state.playTrack);
 
-    const { id: loggedInId, role } = useAuthStore();
-    const isOwner = role === 'artist' && Number(loggedInId) === Number(id);
+    const { userId, role } = useAuthStore();
+    const isOwner = role === 'artist' && Number(userId) === Number(id);
 
     const [artistInfo, setArtistInfo] = useState(null);
     const [albums, setAlbums] = useState([]);
@@ -274,22 +274,22 @@ const ArtistProfilePage = () => {
                                         <span className="text-sm text-slate-400 hidden md:block font-mono">
                                             {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : "--:--"}
                                         </span>
+
                                         {/* NÚT UPDATE BÀI HÁT (Chỉ hiển thị khi là chủ sở hữu kênh) */}
-                                        {isOwner && (
-                                            <button
+                                        {(track.artists?.find(a => (a.role === "MAIN")) && Number(track.artists.find(a => a.role === "MAIN").id) === Number(userId)) && (                                            <button
                                                 onClick={(e) => {
-                                                    e.stopPropagation(); // Ngăn hành vi bấm dòng kích hoạt trình phát nhạc
+                                                    e.stopPropagation();
                                                     handleEditTrack(track);
                                                 }}
-                                                className="text-slate-400 hover:text-red-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
-                                                title="Xóa bài hát"
+                                                className="text-slate-400 hover:text-sky-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
+                                                title="Chỉnh sửa bài hát"
                                             >
                                                 <Pencil size={18} />
                                             </button>
                                         )}
 
                                         {/* NÚT XÓA BÀI HÁT (Chỉ hiển thị khi là chủ sở hữu kênh) */}
-                                        {isOwner && (
+                                        {(track.artists?.find(a => (a.role === "MAIN")) && Number(track.artists.find(a => a.role === "MAIN").id) === Number(userId)) && (
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation(); // Ngăn hành vi bấm dòng kích hoạt trình phát nhạc
