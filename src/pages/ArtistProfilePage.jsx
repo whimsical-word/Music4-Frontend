@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {Play, Activity, Camera, Edit2, X, Trash2, Heart, Music, Pause, Mic2, Disc} from 'lucide-react';
+import {Pencil, Play, Activity, Camera, Edit2, X, Trash2, Heart, Music, Pause, Mic2, Disc} from 'lucide-react';
 import axiosClient from '../app/axios/axiosClient';
 import { useAuthStore } from '../features/auth/useAuthStore';
 import { usePlayerStore } from '../features/player/usePlayerStore';
@@ -11,8 +11,8 @@ const ArtistProfilePage = () => {
     const navigate = useNavigate();
     const playTrack = usePlayerStore(state => state.playTrack);
 
-    const { id: loggedInId, role } = useAuthStore();
-    const isOwner = role === 'artist' && Number(loggedInId) === Number(id);
+    const { userId, role } = useAuthStore();
+    const isOwner = role === 'artist' && Number(userId) === Number(id);
 
     const [artistInfo, setArtistInfo] = useState(null);
     const [albums, setAlbums] = useState([]);
@@ -79,6 +79,13 @@ const ArtistProfilePage = () => {
             setPlayingTrackId(track.id);
             playTrack(track); // Gọi xuống trình phát nhạc tổng của dự án
         }
+    };
+
+    const handleEditTrack = (track) => {
+        // Chuyển hướng sang trang upload kèm theo toàn bộ Object thông tin của bài hát đó thông qua React Router State
+        navigate('/studio/upload', {
+            state: { editTrackData: track }
+        });
     };
 
     // Hàm xử lý xóa bài hát (Chỉ thực hiện được nếu là chính chủ)
@@ -268,8 +275,21 @@ const ArtistProfilePage = () => {
                                             {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : "--:--"}
                                         </span>
 
+                                        {/* NÚT UPDATE BÀI HÁT (Chỉ hiển thị khi là chủ sở hữu kênh) */}
+                                        {(track.artists?.find(a => (a.role === "MAIN")) && Number(track.artists.find(a => a.role === "MAIN").id) === Number(userId)) && (                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleEditTrack(track);
+                                                }}
+                                                className="text-slate-400 hover:text-sky-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
+                                                title="Chỉnh sửa bài hát"
+                                            >
+                                                <Pencil size={18} />
+                                            </button>
+                                        )}
+
                                         {/* NÚT XÓA BÀI HÁT (Chỉ hiển thị khi là chủ sở hữu kênh) */}
-                                        {isOwner && (
+                                        {(track.artists?.find(a => (a.role === "MAIN")) && Number(track.artists.find(a => a.role === "MAIN").id) === Number(userId)) && (
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation(); // Ngăn hành vi bấm dòng kích hoạt trình phát nhạc
