@@ -1,5 +1,13 @@
 import { create } from 'zustand';
 
+const decodeJwt = (token) => {
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch {
+    return null;
+  }
+};
+
 export const useAuthStore = create((set) => ({
     userId: localStorage.getItem('userId') || null,
     username: localStorage.getItem('username') || null,
@@ -43,7 +51,38 @@ export const useAuthStore = create((set) => ({
         });
     },
 
-    setAuthError: (errorMsg) => set({ error: errorMsg }),
-    setLoading: (isLoading) => set({ isLoading }),
+  setAuthError: (errorMsg) => set({ error: errorMsg }),
+  setLoading: (isLoading) => set({ isLoading }),
+
+  loginWithGoogle: (token) => {
+    const payload = decodeJwt(token);
+    if (!payload) {
+      set({ error: "Token Google không hợp lệ." });
+      return false;
+    }
+
+    let finalRole = (payload.role || "listener")
+        .replace("ROLE_", "")
+        .toLowerCase();
+    if (finalRole === "user") finalRole = "listener";
+
+    // Dùng chung key với loginSuccess → không xung đột
+    localStorage.setItem("accessToken", token);
+    localStorage.setItem("userId",   payload.id  ?? "");
+    localStorage.setItem("username", payload.sub  ?? "");
+    localStorage.setItem("role",     finalRole);
+    if (payload.img) localStorage.setItem("userImg", payload.img);
+
+    set({
+      id:              payload.id   ?? null,
+      username:        payload.sub  ?? null,
+      img:             payload.img  ?? null,
+      role:            finalRole,
+      isAuthenticated: true,
+      error:           null,
+    });
+
+    return true;
+  },
 }));
 
