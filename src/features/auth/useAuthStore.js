@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export const useAuthStore = create((set) => ({
-  id: localStorage.getItem("userId") || null,
+  userId: localStorage.getItem("userId") || null,
   username: localStorage.getItem("username") || null,
   img: localStorage.getItem("userImg") || null,
   role: localStorage.getItem("role") || "listener",
@@ -22,7 +22,7 @@ export const useAuthStore = create((set) => ({
     if (img && img !== "null") localStorage.setItem("userImg", img);
 
     set({
-      id: id,
+      userId: id,
       username: username,
       img: img && img !== "null" ? img : null,
       role: finalRole,
@@ -34,7 +34,7 @@ export const useAuthStore = create((set) => ({
   logout: () => {
     localStorage.clear();
     set({
-      id: null,
+      userId: null,
       username: null,
       img: null,
       role: "listener",
