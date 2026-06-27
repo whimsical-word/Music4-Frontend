@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Music, Layers, UploadCloud, BarChart3, User as UserIcon } from 'lucide-react';
+import { Play, Music, Layers, UploadCloud, BarChart3, User as UserIcon, Heart, MessageSquare, Star, MoreHorizontal } from 'lucide-react';
 import axiosClient from '../app/axios/axiosClient';
 import { useAuthStore } from '../features/auth/useAuthStore';
 import { usePlayerStore } from '../features/player/usePlayerStore';
 import MusicImage from '../layouts/components/MusicImage';
+import TrackEngagementModal from '../layouts/components/TrackEngagementModal';
 
 // =====================================================================
 // COMPONENT PHỤ: BĂNG CHUYỀN ĐIỀU HƯỚNG TAY (ĐÃ BỎ HOÀN TOÀN AUTO-SCROLL)
@@ -89,6 +90,9 @@ const HomePage = () => {
     const [albums, setAlbums] = useState([]);
     const [top5Tracks, setTop5Tracks] = useState([]);
 
+    // State điều khiển đóng/mở Pop-up tương tác (Cmt & Yêu thích)
+    const [selectedTrack, setSelectedTrack] = useState(null);
+
     // --- FETCH DATA TỪ SPRING BOOT (GIỮ NGUYÊN HOÀN TOÀN LOGIC CŨ) ---
     useEffect(() => {
         const fetchHomeData = async () => {
@@ -168,9 +172,26 @@ const HomePage = () => {
                                     </button>
                                 </div>
                             </div>
-                            {/* Ép kích thước chữ tự động hiển thị ... khi tên quá dài */}
-                            <h4 className="font-bold text-white truncate text-sm mb-1 w-full">{track.name}</h4>
-                            <p className="text-xs text-slate-400 truncate flex gap-1 items-center w-full">
+
+                            {/* Khối Metadata (Đã thêm nút MoreHorizontal để mở tương tác) */}
+                            <div className="relative pr-6 group/title w-full">
+                                <h4 className="font-bold text-white truncate text-sm mb-1 max-w-[85%] group-hover:text-sky-400 transition-colors">
+                                    {track.name}
+                                </h4>
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedTrack(track);
+                                    }}
+                                    className="absolute right-0 top-0.5 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-white bg-transparent border-none cursor-pointer transition-opacity duration-200"
+                                    title="Tương tác bài hát"
+                                >
+                                    <MoreHorizontal size={16} />
+                                </button>
+                            </div>
+
+                            <p className="text-xs text-slate-400 truncate flex gap-1 items-center w-full mt-1">
                                 {track.artists && track.artists.length > 0 ? (
                                     track.artists.map((artist, idx) => (
                                         <span key={artist.id} className="inline-block max-w-full truncate">
@@ -224,7 +245,7 @@ const HomePage = () => {
                     )}
                 />
 
-                {/* 3. BĂNG CHUYỀN ALBUM (HÌNH VUÔNG GỐC - ĐÃ FIX KÍCH THƯỚC TRÀN MÀN) */}
+                {/* 3. BĂNG CHUYỀN ALBUM */}
                 <AutoScrollCarousel
                     title="Album Nổi Bật"
                     items={albums}
@@ -299,8 +320,8 @@ const HomePage = () => {
                                                 </div>
                                             </div>
 
-                                            {/* CỘT 3: TÊN BÀI HÁT & NGHỆ SĨ */}
-                                            <div className="col-span-7 flex flex-col justify-center min-w-0 px-2">
+                                            {/* CỘT 3: TÊN BÀI HÁT & NGHỆ SĨ (Đã chuyển thành col-span-5 để có chỗ cho các nút) */}
+                                            <div className="col-span-5 flex flex-col justify-center min-w-0 px-2">
                                                 <div className="truncate mb-1.5 min-w-0">
                                                     <h4 className="text-sm font-bold text-white group-hover:text-sky-400 transition-colors truncate w-full">
                                                         {track.name}
@@ -335,6 +356,45 @@ const HomePage = () => {
                                                     {track.viewCount?.toLocaleString() || 0} <span className="text-xs text-slate-400 font-sans font-normal ml-0.5">lượt nghe</span>
                                                 </span>
                                             </div>
+
+                                            {/* CỘT 5: HÀNG CÔNG CỤ TƯƠNG TÁC PHẲNG (Đã thêm mới) */}
+                                            <div className="col-span-2 flex items-center justify-end gap-3 pr-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedTrack(track);
+                                                    }}
+                                                    className="opacity-0 group-hover:opacity-100 text-[#b3b3b3] hover:text-[#ffca28] bg-transparent border-none cursor-pointer transition-all p-1"
+                                                    title="Đánh giá bài hát"
+                                                >
+                                                    <Star size={16} />
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedTrack(track);
+                                                    }}
+                                                    className="opacity-0 group-hover:opacity-100 text-[#b3b3b3] hover:text-sky-400 bg-transparent border-none cursor-pointer transition-all p-1"
+                                                    title="Bình luận bài hát"
+                                                >
+                                                    <MessageSquare size={16} />
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedTrack(track);
+                                                    }}
+                                                    className="opacity-0 group-hover:opacity-100 text-[#b3b3b3] hover:text-red-500 bg-transparent border-none cursor-pointer transition-all p-1"
+                                                    title="Yêu thích bài hát"
+                                                >
+                                                    <Heart size={16} />
+                                                </button>
+                                            </div>
                                         </div>
                                     );
                                 })}
@@ -347,6 +407,14 @@ const HomePage = () => {
                     </div>
                 </section>
             </div>
+
+            {/* BOX ĐIỀU KHIỂN HOẠT ĐỘNG POP-UP TỔNG HỢP (KHI ĐƯỢC KÍCH HOẠT) */}
+            {selectedTrack && (
+                <TrackEngagementModal
+                    track={selectedTrack}
+                    onClose={() => setSelectedTrack(null)}
+                />
+            )}
         </div>
     );
 };
