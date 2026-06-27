@@ -9,7 +9,8 @@ const Navbar = () => {
 
     // Đồng bộ thêm trường dẫn 'img' đại diện từ kho lưu trữ Zustand toàn cục
     // Thêm 'id' vào danh sách rút trích
-    const { id, username, role, img, logout, isAuthenticated } = useAuthStore();
+    const { userId, username, role, img, logout, isAuthenticated } = useAuthStore();
+    const id = userId;
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
     const [searchQuery, setSearchQuery] = useState('');

@@ -8,13 +8,12 @@ export const engagementService = {
     },
 
     // 2. THÊM BÌNH LUẬN MỚI
-    addComment: async (trackId, content, userId) => {
-        // Gửi Object đúng cấu hình CommentRequest mà Backend đang yêu cầu
+    addComment: async (trackId, content, userId, artistId) => {
         const res = await axiosClient.post('/comments', {
             trackId: Number(trackId),
-            userId: userId ? Number(userId) : null, // 🟢 Đính kèm userId chuẩn chỉnh
-            artistId: null,
-            content: content
+            userId: userId ? Number(userId) : null,
+            artistId: artistId ? Number(artistId) : null,
+            content
         });
         return res.data || res;
     },

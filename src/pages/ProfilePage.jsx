@@ -8,7 +8,7 @@ import MusicImage from '../layouts/components/MusicImage';
 const ProfilePage = () => {
     const IMAGE_URL = "https://music4-v3-storage-kenz.s3.ap-southeast-1.amazonaws.com/";
     const navigate = useNavigate();
-    const {id: userId, username, img} = useAuthStore();
+    const {userId, username, img} = useAuthStore();
 
     const [profile, setProfile] = useState({
         name: username || '',
