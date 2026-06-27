@@ -17,6 +17,8 @@ const LoginPage = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const BASE_API_URL = import.meta.env.VITE_API_BASE_URL;
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -135,6 +137,24 @@ const LoginPage = () => {
                         ) : "ĐĂNG NHẬP"}
                     </button>
                 </form>
+
+                <div className="mt-4 text-center text-xs text-[#a7a7a7]" >
+                    <button
+                        onClick={() => {
+                            window.location.href = `${BASE_API_URL}/oauth2/authorization/google`;
+                        }}
+                        className="google-btn flex items-center justify-center mx-auto"
+                    >
+                        <img
+                            src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                            width="20"
+                            height="20"
+                            alt="Google icon"
+                            className="mr-2"
+                        />
+                        Continue with Google
+                    </button>
+                </div>
 
                 <div className="mt-8 text-center text-xs text-[#a7a7a7] border-t border-[#282828] pt-6">
                     Chưa có tài khoản?{' '}

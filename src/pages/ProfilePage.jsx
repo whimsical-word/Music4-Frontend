@@ -8,12 +8,14 @@ import MusicImage from '../layouts/components/MusicImage';
 const ProfilePage = () => {
     const IMAGE_URL = "https://music4-v3-storage-kenz.s3.ap-southeast-1.amazonaws.com/";
     const navigate = useNavigate();
-    const {userId, username, img} = useAuthStore();
+    const {id: userId, username, img} = useAuthStore();
 
     const [profile, setProfile] = useState({
         name: username || '',
         avatar: img || null
     });
+
+    console.log("ProfilePage: userId = " + userId + ", username = " + username + ", img = " + img);
 
     const [playlists, setPlaylists] = useState([]);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -56,7 +58,7 @@ const ProfilePage = () => {
 
                 setProfile({
                     name: profileRes.data.name,
-                    avatar: IMAGE_URL + profileRes.data.img || img,
+                    avatar: profileRes.data.img || img,
                 })
 
                 setPreviewImg(profile.avatar)
