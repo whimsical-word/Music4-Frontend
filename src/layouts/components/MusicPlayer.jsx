@@ -1,16 +1,18 @@
 import React, { useRef, useEffect, useState } from "react";
 import {
-  Play,
-  Pause,
-  SkipForward,
-  SkipBack,
-  Volume,
-  Volume1,
-  Volume2,
-  VolumeX,
-  Repeat1,
-  Repeat,
-  Shuffle,
+    Play,
+    Pause,
+    SkipForward,
+    SkipBack,
+    Volume,
+    Volume1,
+    Volume2,
+    VolumeX,
+    Repeat1,
+    Repeat,
+    Shuffle,
+    ChevronDown, // Thêm icon trượt xuống
+    ChevronUp,   // Thêm icon trượt lên
 } from "lucide-react";
 import { usePlayerStore } from "../../features/player/usePlayerStore";
 import { useAuthStore } from "../../features/auth/useAuthStore";
@@ -19,504 +21,525 @@ import MusicImage from "./MusicImage.jsx";
 import { useNavigate } from "react-router-dom";
 
 const MusicPlayer = () => {
-  const navigate = useNavigate();
-  const [currentTime, setCurrentTime] = useState(0);
-  const [isDraggingVolume, setIsDraggingVolume] = useState(false);
-  const [hoverTime, setHoverTime] = useState(null);
-  const [hoverPosition, setHoverPosition] = useState(0);
-  const [duration, setDuration] = useState(0);
+    const navigate = useNavigate();
+    const [currentTime, setCurrentTime] = useState(0);
+    const [isDraggingVolume, setIsDraggingVolume] = useState(false);
+    const [hoverTime, setHoverTime] = useState(null);
+    const [hoverPosition, setHoverPosition] = useState(0);
+    const [duration, setDuration] = useState(0);
 
-  // 1. Rút thêm playNext, playPrev từ Store
-  const {
-    currentTrack,
-    isPlaying,
-    togglePlay,
-    playNext,
-    playPrev,
-    isShuffle,
-    toggleShuffle,
-    repeatMode,
-    toggleRepeatMode,
-  } = usePlayerStore();
+    // Thêm state quản lý việc ẩn/hiện thanh player
+    const [isMinimized, setIsMinimized] = useState(false);
 
-  const { isAuthenticated, id: userId } = useAuthStore();
+    // 1. Rút thêm playNext, playPrev từ Store
+    const {
+        currentTrack,
+        isPlaying,
+        togglePlay,
+        playNext,
+        playPrev,
+        isShuffle,
+        toggleShuffle,
+        repeatMode,
+        toggleRepeatMode,
+    } = usePlayerStore();
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      usePlayerStore.getState().stop();
-    }
-  }, [isAuthenticated]);
+    const { isAuthenticated, id: userId } = useAuthStore();
 
-  const audioRef = useRef(null);
-  const [progress, setProgress] = useState(0);
-  const [volume, setVolume] = useState(1); // Mặc định âm lượng 100% (1.0)
+    useEffect(() => {
+        if (!isAuthenticated) {
+            usePlayerStore.getState().stop();
+        }
+    }, [isAuthenticated]);
 
-  // CÁC BIẾN REF ĐỂ THEO DÕI THỜI GIAN NGHE THỰC TẾ
-  const lastTimeRef = useRef(0);
-  const accumulatedTimeRef = useRef(0);
-  const hasRecordedViewRef = useRef(false);
+    const audioRef = useRef(null);
+    const [progress, setProgress] = useState(0);
+    const [volume, setVolume] = useState(1); // Mặc định âm lượng 100% (1.0)
 
-  // RESET LẠI BỘ ĐẾM KHI CHUYỂN BÀI HÁT MỚI
-  useEffect(() => {
-    lastTimeRef.current = 0;
-    accumulatedTimeRef.current = 0;
-    hasRecordedViewRef.current = false;
-  }, [currentTrack?.id]);
+    // CÁC BIẾN REF ĐỂ THEO DÕI THỜI GIAN NGHE THỰC TẾ
+    const lastTimeRef = useRef(0);
+    const accumulatedTimeRef = useRef(0);
+    const hasRecordedViewRef = useRef(false);
 
-  const getStreamUrl = (trackId) => {
-    if (!trackId) return "";
-    const baseUrl = "http://localhost:8080/api/tracks";
-    return isAuthenticated
-      ? `${baseUrl}/stream/${trackId}`
-      : `${baseUrl}/stream/preview/${trackId}`;
-  };
+    // RESET LẠI BỘ ĐẾM KHI CHUYỂN BÀI HÁT MỚI
+    useEffect(() => {
+        lastTimeRef.current = 0;
+        accumulatedTimeRef.current = 0;
+        hasRecordedViewRef.current = false;
+    }, [currentTrack?.id]);
 
-  // 2a. Xử lý đồng bộ Volume (Chạy riêng khi volume đổi)
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-      audioRef.current.muted = volume === 0;
-    }
-  }, [volume]);
-
-  const updateVolume = (clientX, element) => {
-    const rect = element.getBoundingClientRect();
-
-    const newVolume = Math.max(
-      0,
-      Math.min(1, (clientX - rect.left) / rect.width),
-    );
-
-    setVolume(newVolume);
-  };
-
-  const handleVolumeMouseDown = (e) => {
-    setIsDraggingVolume(true);
-    updateVolume(e.clientX, e.currentTarget);
-  };
-
-  const volumeBarRef = useRef(null);
-
-  useEffect(() => {
-    const handleMouseMove = (e) => {
-      if (!isDraggingVolume || !volumeBarRef.current) return;
-
-      updateVolume(e.clientX, volumeBarRef.current);
+    const getStreamUrl = (trackId) => {
+        if (!trackId) return "";
+        const baseUrl = "http://localhost:8080/api/tracks";
+        return isAuthenticated
+            ? `${baseUrl}/stream/${trackId}`
+            : `${baseUrl}/stream/preview/${trackId}`;
     };
 
-    const handleMouseUp = () => {
-      setIsDraggingVolume(false);
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isDraggingVolume]);
-
-  const handleProgressHover = (e) => {
-    if (!audioRef.current || !isFinite(audioRef.current.duration)) return;
-
-    const rect = e.currentTarget.getBoundingClientRect();
-
-    const x = e.clientX - rect.left;
-
-    const percentage = Math.max(0, Math.min(1, x / rect.width));
-
-    const previewTime = percentage * audioRef.current.duration;
-
-    setHoverTime(previewTime);
-    setHoverPosition(x);
-  };
-
-  const handleProgressLeave = () => {
-    setHoverTime(null);
-  };
-
-  // 2b. Xử lý Play/Pause và Chuyển bài (Chuyển đổi mượt mà)
-  useEffect(() => {
-    if (audioRef.current && currentTrack) {
-      if (isPlaying) {
-        audioRef.current.play().catch((error) => {
-          console.log("Trình duyệt chặn Auto-play hoặc đợi tương tác:", error);
-        });
-      } else {
-        audioRef.current.pause();
-      }
-    }
-  }, [isPlaying, currentTrack]); // Theo dõi sát sao 2 biến này
-
-  // Sync Playback Position (Đồng bộ thời gian nghe mỗi 10 giây)
-  useEffect(() => {
-    let syncInterval;
-
-    // Chỉ chạy khi user đã đăng nhập, đang có bài hát, và bài hát đang play
-    if (isAuthenticated && userId && currentTrack && isPlaying) {
-      syncInterval = setInterval(async () => {
+    // 2a. Xử lý đồng bộ Volume (Chạy riêng khi volume đổi)
+    useEffect(() => {
         if (audioRef.current) {
-          const currentPosition = Math.floor(audioRef.current.currentTime);
-          // Chỉ gửi nếu đã nghe
-          if (currentPosition > 0) {
-            try {
-              await axiosClient.put("/tracking/sync-time", {
-                userId: userId,
-                trackId: currentTrack.id,
-                position: currentPosition,
-              });
-            } catch (error) {
-              console.error("Lỗi đồng bộ thời gian:", error);
+            audioRef.current.volume = volume;
+            audioRef.current.muted = volume === 0;
+        }
+    }, [volume]);
+
+    const updateVolume = (clientX, element) => {
+        const rect = element.getBoundingClientRect();
+
+        const newVolume = Math.max(
+            0,
+            Math.min(1, (clientX - rect.left) / rect.width),
+        );
+
+        setVolume(newVolume);
+    };
+
+    const handleVolumeMouseDown = (e) => {
+        setIsDraggingVolume(true);
+        updateVolume(e.clientX, e.currentTarget);
+    };
+
+    const volumeBarRef = useRef(null);
+
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (!isDraggingVolume || !volumeBarRef.current) return;
+
+            updateVolume(e.clientX, volumeBarRef.current);
+        };
+
+        const handleMouseUp = () => {
+            setIsDraggingVolume(false);
+        };
+
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
+
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+        };
+    }, [isDraggingVolume]);
+
+    const handleProgressHover = (e) => {
+        if (!audioRef.current || !isFinite(audioRef.current.duration)) return;
+
+        const rect = e.currentTarget.getBoundingClientRect();
+
+        const x = e.clientX - rect.left;
+
+        const percentage = Math.max(0, Math.min(1, x / rect.width));
+
+        const previewTime = percentage * audioRef.current.duration;
+
+        setHoverTime(previewTime);
+        setHoverPosition(x);
+    };
+
+    const handleProgressLeave = () => {
+        setHoverTime(null);
+    };
+
+    // 2b. Xử lý Play/Pause và Chuyển bài (Chuyển đổi mượt mà)
+    useEffect(() => {
+        if (audioRef.current && currentTrack) {
+            if (isPlaying) {
+                audioRef.current.play().catch((error) => {
+                    console.log("Trình duyệt chặn Auto-play hoặc đợi tương tác:", error);
+                });
+            } else {
+                audioRef.current.pause();
             }
-          }
         }
-      }, 10000); // 10 giây gửi 1 lần
-    }
+    }, [isPlaying, currentTrack]); // Theo dõi sát sao 2 biến này
 
-    // Cleanup function: Tự động dọn dẹp interval khi đổi bài hoặc pause
-    return () => {
-      if (syncInterval) {
-        clearInterval(syncInterval);
-      }
-    };
-  }, [isAuthenticated, userId, currentTrack, isPlaying]);
+    // Sync Playback Position (Đồng bộ thời gian nghe mỗi 10 giây)
+    useEffect(() => {
+        let syncInterval;
 
-  // THUẬT TOÁN ANTI-CHEAT
-  const handleTimeUpdate = async () => {
-    if (audioRef.current) {
-      const currentVal = audioRef.current.currentTime;
-      const duration = audioRef.current.duration;
-
-      setCurrentTime(currentVal);
-      if (duration) {
-        setProgress((currentVal / duration) * 100);
-      }
-
-      // Bắt đầu tính toán thời gian nghe thực
-      const timeDifference = currentVal - lastTimeRef.current;
-
-      // Nếu nhảy < 1.5 giây tức là nhạc đang chạy bình thường (không tua)
-      if (timeDifference > 0 && timeDifference < 1.5) {
-        accumulatedTimeRef.current += timeDifference;
-      }
-      lastTimeRef.current = currentVal;
-
-      // Kiểm tra xem đã nghe đủ 90% thời lượng chưa
-      if (
-        duration > 0 &&
-        accumulatedTimeRef.current >= duration * 1 && // Nghe full
-        !hasRecordedViewRef.current // Chưa cộng view bao giờ
-      ) {
-        hasRecordedViewRef.current = true; // Khóa lại, không cộng đúp nữa
-
-        if (isAuthenticated && userId && currentTrack) {
-          try {
-            await axiosClient.post("/tracking/play", {
-              trackId: currentTrack.id,
-              userId: userId,
-            });
-            console.log("✅ Đã nghe full bài hát, tăng View thành công!");
-          } catch (error) {
-            console.error("Lỗi khi lưu lịch sử/tăng view:", error);
-          }
+        // Chỉ chạy khi user đã đăng nhập, đang có bài hát, và bài hát đang play
+        if (isAuthenticated && userId && currentTrack && isPlaying) {
+            syncInterval = setInterval(async () => {
+                if (audioRef.current) {
+                    const currentPosition = Math.floor(audioRef.current.currentTime);
+                    // Chỉ gửi nếu đã nghe
+                    if (currentPosition > 0) {
+                        try {
+                            await axiosClient.put("/tracking/sync-time", {
+                                userId: userId,
+                                trackId: currentTrack.id,
+                                position: currentPosition,
+                            });
+                        } catch (error) {
+                            console.error("Lỗi đồng bộ thời gian:", error);
+                        }
+                    }
+                }
+            }, 10000); // 10 giây gửi 1 lần
         }
-      }
-    }
-  };
 
-  // Khi kết thúc bài -> Lưu lịch sử -> TỰ ĐỘNG NEXT BÀI TIẾP THEO
-  const handleTrackEnded = () => {
-    const audio = audioRef.current;
+        // Cleanup function: Tự động dọn dẹp interval khi đổi bài hoặc pause
+        return () => {
+            if (syncInterval) {
+                clearInterval(syncInterval);
+            }
+        };
+    }, [isAuthenticated, userId, currentTrack, isPlaying]);
 
-    if (repeatMode === "one") {
-      audio.currentTime = 0;
-      audio.play();
-      return;
-    }
+    // THUẬT TOÁN ANTI-CHEAT
+    const handleTimeUpdate = async () => {
+        if (audioRef.current) {
+            const currentVal = audioRef.current.currentTime;
+            const duration = audioRef.current.duration;
 
-    if (repeatMode === "off") {
-      const { currentIndex, queue } = usePlayerStore.getState();
+            setCurrentTime(currentVal);
+            if (duration) {
+                setProgress((currentVal / duration) * 100);
+            }
 
-      if (currentIndex === queue.length - 1) {
-        usePlayerStore.setState({
-          isPlaying: false,
-        });
+            // Bắt đầu tính toán thời gian nghe thực
+            const timeDifference = currentVal - lastTimeRef.current;
 
-        return;
-      }
-    }
+            // Nếu nhảy < 1.5 giây tức là nhạc đang chạy bình thường (không tua)
+            if (timeDifference > 0 && timeDifference < 1.5) {
+                accumulatedTimeRef.current += timeDifference;
+            }
+            lastTimeRef.current = currentVal;
 
-    playNext();
-  };
+            // Kiểm tra xem đã nghe đủ 90% thời lượng chưa
+            if (
+                duration > 0 &&
+                accumulatedTimeRef.current >= duration * 1 && // Nghe full
+                !hasRecordedViewRef.current // Chưa cộng view bao giờ
+            ) {
+                hasRecordedViewRef.current = true; // Khóa lại, không cộng đúp nữa
 
-  // Kiểm tra xem bài hát này có lưu vị trí nghe cũ không (playbackPosition)
-  const handleLoadedMetadata = () => {
-    if (audioRef.current) {
-      // 1. Lấy thời lượng thực tế của file audio
-      setDuration(audioRef.current.duration);
-
-      // 2. Chạy tiếp logic cũ
-      if (currentTrack.playbackPosition) {
-        audioRef.current.currentTime = currentTrack.playbackPosition;
-      }
-    }
-  };
-
-  const handleSeek = (e) => {
-    if (audioRef.current && isFinite(audioRef.current.duration)) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const newTime = (clickX / rect.width) * audioRef.current.duration;
-
-      if (isFinite(newTime)) {
-        audioRef.current.currentTime = newTime;
-      }
-    }
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
-        return;
-      }
-
-      if (e.code === "Space") {
-        e.preventDefault();
-        togglePlay();
-      }
+                if (isAuthenticated && userId && currentTrack) {
+                    try {
+                        await axiosClient.post("/tracking/play", {
+                            trackId: currentTrack.id,
+                            userId: userId,
+                        });
+                        console.log("✅ Đã nghe full bài hát, tăng View thành công!");
+                    } catch (error) {
+                        console.error("Lỗi khi lưu lịch sử/tăng view:", error);
+                    }
+                }
+            }
+        }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
+    // Khi kết thúc bài -> Lưu lịch sử -> TỰ ĐỘNG NEXT BÀI TIẾP THEO
+    const handleTrackEnded = () => {
+        const audio = audioRef.current;
 
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
+        if (repeatMode === "one") {
+            audio.currentTime = 0;
+            audio.play();
+            return;
+        }
+
+        if (repeatMode === "off") {
+            const { currentIndex, queue } = usePlayerStore.getState();
+
+            if (currentIndex === queue.length - 1) {
+                usePlayerStore.setState({
+                    isPlaying: false,
+                });
+
+                return;
+            }
+        }
+
+        playNext();
     };
-  }, [togglePlay]);
 
-  if (!currentTrack) return null;
+    // Kiểm tra xem bài hát này có lưu vị trí nghe cũ không (playbackPosition)
+    const handleLoadedMetadata = () => {
+        if (audioRef.current) {
+            // 1. Lấy thời lượng thực tế của file audio
+            setDuration(audioRef.current.duration);
 
-  return (
-    <div className="fixed bottom-0 left-0 right-0 h-24 bg-[#181818] border-t border-[#282828] flex items-center justify-between px-6 z-[100] animate-fadeIn">
-      <audio
-        ref={audioRef}
-        src={currentTrack?.id ? getStreamUrl(currentTrack.id) : ""}
-        onTimeUpdate={handleTimeUpdate}
-        onEnded={handleTrackEnded}
-        onLoadedMetadata={handleLoadedMetadata}
-        onError={(e) => {
-          console.error("Lỗi không thể tải nguồn nhạc:", e.target.error);
-        }}
-      />
+            // 2. Chạy tiếp logic cũ
+            if (currentTrack.playbackPosition) {
+                audioRef.current.currentTime = currentTrack.playbackPosition;
+            }
+        }
+    };
 
-      {/* KHU VỰC 1: THÔNG TIN BÀI HÁT */}
-      <div className="flex items-center gap-4 w-1/4">
-        <div className="w-14 h-14 rounded-md overflow-hidden bg-[#282828] shrink shadow-md">
-          <MusicImage
-            src={currentTrack.img}
-            type="track"
-            alt={currentTrack.name}
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="min-w-0">
-          <h4 className="text-white text-sm font-bold truncate">
-            {currentTrack.name}
-          </h4>
-          <p className="text-xs text-[#a7a7a7] truncate">
-            {currentTrack.artists && currentTrack.artists.length > 0
-              ? currentTrack.artists.map((artist, idx) => (
-                  <span key={artist.id}>
-                    <span
-                      onClick={() => navigate(`/artist/${artist.id}`)}
-                      className="hover:text-white hover:underline cursor-pointer transition-all"
-                    >
-                      {artist.name}
-                    </span>
-                    {idx < currentTrack.artists.length - 1 && ", "}
-                  </span>
-                ))
-              : "Nghệ sĩ hệ thống"}
-          </p>
-        </div>
-      </div>
+    const handleSeek = (e) => {
+        if (audioRef.current && isFinite(audioRef.current.duration)) {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const newTime = (clickX / rect.width) * audioRef.current.duration;
 
-      {/* KHU VỰC 2: CONTROLS & TIẾN TRÌNH */}
-      <div className="flex flex-col items-center justify-center w-2/4 gap-2">
-        <div className="flex items-center gap-5">
-          {/* Shuffle */}
-          <button
-            onClick={toggleShuffle}
-            className={`border-none bg-transparent cursor-pointer transition-colors ${
-              isShuffle ? "text-green-500" : "text-[#a7a7a7] hover:text-white"
-            }`}
-          >
-            <Shuffle size={18} />
-          </button>
+            if (isFinite(newTime)) {
+                audioRef.current.currentTime = newTime;
+            }
+        }
+    };
 
-          {/* Prev */}
-          <button
-            onClick={playPrev}
-            className="text-[#a7a7a7] hover:text-white transition-colors cursor-pointer border-none bg-transparent"
-          >
-            <SkipBack size={20} />
-          </button>
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
+                return;
+            }
 
-          {/* Play / Pause */}
-          <button
-            onClick={togglePlay}
-            className="w-8 h-8 flex items-center justify-center bg-white rounded-full hover:scale-105 transition-transform cursor-pointer border-none shadow-lg"
-          >
-            {isPlaying ? (
-              <Pause size={16} fill="black" className="text-black" />
-            ) : (
-              <Play size={16} fill="black" className="text-black ml-0.5" />
-            )}
-          </button>
+            if (e.code === "Space") {
+                e.preventDefault();
+                togglePlay();
+            }
+        };
 
-          {/* Next */}
-          <button
-            onClick={playNext}
-            className="text-[#a7a7a7] hover:text-white transition-colors cursor-pointer border-none bg-transparent"
-          >
-            <SkipForward size={20} />
-          </button>
+        window.addEventListener("keydown", handleKeyDown);
 
-          {/* Repeat */}
-          <button
-            onClick={toggleRepeatMode}
-            className={`border-none bg-transparent cursor-pointer transition-colors ${
-              repeatMode !== "off"
-                ? "text-green-500"
-                : "text-[#a7a7a7] hover:text-white"
-            }`}
-          >
-            {repeatMode === "one" ? (
-              <Repeat1 size={18} />
-            ) : (
-              <Repeat size={18} />
-            )}
-          </button>
-        </div>
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [togglePlay]);
 
-        {/* Thanh tiến trình chuẩn Spotify */}
-        <div className="w-full max-w-md flex items-center gap-3 group">
-          {/* BÊN TRÁI: Thời gian đã nghe (currentTime) */}
-          <span className="text-[11px] font-mono text-[#a7a7a7] min-w-[35px] text-right">
-            {formatTime(currentTime)}
-          </span>
+    if (!currentTrack) return null;
 
-          <div
-            className="group h-1.5 flex-1 bg-[#3e3e3e] rounded-full cursor-pointer relative"
-            onClick={handleSeek}
-            onMouseMove={handleProgressHover}
-            onMouseLeave={handleProgressLeave}
-          >
-            {hoverTime !== null && (
-              <>
-                {/* 1. Thanh hover mờ đổ đầy từ đầu đến vị trí chuột (Chuẩn Spotify) */}
-                <div
-                  className="absolute top-0 left-0 h-full bg-white/30 rounded-full pointer-events-none z-10"
-                  style={{
-                    width: `${hoverPosition}px`,
-                  }}
+    return (
+        <>
+            {/* Nút Thu nhỏ / Phóng to thanh nhạc (Floating Button) */}
+            <button
+                onClick={() => setIsMinimized(!isMinimized)}
+                title={isMinimized ? "Hiển thị thanh phát nhạc" : "Thu nhỏ thanh phát nhạc"}
+                className={`fixed right-6 z-[101] p-2 bg-[#282828] border border-[#3e3e3e] hover:bg-[#3e3e3e] hover:scale-105 text-white rounded-full shadow-2xl transition-all duration-500 ease-in-out flex items-center justify-center ${
+                    isMinimized ? "bottom-6" : "bottom-[110px]"
+                }`}
+            >
+                {isMinimized ? <ChevronUp size={22} /> : <ChevronDown size={22} />}
+            </button>
+
+            {/* Main Player - Bọc thêm class translate-y-full khi isMinimized là true */}
+            <div
+                className={`fixed bottom-0 left-0 right-0 h-24 bg-[#181818] border-t border-[#282828] flex items-center justify-between px-6 z-[100] transition-transform duration-500 ease-in-out ${
+                    isMinimized ? "translate-y-full" : "translate-y-0"
+                }`}
+            >
+                <audio
+                    ref={audioRef}
+                    src={currentTrack?.id ? getStreamUrl(currentTrack.id) : ""}
+                    onTimeUpdate={handleTimeUpdate}
+                    onEnded={handleTrackEnded}
+                    onLoadedMetadata={handleLoadedMetadata}
+                    onError={(e) => {
+                        console.error("Lỗi không thể tải nguồn nhạc:", e.target.error);
+                    }}
                 />
 
-                {/* 2. Tooltip thời gian (tinh chỉnh màu nền cho giống Spotify) */}
-                <div
-                  className="absolute -top-10 px-2 py-1 text-xs rounded bg-[#282828] text-white shadow-lg whitespace-nowrap z-30 pointer-events-none"
-                  style={{
-                    left: `${hoverPosition}px`,
-                    transform: "translateX(-50%)",
-                  }}
-                >
-                  {formatTime(hoverTime)}
+                {/* KHU VỰC 1: THÔNG TIN BÀI HÁT */}
+                <div className="flex items-center gap-4 w-1/4">
+                    <div className="w-14 h-14 rounded-md overflow-hidden bg-[#282828] shrink shadow-md">
+                        <MusicImage
+                            src={currentTrack.img}
+                            type="track"
+                            alt={currentTrack.name}
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                    <div className="min-w-0">
+                        <h4 className="text-white text-sm font-bold truncate">
+                            {currentTrack.name}
+                        </h4>
+                        <p className="text-xs text-[#a7a7a7] truncate">
+                            {currentTrack.artists && currentTrack.artists.length > 0
+                                ? currentTrack.artists.map((artist, idx) => (
+                                    <span key={artist.id}>
+                      <span
+                          onClick={() => navigate(`/artist/${artist.id}`)}
+                          className="hover:text-white hover:underline cursor-pointer transition-all"
+                      >
+                        {artist.name}
+                      </span>
+                                        {idx < currentTrack.artists.length - 1 && ", "}
+                    </span>
+                                ))
+                                : "Nghệ sĩ hệ thống"}
+                        </p>
+                    </div>
                 </div>
-              </>
-            )}
 
-            {/* Progress hiện tại */}
-            {/* Đổi sang absolute và thêm z-20 để nó luôn nổi lên trên thanh hover mờ */}
-            <div
-              className="absolute top-0 left-0 h-full bg-white group-hover:bg-blue-500 transition-colors rounded-full z-20"
-              style={{ width: `${progress}%` }}
-            >
-              {/* Nút tròn */}
-              <div
-                className="
-                  absolute right-0 top-1/2
-                  -translate-y-1/2 translate-x-1/2
-                  w-3 h-3 bg-white rounded-full shadow
-                  opacity-0 group-hover:opacity-100
-                  transition-opacity
-                "
-              />
+                {/* KHU VỰC 2: CONTROLS & TIẾN TRÌNH */}
+                <div className="flex flex-col items-center justify-center w-2/4 gap-2">
+                    <div className="flex items-center gap-5">
+                        {/* Shuffle */}
+                        <button
+                            onClick={toggleShuffle}
+                            className={`border-none bg-transparent cursor-pointer transition-colors ${
+                                isShuffle ? "text-green-500" : "text-[#a7a7a7] hover:text-white"
+                            }`}
+                        >
+                            <Shuffle size={18} />
+                        </button>
+
+                        {/* Prev */}
+                        <button
+                            onClick={playPrev}
+                            className="text-[#a7a7a7] hover:text-white transition-colors cursor-pointer border-none bg-transparent"
+                        >
+                            <SkipBack size={20} />
+                        </button>
+
+                        {/* Play / Pause */}
+                        <button
+                            onClick={togglePlay}
+                            className="w-8 h-8 flex items-center justify-center bg-white rounded-full hover:scale-105 transition-transform cursor-pointer border-none shadow-lg"
+                        >
+                            {isPlaying ? (
+                                <Pause size={16} fill="black" className="text-black" />
+                            ) : (
+                                <Play size={16} fill="black" className="text-black ml-0.5" />
+                            )}
+                        </button>
+
+                        {/* Next */}
+                        <button
+                            onClick={playNext}
+                            className="text-[#a7a7a7] hover:text-white transition-colors cursor-pointer border-none bg-transparent"
+                        >
+                            <SkipForward size={20} />
+                        </button>
+
+                        {/* Repeat */}
+                        <button
+                            onClick={toggleRepeatMode}
+                            className={`border-none bg-transparent cursor-pointer transition-colors ${
+                                repeatMode !== "off"
+                                    ? "text-green-500"
+                                    : "text-[#a7a7a7] hover:text-white"
+                            }`}
+                        >
+                            {repeatMode === "one" ? (
+                                <Repeat1 size={18} />
+                            ) : (
+                                <Repeat size={18} />
+                            )}
+                        </button>
+                    </div>
+
+                    {/* Thanh tiến trình chuẩn Spotify */}
+                    <div className="w-full max-w-md flex items-center gap-3 group">
+                        {/* BÊN TRÁI: Thời gian đã nghe (currentTime) */}
+                        <span className="text-[11px] font-mono text-[#a7a7a7] min-w-[35px] text-right">
+              {formatTime(currentTime)}
+            </span>
+
+                        <div
+                            className="group h-1.5 flex-1 bg-[#3e3e3e] rounded-full cursor-pointer relative"
+                            onClick={handleSeek}
+                            onMouseMove={handleProgressHover}
+                            onMouseLeave={handleProgressLeave}
+                        >
+                            {hoverTime !== null && (
+                                <>
+                                    {/* 1. Thanh hover mờ đổ đầy từ đầu đến vị trí chuột (Chuẩn Spotify) */}
+                                    <div
+                                        className="absolute top-0 left-0 h-full bg-white/30 rounded-full pointer-events-none z-10"
+                                        style={{
+                                            width: `${hoverPosition}px`,
+                                        }}
+                                    />
+
+                                    {/* 2. Tooltip thời gian (tinh chỉnh màu nền cho giống Spotify) */}
+                                    <div
+                                        className="absolute -top-10 px-2 py-1 text-xs rounded bg-[#282828] text-white shadow-lg whitespace-nowrap z-30 pointer-events-none"
+                                        style={{
+                                            left: `${hoverPosition}px`,
+                                            transform: "translateX(-50%)",
+                                        }}
+                                    >
+                                        {formatTime(hoverTime)}
+                                    </div>
+                                </>
+                            )}
+
+                            {/* Progress hiện tại */}
+                            {/* Đổi sang absolute và thêm z-20 để nó luôn nổi lên trên thanh hover mờ */}
+                            <div
+                                className="absolute top-0 left-0 h-full bg-white group-hover:bg-blue-500 transition-colors rounded-full z-20"
+                                style={{ width: `${progress}%` }}
+                            >
+                                {/* Nút tròn */}
+                                <div
+                                    className="
+                    absolute right-0 top-1/2
+                    -translate-y-1/2 translate-x-1/2
+                    w-3 h-3 bg-white rounded-full shadow
+                    opacity-0 group-hover:opacity-100
+                    transition-opacity
+                  "
+                                />
+                            </div>
+                        </div>
+
+                        {/* BÊN PHẢI: Tổng thời lượng (currentTrack.duration) */}
+                        <span className="text-[11px] font-mono text-[#a7a7a7] min-w-[35px] text-left">
+              {formatTime(duration || currentTrack?.duration)}
+            </span>
+                    </div>
+                </div>
+
+                {/* KHU VỰC 3: ÂM LƯỢNG */}
+                <div className="flex items-center justify-end w-1/4 gap-3 text-[#a7a7a7] pr-6">
+                    {/* Đổi icon nếu tắt tiếng hoàn toàn */}
+                    {volume === 0 ? (
+                        <VolumeX
+                            size={20}
+                            className="cursor-pointer hover:text-white transition-colors"
+                            onClick={() => setVolume(1)}
+                        />
+                    ) : volume <= 0.3 ? (
+                        <Volume
+                            size={20}
+                            className="cursor-pointer hover:text-white transition-colors"
+                            onClick={() => setVolume(0)}
+                        />
+                    ) : volume <= 0.7 ? (
+                        <Volume1
+                            size={20}
+                            className="cursor-pointer hover:text-white transition-colors"
+                            onClick={() => setVolume(0)}
+                        />
+                    ) : (
+                        <Volume2
+                            size={20}
+                            className="cursor-pointer hover:text-white transition-colors"
+                            onClick={() => setVolume(0)}
+                        />
+                    )}
+
+                    {/* Thanh kéo Âm lượng đã được biến thành thanh có thể kéo thả */}
+                    <div
+                        ref={volumeBarRef}
+                        className="w-24 h-1.5 bg-[#3e3e3e] rounded-full cursor-pointer group relative"
+                        onMouseDown={handleVolumeMouseDown}
+                    >
+                        <div
+                            className="h-full bg-white group-hover:bg-blue-500 transition-colors rounded-full relative"
+                            style={{ width: `${volume * 100}%` }}
+                        >
+                            <div
+                                className="absolute right-0 top-1/2 transform -translate-y-1/2
+                   w-3 h-3 bg-white rounded-full shadow"
+                            />
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
-
-          {/* BÊN PHẢI: Tổng thời lượng (currentTrack.duration) */}
-          <span className="text-[11px] font-mono text-[#a7a7a7] min-w-[35px] text-left">
-            {formatTime(duration || currentTrack?.duration)}
-          </span>
-        </div>
-      </div>
-
-      {/* KHU VỰC 3: ÂM LƯỢNG */}
-      <div className="flex items-center justify-end w-1/4 gap-3 text-[#a7a7a7]">
-        {/* Đổi icon nếu tắt tiếng hoàn toàn */}
-        {volume === 0 ? (
-          <VolumeX
-            size={20}
-            className="cursor-pointer hover:text-white transition-colors"
-            onClick={() => setVolume(1)}
-          />
-        ) : volume <= 0.3 ? (
-          <Volume
-            size={20}
-            className="cursor-pointer hover:text-white transition-colors"
-            onClick={() => setVolume(0)}
-          />
-        ) : volume <= 0.7 ? (
-          <Volume1
-            size={20}
-            className="cursor-pointer hover:text-white transition-colors"
-            onClick={() => setVolume(0)}
-          />
-        ) : (
-          <Volume2
-            size={20}
-            className="cursor-pointer hover:text-white transition-colors"
-            onClick={() => setVolume(0)}
-          />
-        )}
-
-        {/* Thanh kéo Âm lượng đã được biến thành thanh có thể kéo thả */}
-        <div
-          ref={volumeBarRef}
-          className="w-24 h-1.5 bg-[#3e3e3e] rounded-full cursor-pointer group relative"
-          onMouseDown={handleVolumeMouseDown}
-        >
-          <div
-            className="h-full bg-white group-hover:bg-blue-500 transition-colors rounded-full relative"
-            style={{ width: `${volume * 100}%` }}
-          >
-            <div
-              className="absolute right-0 top-1/2 transform -translate-y-1/2
-                 w-3 h-3 bg-white rounded-full shadow"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+        </>
+    );
 };
 
 const formatTime = (seconds) => {
-  if (!seconds) return "0:00";
-  const m = Math.floor(seconds / 60);
-  const s = Math.round(seconds % 60);
-  if (s === 60) return `${m + 1}:00`;
-  return `${m}:${s < 10 ? "0" : ""}${s}`;
+    if (!seconds) return "0:00";
+    const m = Math.floor(seconds / 60);
+    const s = Math.round(seconds % 60);
+    if (s === 60) return `${m + 1}:00`;
+    return `${m}:${s < 10 ? "0" : ""}${s}`;
 };
 
 export default MusicPlayer;
