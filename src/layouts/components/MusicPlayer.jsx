@@ -39,7 +39,7 @@ const MusicPlayer = () => {
     toggleRepeatMode,
   } = usePlayerStore();
 
-  const { isAuthenticated, id: userId } = useAuthStore();
+  const { isAuthenticated, userId } = useAuthStore();
 
   useEffect(() => {
     if (!isAuthenticated) {
