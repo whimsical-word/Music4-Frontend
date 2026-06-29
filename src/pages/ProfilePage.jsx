@@ -15,6 +15,8 @@ const ProfilePage = () => {
         avatar: img || null
     });
 
+    console.log("ProfilePage: userId = " + userId + ", username = " + username + ", img = " + img);
+
     const [playlists, setPlaylists] = useState([]);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -56,7 +58,7 @@ const ProfilePage = () => {
 
                 setProfile({
                     name: profileRes.data.name,
-                    avatar: IMAGE_URL + profileRes.data.img || img,
+                    avatar: profileRes.data.img || img,
                 })
 
                 setPreviewImg(profile.avatar)

@@ -97,13 +97,13 @@ const AdminDashboardPage = () => {
 
                 if (artistsRes.status === 'fulfilled') {
                     const artistData = artistsRes.value.data;
-                    if (artistData && artistData.content) {
-                        setArtists(artistData.content);
-                        setArtistTotalPages(artistData.totalPages || 0);
-                    } else {
-                        setArtists(artistData || []);
-                        setArtistTotalPages(0);
-                    }
+
+                    // Bóc tách mảng linh hoạt giống như User
+                    const artistList = artistData?.content || artistData?.data || artistData || [];
+                    setArtists(Array.isArray(artistList) ? artistList : []);
+
+                    // Lấy totalPages một cách an toàn
+                    setArtistTotalPages(artistData?.totalPages || 0);
                 }
 
                 if (artistCountRes.status === 'fulfilled') setArtistCount(artistCountRes.value.data || 0);
