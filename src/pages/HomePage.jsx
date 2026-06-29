@@ -11,6 +11,7 @@ import {
   MessageSquare,
   Star,
   MoreHorizontal,
+  Sparkles,
 } from "lucide-react";
 import axiosClient from "../app/axios/axiosClient";
 import { useAuthStore } from "../features/auth/useAuthStore";
@@ -92,7 +93,7 @@ const AutoScrollCarousel = ({ title, items, renderItem, onViewAll }) => {
 // =====================================================================
 const HomePage = () => {
   const navigate = useNavigate();
-  const { username, role } = useAuthStore();
+  const { username, role, id: userId } = useAuthStore();
 
   const playTrack = usePlayerStore((state) => state.playTrack);
 
@@ -104,6 +105,7 @@ const HomePage = () => {
   const [top5Tracks, setTop5Tracks] = useState([]);
 
   // State điều khiển đóng/mở Pop-up tương tác (Cmt & Yêu thích)
+  const [aiRecommendations, setAiRecommendations] = useState([]);
   const [selectedTrack, setSelectedTrack] = useState(null);
 
   // --- FETCH DATA TỪ SPRING BOOT (GIỮ NGUYÊN HOÀN TOÀN LOGIC CŨ) ---
@@ -111,18 +113,22 @@ const HomePage = () => {
     const fetchHomeData = async () => {
       setIsLoading(true);
       try {
-        const [tracksRes, artistsRes, albumRes, top5TrackRes] =
+        const aiRequestParams = userId ? { params: { userId } } : {};
+
+        const [tracksRes, artistsRes, albumRes, top5TrackRes, aiRes] =
           await Promise.all([
             axiosClient.get("/tracks"),
             axiosClient.get("/artists"),
             axiosClient.get("/albums"),
             axiosClient.get("tracks/top5-views"),
+            axiosClient.get("/recommendations", aiRequestParams),
           ]);
 
         setTracks(tracksRes.data || []);
         setArtists(artistsRes.data || []);
         setAlbums(albumRes.data || []);
         setTop5Tracks(top5TrackRes.data || []);
+        setAiRecommendations(aiRes.data || []);
       } catch (error) {
         console.error("Lỗi lấy dữ liệu trang chủ: ", error);
       } finally {
@@ -131,7 +137,7 @@ const HomePage = () => {
     };
 
     fetchHomeData();
-  }, []);
+  }, [userId]);
 
   if (isLoading) {
     return (
@@ -156,6 +162,94 @@ const HomePage = () => {
       </div>
 
       <div className="space-y-12 animate-fadeIn">
+        {/* 0. BĂNG CHUYỀN GỢI Ý AI (DÀNH RIÊNG CHO BẠN) */}
+        {aiRecommendations.length > 0 && (
+          <AutoScrollCarousel
+            title={
+              <span className="flex items-center gap-2 text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-fuchsia-500">
+                <Sparkles size={24} className="text-sky-400" />
+                Gợi Ý Dành Riêng Cho Bạn
+              </span>
+            }
+            items={aiRecommendations}
+            onViewAll={() => navigate("/recommendations")}
+            renderItem={(track) => {
+              return (
+                <div
+                  key={track.id}
+                  className="w-[160px] md:w-[200px] flex-shrink-0 snap-start bg-[#121a24] p-4 rounded-2xl hover:bg-[#1a2332] transition-all duration-300 group cursor-pointer border border-sky-500/10 hover:border-sky-500/30 relative shadow-lg hover:shadow-sky-900/20"
+                >
+                  {/* Khung chứa ảnh (Đã bỏ Badge % Hợp gu) */}
+                  <div className="relative w-full h-[150px] md:h-[168px] mb-4 rounded-xl overflow-hidden bg-[#0a0f14] shadow-inner flex-shrink-0">
+                    <MusicImage
+                      src={track.img}
+                      type="track"
+                      alt={track.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                    />
+
+                    {/* Lớp mờ và Nút Play */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          playTrack(track, aiRecommendations);
+                        }}
+                        className="w-12 h-12 bg-sky-500 hover:bg-sky-400 rounded-full flex items-center justify-center text-white transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 border-none cursor-pointer shadow-[0_4px_18px_rgba(14,165,233,0.4)]"
+                      >
+                        <Play
+                          size={22}
+                          fill="currentColor"
+                          className="text-white ml-1"
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Thông tin bài hát */}
+                  <div className="relative pr-6 group/title w-full">
+                    <h4 className="font-bold text-slate-100 truncate text-sm mb-1.5 max-w-[85%] group-hover:text-sky-400 transition-colors">
+                      {track.name}
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedTrack(track);
+                      }}
+                      className="absolute right-0 top-0 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-white bg-transparent border-none cursor-pointer transition-opacity duration-200"
+                    >
+                      <MoreHorizontal size={18} />
+                    </button>
+                  </div>
+
+                  <p className="text-xs text-slate-400 truncate flex gap-1 items-center w-full">
+                    {track.artists && track.artists.length > 0
+                      ? track.artists.map((artist, idx) => (
+                          <span
+                            key={artist.id}
+                            className="inline-block max-w-full truncate"
+                          >
+                            <span
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/artist/${artist.id}`);
+                              }}
+                              className="hover:text-sky-400 hover:underline cursor-pointer transition-colors text-slate-400 font-medium"
+                            >
+                              {artist.name}
+                            </span>
+                            {idx < track.artists.length - 1 && ", "}
+                          </span>
+                        ))
+                      : "Nghệ sĩ hệ thống"}
+                  </p>
+                </div>
+              );
+            }}
+          />
+        )}
+
         {/* 1. BĂNG CHUYỀN BÀI HÁT (TRACKS CAROUSEL) */}
         <AutoScrollCarousel
           title="Khám phá Bài Hát"
