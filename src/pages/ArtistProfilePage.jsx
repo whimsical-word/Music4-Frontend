@@ -34,14 +34,16 @@ import axiosClient from "../app/axios/axiosClient";
 import { useAuthStore } from "../features/auth/useAuthStore";
 import { usePlayerStore } from "../features/player/usePlayerStore";
 import MusicImage from "../layouts/components/MusicImage";
+import { useFollowStore } from "../features/follow/useFollowStore";
 
 const ArtistProfilePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const playTrack = usePlayerStore((state) => state.playTrack);
 
-  const { userId, role } = useAuthStore();
-  const isOwner = role === "artist" && Number(userId) === Number(id);
+    const { userId, role } = useAuthStore();
+    const isOwner = role === "artist" && Number(userId) === Number(id);
+    const { followedArtistIds, toggleFollowArtist, fetchFollowedArtists } = useFollowStore();
 
   const [artistInfo, setArtistInfo] = useState(null);
   const [albums, setAlbums] = useState([]);
@@ -59,6 +61,14 @@ const ArtistProfilePage = () => {
   const [selectedCover, setSelectedCover] = useState(null);
   const [previewCover, setPreviewCover] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isBtnHovered, setIsBtnHovered] = useState(false);
+  const isFollowing = followedArtistIds.includes(Number(id));
+
+    useEffect(() => {
+        if (userId) {
+            fetchFollowedArtists();
+        }
+    }, [userId]);
 
   useEffect(() => {
     const fetchArtistData = async () => {
@@ -106,6 +116,17 @@ const ArtistProfilePage = () => {
     fetchArtistData();
   }, [id, isOwner]);
 
+    const handleFollowToggle = async () => {
+        if (!userId) {
+            alert("Vui lòng đăng nhập để thực hiện tính năng này!");
+            return;
+        }
+        try {
+            await toggleFollowArtist(Number(id));
+        } catch (error) {
+            console.error("Lỗi khi thay đổi trạng thái theo dõi:", error);
+        }
+    };
   const handlePlayTrack = (track) => {
     if (playingTrackId === track.id) {
       setPlayingTrackId(null);
@@ -285,13 +306,22 @@ const ArtistProfilePage = () => {
             <h1 className="text-5xl md:text-7xl font-black mb-3 tracking-tighter bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
               {artistInfo.name}
             </h1>
-            <div className="flex items-center gap-6">
-              {!isOwner && (
-                <button className="px-5 py-1.5 border border-white/20 text-white hover:text-sky-400 hover:border-sky-400 rounded-full font-bold uppercase text-xs hover:scale-105 transition-all bg-transparent cursor-pointer">
-                  Theo dõi
-                </button>
-              )}
-            </div>
+              <div className="flex items-center gap-6">
+                  {!isOwner && (
+                      <button
+                          onClick={handleFollowToggle}
+                          onMouseEnter={() => setIsBtnHovered(true)}
+                          onMouseLeave={() => setIsBtnHovered(false)}
+                          className={`px-6 py-2 font-bold uppercase text-xs hover:scale-105 transition-all cursor-pointer rounded-full min-w-[140px] text-center border bg-transparent ${
+                              isFollowing
+                                  ? "border-sky-500 bg-sky-500/10 text-sky-400 hover:border-red-500 hover:text-red-500 hover:bg-red-500/10"
+                                  : "border-white/20 text-white hover:text-sky-400 hover:border-sky-400"
+                          }`}
+                      >
+                          {isFollowing ? (isBtnHovered ? "Hủy theo dõi" : "Đang theo dõi") : "Theo dõi"}
+                      </button>
+                  )}
+              </div>
             <p className="text-sm text-slate-400 font-medium mt-2">
               {artistInfo.trackTotal || 0} Bài hát •{" "}
               {artistInfo.albumTotal || 0} Album
