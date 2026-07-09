@@ -50,6 +50,23 @@ const AllArtistsPage = () => {
         }
     };
 
+    const getPaginationGroup = () => {
+        let pages = [];
+        const delta = 2; // Số trang hiển thị quanh trang hiện tại
+        for (let i = 0; i < totalPages; i++) {
+            if (
+                i === 0 || // Trang đầu
+                i === totalPages - 1 || // Trang cuối
+                (i >= currentPage - delta && i <= currentPage + delta) // Trang lân cận
+            ) {
+                pages.push(i);
+            } else if (pages[pages.length - 1] !== '...') {
+                pages.push('...');
+            }
+        }
+        return pages;
+    };
+
     if (isLoading) {
         return (
             <div className="p-6 bg-[#121212] min-h-screen flex items-center justify-center font-sans">
@@ -108,34 +125,58 @@ const AllArtistsPage = () => {
             </div>
 
             {/* --- 3. GIAO DIỆN THANH PHÂN TRANG (PAGINATION BAR) --- */}
-            {totalPages >= 1 && (
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-16 pt-6 border-t border-zinc-800">
-                    <div className="flex items-center gap-2">
-                        {/* Nút Trang trước */}
-                        <button
-                            onClick={handlePrevPage}
-                            disabled={currentPage === 0}
-                            className="p-2.5 rounded-full bg-[#1e1e1e] border border-zinc-800 text-zinc-400 hover:text-white hover:bg-[#282828] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[#1e1e1e] disabled:hover:text-zinc-400 transition-all cursor-pointer"
-                            title="Trang trước"
-                        >
-                            <ChevronLeft size={20} />
-                        </button>
+            {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-1 mt-16 pt-8 border-t border-white/[0.05]">
+                    {/* Nút về đầu trang */}
+                    <button
+                        onClick={() => setCurrentPage(0)}
+                        disabled={currentPage === 0}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#1e1e1e] border border-white/[0.05] text-slate-400 hover:text-white hover:border-sky-500/50 disabled:opacity-30 disabled:hover:border-white/[0.05] transition-all"
+                    >
+                        «
+                    </button>
 
-                        {/* Số hiển thị trang hiện tại */}
-                        <span className="text-sm font-medium text-[#a7a7a7] px-4">
-                            Trang <strong className="text-white font-bold">{currentPage + 1}</strong> / {totalPages}
-                        </span>
+                    {/* Nút Trước */}
+                    <button
+                        onClick={handlePrevPage}
+                        disabled={currentPage === 0}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#1e1e1e] border border-white/[0.05] text-slate-400 hover:text-white hover:border-sky-500/50 disabled:opacity-30 transition-all"
+                    >
+                        <ChevronLeft size={18} />
+                    </button>
 
-                        {/* Nút Trang sau */}
+                    {/* Các số trang */}
+                    {getPaginationGroup().map((page, index) => (
                         <button
-                            onClick={handleNextPage}
-                            disabled={currentPage === totalPages - 1}
-                            className="p-2.5 rounded-full bg-[#1e1e1e] border border-zinc-800 text-zinc-400 hover:text-white hover:bg-[#282828] disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-[#1e1e1e] disabled:hover:text-zinc-400 transition-all cursor-pointer"
-                            title="Trang sau"
+                            key={index}
+                            onClick={() => typeof page === 'number' && setCurrentPage(page)}
+                            className={`w-10 h-10 rounded-xl text-sm font-semibold transition-all border ${
+                                page === currentPage
+                                    ? 'bg-sky-600 border-sky-500 text-white shadow-lg shadow-sky-500/20'
+                                    : 'bg-[#1e1e1e] border-white/[0.05] text-slate-400 hover:bg-[#282828] hover:text-white'
+                            } ${page === '...' ? 'cursor-default border-none hover:bg-transparent' : ''}`}
                         >
-                            <ChevronRight size={20} />
+                            {typeof page === 'number' ? page + 1 : page}
                         </button>
-                    </div>
+                    ))}
+
+                    {/* Nút Sau */}
+                    <button
+                        onClick={handleNextPage}
+                        disabled={currentPage === totalPages - 1}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#1e1e1e] border border-white/[0.05] text-slate-400 hover:text-white hover:border-sky-500/50 disabled:opacity-30 transition-all"
+                    >
+                        <ChevronRight size={18} />
+                    </button>
+
+                    {/* Nút đến cuối trang */}
+                    <button
+                        onClick={() => setCurrentPage(totalPages - 1)}
+                        disabled={currentPage === totalPages - 1}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#1e1e1e] border border-white/[0.05] text-slate-400 hover:text-white hover:border-sky-500/50 disabled:opacity-30 disabled:hover:border-white/[0.05] transition-all"
+                    >
+                        »
+                    </button>
                 </div>
             )}
         </div>
