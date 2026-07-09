@@ -12,7 +12,7 @@ const AllArtistsPage = () => {
     // --- 1. BỔ SUNG CÁC STATE QUẢN LÝ PHÂN TRANG ---
     const [currentPage, setCurrentPage] = useState(0); // Spring Boot mặc định trang đầu tiên là số 0
     const [totalPages, setTotalPages] = useState(0);
-    const pageSize = 12; // Chọn 12 phần tử vì chia hết cho lưới 2, 3, 4, 6 cột giúp giao diện luôn đều đẹp
+    const pageSize = 12; // Chọn 12 phần tử giúp lưới hiển thị luôn đều đẹp
 
     useEffect(() => {
         const fetchAllArtists = async () => {
@@ -23,7 +23,6 @@ const AllArtistsPage = () => {
 
                 // Vì Back-end trả về Page nên data thật nằm trong mảng `content`
                 setArtists(res.data.content || []);
-
                 setTotalPages(res.data.page?.totalPages || 0);
 
             } catch (error) {
@@ -69,28 +68,28 @@ const AllArtistsPage = () => {
 
     if (isLoading) {
         return (
-            <div className="p-6 bg-[#121212] min-h-screen flex items-center justify-center font-sans">
-                <div className="w-10 h-10 border-4 border-[#282828] border-t-blue-500 rounded-full animate-spin"></div>
+            <div className="p-6 bg-[#0d131a] min-h-screen flex items-center justify-center font-sans text-slate-400">
+                <div className="w-10 h-10 border-4 border-white/[0.05] border-t-sky-500 rounded-full animate-spin"></div>
             </div>
         );
     }
 
     return (
-        <div className="p-6 pb-32 bg-[#121212] min-h-screen font-sans text-gray-100 flex flex-col justify-between">
+        <div className="p-8 pb-32 bg-[#0d131a] min-h-screen font-sans text-slate-100 flex flex-col justify-between selection:bg-sky-600 selection:text-white">
             <div>
                 {/* Nút quay lại trang chủ */}
                 <button
                     onClick={() => navigate('/')}
-                    className="flex items-center gap-2 text-sm font-bold text-[#a7a7a7] hover:text-white mb-6 bg-transparent border-none cursor-pointer transition-colors"
+                    className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-white mb-6 bg-transparent border-none cursor-pointer transition-colors group/btn"
                 >
-                    <ArrowLeft size={18} /> Quay lại trang chủ
+                    <ArrowLeft size={18} className="group-hover/btn:-translate-x-1 transition-transform" /> Quay lại trang chủ
                 </button>
 
-                <h2 className="text-3xl font-extrabold text-white mb-8 tracking-tight">Nghệ sĩ phổ biến</h2>
+                <h2 className="text-3xl font-black text-white mb-8 tracking-tight">Nghệ sĩ phổ biến</h2>
 
                 {/* Kiểm tra nếu không có nghệ sĩ nào */}
                 {artists.length === 0 ? (
-                    <div className="text-center text-zinc-500 my-20">
+                    <div className="text-center py-20 bg-[#0f1722]/50 rounded-2xl border border-dashed border-white/[0.05] text-slate-500 my-20">
                         Không tìm thấy nghệ sĩ nào trong hệ thống.
                     </div>
                 ) : (
@@ -100,24 +99,27 @@ const AllArtistsPage = () => {
                             <div
                                 key={artist.id}
                                 onClick={() => navigate(`/artist/${artist.id}`)}
-                                className="bg-[#181818] p-5 rounded-xl hover:bg-[#282828] transition-all duration-300 group cursor-pointer border border-transparent hover:border-[#3e3e3e] text-center"
+                                className="bg-[#0f1722] p-5 rounded-2xl hover:bg-white/[0.03] transition-all duration-300 group cursor-pointer border border-white/[0.05] hover:border-sky-500/30 text-center shadow-lg shadow-black/20"
                             >
                                 {/* Khung hình tròn chuẩn Spotify */}
-                                <div className="w-28 h-28 md:w-32 md:h-32 mx-auto mb-4 rounded-full overflow-hidden border border-[#282828] relative bg-[#282828] shadow-md">
+                                <div className="w-28 h-28 md:w-32 md:h-32 mx-auto mb-4 rounded-full overflow-hidden border border-white/[0.05] relative bg-white/[0.02] shadow-inner">
                                     <MusicImage
                                         src={artist.img}
                                         type='artist'
                                         alt={artist.name}
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 object-top"
                                     />
-                                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                                        <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shadow-md transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                                    {/* Lớp phủ mờ nhẹ và nút Icon nổi bật khi hover */}
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                        <div className="w-10 h-10 bg-sky-600 rounded-full flex items-center justify-center shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
                                             <UserIcon size={18} className="text-white" />
                                         </div>
                                     </div>
                                 </div>
-                                <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-blue-400 transition-colors">{artist.name}</h4>
-                                <p className="text-[11px] text-[#a7a7a7] font-medium tracking-wider uppercase">Artist</p>
+                                <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors" title={artist.name}>
+                                    {artist.name}
+                                </h4>
+                                <p className="text-[11px] text-slate-400 font-medium tracking-wider uppercase">Artist</p>
                             </div>
                         ))}
                     </div>
@@ -131,7 +133,7 @@ const AllArtistsPage = () => {
                     <button
                         onClick={() => setCurrentPage(0)}
                         disabled={currentPage === 0}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#1e1e1e] border border-white/[0.05] text-slate-400 hover:text-white hover:border-sky-500/50 disabled:opacity-30 disabled:hover:border-white/[0.05] transition-all"
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/[0.03] border border-white/[0.05] text-slate-400 hover:text-white hover:border-sky-500/50 hover:bg-white/[0.08] disabled:opacity-20 disabled:hover:border-white/[0.05] disabled:hover:bg-white/[0.03] transition-all font-mono"
                     >
                         «
                     </button>
@@ -140,7 +142,7 @@ const AllArtistsPage = () => {
                     <button
                         onClick={handlePrevPage}
                         disabled={currentPage === 0}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#1e1e1e] border border-white/[0.05] text-slate-400 hover:text-white hover:border-sky-500/50 disabled:opacity-30 transition-all"
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/[0.03] border border-white/[0.05] text-slate-400 hover:text-white hover:border-sky-500/50 hover:bg-white/[0.08] disabled:opacity-20 transition-all"
                     >
                         <ChevronLeft size={18} />
                     </button>
@@ -153,8 +155,9 @@ const AllArtistsPage = () => {
                             className={`w-10 h-10 rounded-xl text-sm font-semibold transition-all border ${
                                 page === currentPage
                                     ? 'bg-sky-600 border-sky-500 text-white shadow-lg shadow-sky-500/20'
-                                    : 'bg-[#1e1e1e] border-white/[0.05] text-slate-400 hover:bg-[#282828] hover:text-white'
-                            } ${page === '...' ? 'cursor-default border-none hover:bg-transparent' : ''}`}
+                                    : 'bg-white/[0.03] border-white/[0.05] text-slate-400 hover:bg-white/[0.08] hover:text-white hover:border-sky-500/30'
+                            } ${page === '...' ? 'cursor-default border-none hover:bg-transparent text-slate-600' : ''}`}
+                            disabled={page === '...'}
                         >
                             {typeof page === 'number' ? page + 1 : page}
                         </button>
@@ -164,7 +167,7 @@ const AllArtistsPage = () => {
                     <button
                         onClick={handleNextPage}
                         disabled={currentPage === totalPages - 1}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#1e1e1e] border border-white/[0.05] text-slate-400 hover:text-white hover:border-sky-500/50 disabled:opacity-30 transition-all"
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/[0.03] border border-white/[0.05] text-slate-400 hover:text-white hover:border-sky-500/50 hover:bg-white/[0.08] disabled:opacity-20 transition-all"
                     >
                         <ChevronRight size={18} />
                     </button>
@@ -173,7 +176,7 @@ const AllArtistsPage = () => {
                     <button
                         onClick={() => setCurrentPage(totalPages - 1)}
                         disabled={currentPage === totalPages - 1}
-                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#1e1e1e] border border-white/[0.05] text-slate-400 hover:text-white hover:border-sky-500/50 disabled:opacity-30 disabled:hover:border-white/[0.05] transition-all"
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-white/[0.03] border border-white/[0.05] text-slate-400 hover:text-white hover:border-sky-500/50 hover:bg-white/[0.08] disabled:opacity-20 disabled:hover:border-white/[0.05] disabled:hover:bg-white/[0.03] transition-all font-mono"
                     >
                         »
                     </button>

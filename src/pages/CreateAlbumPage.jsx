@@ -243,7 +243,7 @@ const CreateAlbumPage = () => {
       await axiosClient.post("/tracks/bulk-json", finalBulkPayload);
 
       alert(
-        "🎉 Đỉnh cao bồ ơi! Album và toàn bộ danh sách nhạc đã được phát hành thành công mà không tốn 1MB bộ nhớ rác nào!",
+        "🎉 Album và toàn bộ danh sách nhạc đã được phát hành thành công!",
       );
       navigate(`/artist/${userId}`);
     } catch (error) {

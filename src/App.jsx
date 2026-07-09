@@ -6,17 +6,19 @@ import LoginPage from "./pages/LoginPage.jsx";
 import AllTracksPage from "./pages/AllTracksPage.jsx";
 import AllArtistsPage from "./pages/AllArtistsPage.jsx";
 import SearchPage from "./pages/SearchPage.jsx";
-import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
 import PlaylistPage from "./pages/PlaylistPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
 import ArtistProfilePage from "./pages/ArtistProfilePage.jsx";
 import {CreateTrackPage} from "./pages/CreateTrackPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage.jsx";
-import {ResetPassword} from "./pages/ResetPassword.jsx";
 import CreateAlbumPage from "./pages/CreateAlbumPage.jsx";
 import AlbumDetailPage from "./pages/AlbumDetailPage.jsx";
 import LikedSongsPage from "./pages/LikedSongsPage.jsx";
+import OAuth2RedirectPage from "./pages/OAuth2RedirectPage.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
+import {ResetPassword} from "./pages/ResetPassword.jsx";
+import AllAlbumPage from "./pages/AllAlbumPage.jsx";
 
 
 function App() {
@@ -24,10 +26,14 @@ function App() {
         <BrowserRouter>
             <Routes>
                 <Route path="/" element={<MainLayout />}>
+                    <Route path="/oauth2/redirect" element={<OAuth2RedirectPage />} />
                     <Route index element={<HomePage />} />
                     <Route path="/login" element={<LoginPage />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path={"/reset-password"} element={<ResetPassword/>}/>
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="tracks" element={<AllTracksPage />} />
+                    <Route path="/albums" element={<AllAlbumPage />} />
                     <Route path="/artists" element={<AllArtistsPage />} />
                     <Route path="/search" element={<SearchPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
