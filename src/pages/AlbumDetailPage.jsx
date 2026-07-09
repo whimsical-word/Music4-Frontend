@@ -30,6 +30,21 @@ const AlbumDetailPage = () => {
     // --- Quyền sở hữu album: Nghệ sĩ đăng nhập phải trùng với chủ Album ---
     const isOwner = role === 'artist' && Number(loggedInId) === Number(albumInfo?.artistId || tracks[0]?.artistId);
 
+    // Tính tổng giây từ tất cả bài hát
+    const totalDurationSeconds = tracks.reduce((sum, track) => sum + (track.duration || 0), 0);
+
+    // Chuyển đổi giây sang định dạng Phút:Giây hoặc Giờ:Phút:Giây
+    const formatTotalDuration = (seconds) => {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remainingSeconds = seconds % 60;
+
+        if (hours > 0) {
+            return `${hours} giờ ${minutes} phút`;
+        }
+        return `${minutes} phút ${remainingSeconds} giây`;
+    };
+
     // --- Hàm xử lý xóa bài hát khỏi Album ---
     const handleDeleteTrack = async (trackId, trackName) => {
         const isConfirm = window.confirm(`❗ Bạn có chắc chắn muốn xóa bài hát "${trackName}" không?\nHành động này sẽ xóa vĩnh viễn bài hát dưới Database và dọn sạch file trên AWS S3.`);
@@ -61,10 +76,11 @@ const AlbumDetailPage = () => {
 
                 // Bóc tách thông tin Album từ bài hát đầu tiên trả về
                 if (trackData.length > 0) {
+                    const mainArtist = trackData[0].artists.find(a => a.role === 'MAIN') || trackData[0].artists[0];
                     setAlbumInfo({
-                        albumTitle: trackData[0].title || "Album Kỷ Nguyên Mới",
-                        artistName: trackData[0].artistId || "Nghệ sĩ",
-                        artistId: trackData[0].artistId, // Giữ lại ID để so sánh với isOwner công bằng
+                        albumTitle: trackData[0].albumName || "Album Kỷ Nguyên Mới",
+                        artistName: mainArtist?.name || "Nghệ Sĩ",
+                        artistId: mainArtist?.artistId, // Giữ lại ID để so sánh với isOwner công bằng
                         coverUrl: S3_BASE_URL + trackData[0].img || ""
                     });
                 }
@@ -144,6 +160,9 @@ const AlbumDetailPage = () => {
                         </span>
                         <span className="text-slate-500">•</span>
                         <span className="text-slate-400">{tracks.length} bài hát</span>
+
+                        <span className="text-slate-500">•</span>
+                        <span className="text-slate-400">{formatTotalDuration(totalDurationSeconds)}</span>
                     </div>
                 </div>
             </div>
@@ -197,7 +216,7 @@ const AlbumDetailPage = () => {
                                             {track.name || track.title}
                                         </p>
                                         <p className="text-xs text-slate-400 truncate">
-                                            {track.artistName || albumInfo?.artistName || "Nghệ sĩ"}
+                                            {track.artists?.map(a => a.name).join(', ') || "Nghệ sĩ"}
                                         </p>
                                     </div>
                                 </div>

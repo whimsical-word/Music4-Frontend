@@ -4,7 +4,7 @@ import { ArrowLeft, User as UserIcon, ChevronLeft, ChevronRight } from 'lucide-r
 import axiosClient from '../app/axios/axiosClient';
 import MusicImage from "../layouts/components/MusicImage.jsx";
 
-const AllArtistsPage = () => {
+const AllAlbumPage = () => {
     const navigate = useNavigate();
     const [artists, setArtists] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -19,12 +19,11 @@ const AllArtistsPage = () => {
             setIsLoading(true);
             try {
                 // Gửi kèm tham số page và size lên API Back-end
-                const res = await axiosClient.get(`/artists?page=${currentPage}&size=${pageSize}`);
-
+                const res = await axiosClient.get(`/albums/all?page=${currentPage}&size=${pageSize}`);
+                console.log(res);
                 // Vì Back-end trả về Page nên data thật nằm trong mảng `content`
                 setArtists(res.data.content || []);
                 setTotalPages(res.data.page?.totalPages || 0);
-
             } catch (error) {
                 console.error("Lỗi tải danh sách Artist: ", error);
             } finally {
@@ -109,7 +108,7 @@ const AllArtistsPage = () => {
                                         alt={artist.name}
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 object-top"
                                     />
-                                    {/* Lớp phủ mờ nhẹ và nút Icon nổi bật khi hover */}
+                                    {/* Lớp phủ mờ nhẹ khi hover */}
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                                         <div className="w-10 h-10 bg-sky-600 rounded-full flex items-center justify-center shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
                                             <UserIcon size={18} className="text-white" />
@@ -119,7 +118,9 @@ const AllArtistsPage = () => {
                                 <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors" title={artist.name}>
                                     {artist.name}
                                 </h4>
-                                <p className="text-[11px] text-slate-400 font-medium tracking-wider uppercase">Artist</p>
+                                <p className="text-[11px] text-slate-400 font-medium tracking-wider uppercase truncate">
+                                    {artist.artist?.name || 'Nghệ sĩ'}
+                                </p>
                             </div>
                         ))}
                     </div>
@@ -186,4 +187,4 @@ const AllArtistsPage = () => {
     );
 };
 
-export default AllArtistsPage;
+export default AllAlbumPage;

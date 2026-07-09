@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import trackService from '../features/tracks/trackService';
+import { ArrowLeft, User as UserIcon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Play } from "lucide-react";
+import axiosClient from "../app/axios/axiosClient.js";
 
 const AllTracksPage = () => {
     const [tracks, setTracks] = useState([]);
@@ -8,20 +9,62 @@ const AllTracksPage = () => {
     const [loading, setLoading] = useState(true);
     const S3_BASE_URL = "https://music4-v3-storage-kenz.s3.ap-southeast-1.amazonaws.com/";
 
-    // 1. Gọi API lấy dữ liệu khi trang được nạp
+    // --- 1. BỔ SUNG CÁC STATE PHÂN TRANG ---
+    const [currentPage, setCurrentPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const pageSize = 8;
+
+    // --- SỬA LẠI useEffect ---
     useEffect(() => {
         const fetchTracks = async () => {
+            setLoading(true);
             try {
-                const data = await trackService.getAllTracksDetail();
-                setTracks(data);
+                const res = await axiosClient.get(`/tracks?page=${currentPage}&size=${pageSize}`);
+
+                // Kiểm tra cấu trúc dữ liệu trả về từ backend của bạn
+                // Đảm bảo res.data.totalPages có giá trị
+                setTracks(res.data.content || []);
+                setTotalPages(res.data.page?.totalPages || 0);
             } catch (error) {
-                console.error("Lỗi khi lấy danh sách bài hát:", error);
+                console.error("Lỗi:", error);
             } finally {
                 setLoading(false);
             }
         };
         fetchTracks();
-    }, []);
+    }, [currentPage]);
+
+    const getPaginationGroup = () => {
+        let pages = [];
+        const delta = 2; // Số trang hiển thị quanh trang hiện tại
+        for (let i = 0; i < totalPages; i++) {
+            if (
+                i === 0 || // Trang đầu
+                i === totalPages - 1 || // Trang cuối
+                (i >= currentPage - delta && i <= currentPage + delta) // Trang lân cận
+            ) {
+                pages.push(i);
+            } else if (pages[pages.length - 1] !== '...') {
+                pages.push('...');
+            }
+        }
+        return pages;
+    };
+
+    // --- 2. CÁC HÀM XỬ LÝ CHUYỂN TRANG ---
+    const handlePrevPage = () => {
+        if (currentPage > 0) {
+            setCurrentPage((prev) => prev - 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' }); // Cuộn mượt lên đầu trang khi qua trang mới
+        }
+    };
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages - 1) {
+            setCurrentPage((prev) => prev + 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
 
     // 2. Hàm helper đổi số giây thành định dạng phút:giây (ví dụ: 223s -> 3:43)
     const formatDuration = (seconds) => {
@@ -81,12 +124,6 @@ const AllTracksPage = () => {
             </div>
 
             {/* Xử lý trường hợp không tìm thấy kết quả phù hợp */}
-            {filteredTracks.length === 0 ? (
-                <div className="text-center py-20 bg-[#0f1722]/50 rounded-2xl border border-dashed border-white/[0.05]">
-                    <p className="text-slate-500">Không tìm thấy bài hát nào phù hợp với từ khóa.</p>
-                </div>
-            ) : (
-                /* Bảng danh sách bài hát chi tiết */
                 <div className="overflow-x-auto bg-[#0f1722] rounded-2xl border border-white/[0.05] shadow-2xl backdrop-blur-md">
                     <table className="w-full text-left border-collapse">
                         <thead>
@@ -193,6 +230,60 @@ const AllTracksPage = () => {
                         ))}
                         </tbody>
                     </table>
+                </div>
+            {/* --- 3. GIAO DIỆN THANH PHÂN TRANG (PAGINATION BAR) --- */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-1 mt-16 pt-8 border-t border-white/[0.05]">
+                    {/* Nút về đầu trang */}
+                    <button
+                        onClick={() => setCurrentPage(0)}
+                        disabled={currentPage === 0}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#1e1e1e] border border-white/[0.05] text-slate-400 hover:text-white hover:border-sky-500/50 disabled:opacity-30 disabled:hover:border-white/[0.05] transition-all"
+                    >
+                        «
+                    </button>
+
+                    {/* Nút Trước */}
+                    <button
+                        onClick={handlePrevPage}
+                        disabled={currentPage === 0}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#1e1e1e] border border-white/[0.05] text-slate-400 hover:text-white hover:border-sky-500/50 disabled:opacity-30 transition-all"
+                    >
+                        <ChevronLeft size={18} />
+                    </button>
+
+                    {/* Các số trang */}
+                    {getPaginationGroup().map((page, index) => (
+                        <button
+                            key={index}
+                            onClick={() => typeof page === 'number' && setCurrentPage(page)}
+                            className={`w-10 h-10 rounded-xl text-sm font-semibold transition-all border ${
+                                page === currentPage
+                                    ? 'bg-sky-600 border-sky-500 text-white shadow-lg shadow-sky-500/20'
+                                    : 'bg-[#1e1e1e] border-white/[0.05] text-slate-400 hover:bg-[#282828] hover:text-white'
+                            } ${page === '...' ? 'cursor-default border-none hover:bg-transparent' : ''}`}
+                        >
+                            {typeof page === 'number' ? page + 1 : page}
+                        </button>
+                    ))}
+
+                    {/* Nút Sau */}
+                    <button
+                        onClick={handleNextPage}
+                        disabled={currentPage === totalPages - 1}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#1e1e1e] border border-white/[0.05] text-slate-400 hover:text-white hover:border-sky-500/50 disabled:opacity-30 transition-all"
+                    >
+                        <ChevronRight size={18} />
+                    </button>
+
+                    {/* Nút đến cuối trang */}
+                    <button
+                        onClick={() => setCurrentPage(totalPages - 1)}
+                        disabled={currentPage === totalPages - 1}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-[#1e1e1e] border border-white/[0.05] text-slate-400 hover:text-white hover:border-sky-500/50 disabled:opacity-30 disabled:hover:border-white/[0.05] transition-all"
+                    >
+                        »
+                    </button>
                 </div>
             )}
         </div>

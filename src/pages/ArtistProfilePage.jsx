@@ -122,6 +122,32 @@ const ArtistProfilePage = () => {
     });
   };
 
+    const handleDeleteAlbum = async (albumId, albumName) => {
+        const isConfirm = window.confirm(
+            `❗ Bạn có chắc chắn muốn xóa album "${albumName}" không?\nCác bài hát trong album sẽ không bị xóa mà sẽ trở thành bài hát đơn lẻ.`
+        );
+        if (!isConfirm) return;
+
+        try {
+            await axiosClient.delete(`/albums/${albumId}`); // Đảm bảo URL khớp với API của bạn
+            alert("🎉 Đã xóa album thành công!");
+
+            // Cập nhật State để xóa album khỏi giao diện ngay lập tức
+            setAlbums((prevAlbums) => prevAlbums.filter((album) => album.id !== albumId));
+
+            // Giảm số lượng album trên UI
+            if (artistInfo) {
+                setArtistInfo((prev) => ({
+                    ...prev,
+                    albumTotal: Math.max(0, prev.albumTotal - 1),
+                }));
+            }
+        } catch (error) {
+            console.error("Lỗi khi xóa album:", error);
+            alert(`❌ Xóa album thất bại: ${error.response?.data?.message || "Vui lòng kiểm tra lại!"}`);
+        }
+    };
+
   // Hàm xử lý xóa bài hát (Chỉ thực hiện được nếu là chính chủ)
   const handleDeleteTrack = async (trackId, trackName) => {
     const isConfirm = window.confirm(
@@ -672,7 +698,7 @@ const ArtistProfilePage = () => {
                         {track.name}
                       </p>
                       <p className="text-xs text-slate-400 truncate">
-                        {artistInfo.name}
+                          {track.artists?.map(a => a.name).join(', ') || "Nghệ sĩ"}
                       </p>
                     </div>
                   </div>
@@ -732,53 +758,69 @@ const ArtistProfilePage = () => {
           )}
         </section>
 
-        {/* 5. DANH SÁCH ALBUM CỦA NGHỆ SĨ */}
-        <section>
-          <h2 className="text-xl font-bold mb-6 hover:text-sky-400 transition-colors cursor-pointer inline-block">
-            Album
-          </h2>
-          {albums.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-              {albums.map((album) => (
-                <div
-                  key={album.id}
-                  onClick={() => navigate(`/albums/${album.id}`)}
-                  className="bg-[#111a24]/40 border border-white/[0.04] p-4 rounded-xl hover:bg-white/[0.06] transition-all duration-300 group cursor-pointer shadow-md"
-                >
-                  <div className="relative aspect-square w-full mb-4 rounded-lg overflow-hidden bg-[#16222f] shadow-md">
-                    <MusicImage
-                      src={album.img}
-                      type="album"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-xs">
-                      <button className="w-10 h-10 bg-sky-600 hover:bg-sky-500 rounded-full flex items-center justify-center shadow-md border-none cursor-pointer text-white transition-colors">
-                        <Play
-                          size={18}
-                          fill="currentColor"
-                          className="ml-0.5"
-                        />
-                      </button>
-                    </div>
+          {/* 5. DANH SÁCH ALBUM CỦA NGHỆ SĨ */}
+          <section>
+              <h2 className="text-xl font-bold mb-6 hover:text-sky-400 transition-colors cursor-pointer inline-block">
+                  Album
+              </h2>
+              {albums.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                      {albums.map((album) => (
+                          <div
+                              key={album.id}
+                              className="bg-[#111a24]/40 border border-white/[0.04] p-4 rounded-xl hover:bg-white/[0.06] transition-all duration-300 group cursor-pointer shadow-md relative"
+                          >
+                              {/* NÚT XÓA ALBUM - GÓC DƯỚI BÊN PHẢI */}
+                              {isOwner && (
+                                  <button
+                                      onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteAlbum(album.id, album.name);
+                                      }}
+                                      className="absolute bottom-4 right-4 z-20 p-2 bg-black/50 rounded-full text-slate-400 hover:text-red-400 hover:bg-red-500/20 transition-all cursor-pointer border-none"
+                                      title="Xóa album"
+                                  >
+                                      <Trash2 size={16} />
+                                  </button>
+                              )}
+
+                              <div
+                                  onClick={() => navigate(`/albums/${album.id}`)}
+                                  className="relative aspect-square w-full mb-4 rounded-lg overflow-hidden bg-[#16222f] shadow-md"
+                              >
+                                  <MusicImage
+                                      src={album.img}
+                                      type="album"
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                  />
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-xs">
+                                      <button className="w-10 h-10 bg-sky-600 hover:bg-sky-500 rounded-full flex items-center justify-center shadow-md border-none cursor-pointer text-white transition-colors">
+                                          <Play
+                                              size={18}
+                                              fill="currentColor"
+                                              className="ml-0.5"
+                                          />
+                                      </button>
+                                  </div>
+                              </div>
+                              <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors">
+                                  {album.name}
+                              </h4>
+                              <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">
+                                  {album.uploadDate
+                                      ? new Date(album.uploadDate).getFullYear()
+                                      : "----"}{" "}
+                                  • Album
+                              </p>
+                          </div>
+                      ))}
                   </div>
-                  <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors">
-                    {album.name}
-                  </h4>
-                  <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">
-                    {album.uploadDate
-                      ? new Date(album.uploadDate).getFullYear()
-                      : "----"}{" "}
-                    • Album
+              ) : (
+                  <p className="text-slate-400 text-sm bg-[#111a24]/20 p-4 rounded-xl border border-white/[0.04]">
+                      Nghệ sĩ này chưa phát hành album nào.
                   </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-slate-400 text-sm bg-[#111a24]/20 p-4 rounded-xl border border-white/[0.04]">
-              Nghệ sĩ này chưa phát hành album nào.
-            </p>
-          )}
-        </section>
+              )}
+          </section>
       </div>
 
       {/* 6. MODAL POPUP CHỈNH SỬA THÔNG TIN */}
