@@ -35,6 +35,7 @@ import { useAuthStore } from "../features/auth/useAuthStore";
 import { usePlayerStore } from "../features/player/usePlayerStore";
 import MusicImage from "../layouts/components/MusicImage";
 import { useFollowStore } from "../features/follow/useFollowStore";
+import TrackActionDropdown from "../layouts/components/TrackActionDropdown";
 
 const ArtistProfilePage = () => {
   const { id } = useParams();
@@ -708,50 +709,53 @@ const ArtistProfilePage = () => {
                   </div>
 
                   {/* Khối bên phải: Lượt nghe, Thời lượng, Nút Xóa */}
-                  <div className="flex items-center gap-6 ml-4">
-                    <span className="text-xs text-slate-400 hidden sm:block">
-                      {track.viewCount?.toLocaleString() || 0} lượt nghe
-                    </span>
-                    <span className="text-sm text-slate-400 hidden md:block font-mono">
-                      {track.duration
-                        ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, "0")}`
-                        : "--:--"}
-                    </span>
+                    <div className="flex items-center gap-6 ml-4">
+    <span className="text-xs text-slate-400 hidden sm:block">
+      {track.viewCount?.toLocaleString() || 0} lượt nghe
+    </span>
+                        <span className="text-sm text-slate-400 hidden md:block font-mono">
+      {track.duration
+          ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, "0")}`
+          : "--:--"}
+    </span>
 
-                    {/* NÚT UPDATE BÀI HÁT (Chỉ hiển thị khi là chủ sở hữu kênh) */}
-                    {track.artists?.find((a) => a.role === "MAIN") &&
-                      Number(
-                        track.artists.find((a) => a.role === "MAIN").id,
-                      ) === Number(userId) && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditTrack(track);
-                          }}
-                          className="text-slate-400 hover:text-sky-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
-                          title="Chỉnh sửa bài hát"
-                        >
-                          <Pencil size={18} />
-                        </button>
-                      )}
+                        {/* 🟢 TÍNH NĂNG MỚI: Nút ba chấm chọn Playlist (Chỉ hiển thị khi user đã đăng nhập) */}
+                        {userId && <TrackActionDropdown trackId={track.id} />}
 
-                    {/* NÚT XÓA BÀI HÁT (Chỉ hiển thị khi là chủ sở hữu kênh) */}
-                    {track.artists?.find((a) => a.role === "MAIN") &&
-                      Number(
-                        track.artists.find((a) => a.role === "MAIN").id,
-                      ) === Number(userId) && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation(); // Ngăn hành vi bấm dòng kích hoạt trình phát nhạc
-                            handleDeleteTrack(track.id, track.name);
-                          }}
-                          className="text-slate-400 hover:text-red-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
-                          title="Xóa bài hát"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      )}
-                  </div>
+                        {/* NÚT UPDATE BÀI HÁT (Chỉ hiển thị khi là chủ sở hữu kênh) */}
+                        {track.artists?.find((a) => a.role === "MAIN") &&
+                            Number(
+                                track.artists.find((a) => a.role === "MAIN").id,
+                            ) === Number(userId) && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditTrack(track);
+                                    }}
+                                    className="text-slate-400 hover:text-sky-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
+                                    title="Chỉnh sửa bài hát"
+                                >
+                                    <Pencil size={18} />
+                                </button>
+                            )}
+
+                        {/* NÚT XÓA BÀI HÁT (Chỉ hiển thị khi là chủ sở hữu kênh) */}
+                        {track.artists?.find((a) => a.role === "MAIN") &&
+                            Number(
+                                track.artists.find((a) => a.role === "MAIN").id,
+                            ) === Number(userId) && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // Ngăn hành vi bấm dòng kích hoạt trình phát nhạc
+                                        handleDeleteTrack(track.id, track.name);
+                                    }}
+                                    className="text-slate-400 hover:text-red-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
+                                    title="Xóa bài hát"
+                                >
+                                    <Trash2 size={18} />
+                                </button>
+                            )}
+                    </div>
                 </div>
               ))}
             </div>
