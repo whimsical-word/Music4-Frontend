@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import trackService from '../features/tracks/trackService';
-import { Play } from "lucide-react";
+import { Play, MessageSquare } from "lucide-react"; // 🟢 Thêm MessageSquare để làm nút mở tương tác
+import TrackEngagementModal from "../layouts/components/TrackEngagementModal";
 
 const AllTracksPage = () => {
     const [tracks, setTracks] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
+
+    // 🟢 STATE MỚI: Theo dõi bài hát nào đang được chọn để mở Modal tương tác
+    const [selectedTrack, setSelectedTrack] = useState(null);
+
     const S3_BASE_URL = "https://music4-v3-storage-kenz.s3.ap-southeast-1.amazonaws.com/";
 
     // 1. Gọi API lấy dữ liệu khi trang được nạp
@@ -23,7 +28,7 @@ const AllTracksPage = () => {
         fetchTracks();
     }, []);
 
-    // 2. Hàm helper đổi số giây thành định dạng phút:giây (ví dụ: 223s -> 3:43)
+    // 2. Hàm helper đổi số giây thành định dạng phút:giây
     const formatDuration = (seconds) => {
         if (!seconds) return "0:00";
         const mins = Math.floor(seconds / 60);
@@ -31,7 +36,7 @@ const AllTracksPage = () => {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    // 3. Hàm lọc bài hát theo ô tìm kiếm (Tìm theo Tên bài hát hoặc Tên nghệ sĩ)
+    // 3. Hàm lọc bài hát theo ô tìm kiếm
     const filteredTracks = tracks.filter(track => {
         const nameMatch = track.name?.toLowerCase().includes(searchTerm.toLowerCase());
         const artistMatch = track.artists?.some(artist =>
@@ -99,6 +104,7 @@ const AllTracksPage = () => {
                             <th className="p-4 text-center">Ngày đăng</th>
                             <th className="p-4 text-center">Thời lượng</th>
                             <th className="p-4 text-center">Lượt nghe</th>
+                            <th className="p-4 w-20 text-center">Tương tác</th> {/* 🟢 Thêm cột tiêu đề Tương tác */}
                         </tr>
                         </thead>
                         <tbody className="divide-y divide-white/[0.03] text-sm text-slate-300">
@@ -158,7 +164,7 @@ const AllTracksPage = () => {
                                     )}
                                 </td>
 
-                                {/* 5. Thể loại (Render các tag nhỏ gọn) */}
+                                {/* 5. Thể loại */}
                                 <td className="p-4">
                                     <div className="flex flex-wrap gap-1 max-w-[160px]">
                                         {track.categories && track.categories.length > 0 ? (
@@ -183,17 +189,45 @@ const AllTracksPage = () => {
                                     {formatDuration(track.duration)}
                                 </td>
 
-                                {/* 8. Lượt nghe (View Count) */}
+                                {/* 8. Lượt nghe */}
                                 <td className="p-4 text-center">
                                         <span className="px-2.5 py-1 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-full text-xs font-bold font-mono">
                                             {track.viewCount?.toLocaleString() || 0}
                                         </span>
+                                </td>
+
+                                {/* 🟢 9. CỘT MỚI: Nút mở Modal tương tác phẳng (Ẩn mặc định, hiện khi Hover dòng) */}
+                                <td className="p-4 text-center">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Ngăn hành động click trúng dòng
+                                            // Chuẩn hóa lại object track để đảm bảo có đầy đủ .img hợp lệ gửi vào modal
+                                            const normalizedTrack = {
+                                                ...track,
+                                                img: track.img ? `${S3_BASE_URL}${track.img}` : 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&q=80'
+                                            };
+                                            setSelectedTrack(normalizedTrack);
+                                        }}
+                                        className="opacity-0 group-hover:opacity-100 text-[#b3b3b3] hover:text-sky-400 bg-transparent border-none cursor-pointer transition-all p-2 rounded-full hover:bg-white/[0.05]"
+                                        title="Mở bảng tương tác (Thích, Bình luận, Playlist)"
+                                    >
+                                        <MessageSquare size={16} />
+                                    </button>
                                 </td>
                             </tr>
                         ))}
                         </tbody>
                     </table>
                 </div>
+            )}
+
+            {/* 🟢 RENDERING MODAL: Tự động hiển thị khi selectedTrack khác null */}
+            {selectedTrack && (
+                <TrackEngagementModal
+                    track={selectedTrack}
+                    onClose={() => setSelectedTrack(null)}
+                />
             )}
         </div>
     );

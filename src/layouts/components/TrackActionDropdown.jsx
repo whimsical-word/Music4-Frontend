@@ -19,9 +19,6 @@ const TrackActionDropdown = ({ trackId }) => {
     }, []);
 
     const handleAddToPlaylist = async (playlistId, playlistName) => {
-        console.log("=== CHECK DATA TRƯỚC KHI THÊM ===");
-        console.log("Playlist ID nhận được:", playlistId);
-        console.log("Track ID nhận được:", trackId);
 
         const result = await addTrackToPlaylist(playlistId, trackId);
         if (result.success) {
