@@ -10,7 +10,6 @@ export const usePlaylistStore = create((set, get) => ({
     fetchMyPlaylists: async () => {
         set({ isLoading: true, error: null });
         try {
-            // 🛠️ FIX CHUẨN: Đổi từ "/playlists/me" thành "/playlists/my-playlists" cho khớp với Backend
             const res = await axiosClient.get("/playlists/my-playlists");
             const data = res.data || res;
             set({ playlists: Array.isArray(data) ? data : [], isLoading: false });
@@ -36,7 +35,7 @@ export const usePlaylistStore = create((set, get) => ({
         }
     },
 
-    // 3. Cập nhật Playlist
+    // 3. Cập nhật Playlist (Tên & Mô tả)
     updatePlaylist: async (id, playlistRequest) => {
         try {
             const res = await axiosClient.put(`/playlists/${id}`, playlistRequest);
@@ -49,6 +48,30 @@ export const usePlaylistStore = create((set, get) => ({
         } catch (err) {
             console.error("Lỗi cập nhật playlist:", err);
             return { success: false };
+        }
+    },
+
+    uploadPlaylistImage: async (id, file) => {
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            // Gọi đúng endpoint upload ảnh dạng multipart/form-data
+            const res = await axiosClient.put(`/playlists/${id}/image`, formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+            });
+            const updatedPlaylist = res.data || res;
+
+            // Cập nhật lại state của danh sách playlist để giao diện React tự re-render ảnh mới
+            set((state) => ({
+                playlists: state.playlists.map((pl) => (pl.id === id ? updatedPlaylist : pl)),
+            }));
+            return { success: true, data: updatedPlaylist };
+        } catch (err) {
+            console.error("Lỗi upload ảnh playlist:", err);
+            return { success: false, message: err.response?.data?.message || "Upload ảnh thất bại." };
         }
     },
 
@@ -69,7 +92,6 @@ export const usePlaylistStore = create((set, get) => ({
     // 5. Thêm bài hát vào Playlist
     addTrackToPlaylist: async (playlistId, trackId) => {
         try {
-            // 🛠️ Giữ nguyên URL chuẩn chỉnh không /api
             await axiosClient.post(`/playlists/${playlistId}/tracks`, { trackId });
             return { success: true, message: "Thêm vào playlist thành công!" };
         } catch (err) {
@@ -81,7 +103,6 @@ export const usePlaylistStore = create((set, get) => ({
     // 6. Xóa bài hát khỏi Playlist
     removeTrackFromPlaylist: async (playlistId, trackId) => {
         try {
-            // 🛠️ Giữ nguyên URL chuẩn chỉnh không /api
             await axiosClient.delete(`/playlists/${playlistId}/tracks/${trackId}`);
             return { success: true, message: "Đã loại bỏ bài hát khỏi playlist." };
         } catch (err) {

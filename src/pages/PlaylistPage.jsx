@@ -75,26 +75,47 @@ const PlaylistPage = () => {
     };
 
     // Xử lý submit lưu thông tin (Tên, Mô tả, Ảnh) lên Backend thông qua store
+    // Xử lý submit lưu thông tin (Tên, Mô tả, Ảnh) lên Backend thông qua store
     const handleSave = async (e) => {
         e.preventDefault();
         if (!editName.trim()) return alert("Tên playlist không được để trống!");
 
-        const formData = new FormData();
-        formData.append('name', editName.trim());
-        formData.append('description', editDescription.trim());
-        if (editAvatar) {
-            formData.append('coverFile', editAvatar); // Khớp trúng RequestPart bên Spring Boot
-        }
+        // 1. Chuẩn bị request JSON cho thông tin text (Tên và Mô tả)
+        const playlistRequest = {
+            name: editName.trim(),
+            description: editDescription.trim()
+        };
 
-        // Gọi hàm update từ Zustand Store đã chỉnh sửa
-        const result = await updatePlaylist(id, formData);
+        // Lấy thêm hàm uploadPlaylistImage từ store để xử lý hình ảnh
+        const { uploadPlaylistImage } = usePlaylistStore.getState();
 
-        if (result.success) {
+        try {
+            // 2. Gọi API cập nhật Tên và Mô tả trước
+            const textResult = await updatePlaylist(id, playlistRequest);
+
+            if (!textResult.success) {
+                alert("❌ Cập nhật thông tin playlist thất bại!");
+                return;
+            }
+
+            // 3. Nếu người dùng có chọn file ảnh mới -> Tiến hành gọi API upload ảnh riêng
+            if (editAvatar) {
+                const imageResult = await uploadPlaylistImage(id, editAvatar);
+                if (!imageResult.success) {
+                    alert("⚠️ Thông tin đã lưu nhưng upload hình ảnh thất bại!");
+                    fetchPlaylistDetails();
+                    return;
+                }
+            }
+
+            // 4. Hoàn tất thành công toàn bộ
             setIsEditModalOpen(false);
             alert("🎉 Cập nhật thông tin playlist thành công!");
-            fetchPlaylistDetails(); // Kéo lại data mới về UI lập tức
-        } else {
-            alert("❌ Cập nhật thất bại. Vui lòng kiểm tra lại cấu trúc API Backend!");
+            fetchPlaylistDetails(); // Kéo lại data mới để UI hiển thị ảnh ngay lập tức
+
+        } catch (error) {
+            console.error("Lỗi khi xử lý lưu playlist:", error);
+            alert("❌ Có lỗi xảy ra trong quá trình cập nhật!");
         }
     };
 
