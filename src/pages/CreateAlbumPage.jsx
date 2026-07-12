@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, {useState, useEffect, useRef} from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FolderPlus,
-  Image as ImageIcon,
-  Music,
-  Trash2,
-  Plus,
-  CheckCircle,
-  AlertCircle,
-  Loader2,
+    FolderPlus,
+    Image as ImageIcon,
+    Music,
+    Trash2,
+    Plus,
+    CheckCircle,
+    AlertCircle,
+    Loader2, Search, X,
 } from "lucide-react";
 import axiosClient from "../app/axios/axiosClient";
 import { useAuthStore } from "../features/auth/useAuthStore";
@@ -23,9 +23,43 @@ const CreateAlbumPage = () => {
   const [albumCoverPreview, setAlbumCoverPreview] = useState(null);
   const [albumCoverProgress, setAlbumCoverProgress] = useState(0);
 
+
+    // Thay thế hoặc bổ sung các state này vào component
+    const [artistSearch, setArtistSearch] = useState("");
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+    const handleRemoveFeatArtist = (artistId) => {
+        setSelectedFeatArtists(selectedFeatArtists.filter(a => a.id !== artistId));
+    };
+
+    // Logic chọn nghệ sĩ (cập nhật cho từng track)
+    const addFeatArtist = (trackId, artist) => {
+        setTracks((prev) =>
+            prev.map((t) => {
+                if (t.id === trackId && !t.artistIds.includes(artist.id)) {
+                    return { ...t, artistIds: [...t.artistIds, artist.id] };
+                }
+                return t;
+            })
+        );
+    };
+
+    // Logic xóa nghệ sĩ
+    const removeFeatArtist = (trackId, artistId) => {
+        setTracks((prev) =>
+            prev.map((t) => {
+                if (t.id === trackId) {
+                    return { ...t, artistIds: t.artistIds.filter((id) => id !== artistId) };
+                }
+                return t;
+            })
+        );
+    };
+
   // --- State lưu danh sách dữ liệu từ Backend ---
   const [dbArtists, setDbArtists] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+    const [categories, setCategories] = useState([]);
 
   // Danh mục cứng để test
   const mockCategories = [
@@ -38,10 +72,44 @@ const CreateAlbumPage = () => {
   // --- Mảng Quản Lý Trạng Thái Bài Hát ---
   const [tracks, setTracks] = useState([]);
 
+    const dropdownRef = useRef(null);
+    const albumDropdownRef = useRef(null);
+    const [isAlbumDropdownOpen, setIsAlbumDropdownOpen] = useState(false);
+    const [selectedFeatArtists, setSelectedFeatArtists] = useState([]);
+    const [activeDropdownId, setActiveDropdownId] = useState(null);
+
+    const filteredArtists = dbArtists.filter(artist =>
+        artist.name.toLowerCase().includes(artistSearch.toLowerCase()) &&
+        !selectedFeatArtists.some(selected => selected.id === artist.id) &&
+        Number(artist.id) !== Number(userId) // Không hiển thị chính mình trong danh sách Feat
+    );
+
+    const handleSelectArtist = (artistObj) => {
+        if (artistObj && !selectedFeatArtists.some(a => a.id === artistObj.id)) {
+            setSelectedFeatArtists([...selectedFeatArtists, artistObj]);
+        }
+        setArtistSearch("");
+        setIsDropdownOpen(false);
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            // Nếu click ra ngoài dropdown thì reset state
+            if (activeDropdownId !== null && !event.target.closest('.relative')) {
+                setActiveDropdownId(null);
+                setArtistSearch("");
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [activeDropdownId]);
+
   // Lấy danh sách nghệ sĩ đổ vào Dropdown Feat Artist
   useEffect(() => {
     const fetchArtists = async () => {
       try {
+          const catRes = await axiosClient.get("/categories"); // Thay đổi đường dẫn nếu cần
+          setCategories(catRes.data || []);
         const res = await axiosClient.get("/artists/all");
         setDbArtists(res.data || []);
       } catch (err) {
@@ -66,24 +134,25 @@ const CreateAlbumPage = () => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    const newTracksEntries = files.map((file) => {
-      const trackId = Math.random().toString(36).substring(2, 9);
+      const newTracksEntries = files.map((file) => {
+          const trackId = Math.random().toString(36).substring(2, 9);
 
-      return {
-        id: trackId,
-        title: file.name.replace(/\.[^/.]+$/, ""), // Tự lấy tên file làm tiêu đề gốc
-        file: file, // 🔥 GIỮ LẠI FILE GỐC Ở ĐÂY ĐỂ DÀNH UPLOAD SAU
-        duration: 0,
-        artistId: userId || 7, // Lấy ID nghệ sĩ đang đăng nhập
-        artistIds: [],
-        categoryIds: [],
-        fileName: file.name,
-        progress: 0,
-        status: "idle", // Trạng thái ban đầu là 'idle' (đang đợi)
-      };
-    });
+          return {
+              id: trackId,
+              title: file.name.replace(/\.[^/.]+$/, ""),
+              file: file,
+              duration: 0,
+              artistId: userId || 7,
+              artistIds: [],      // Dùng để gửi ID lên Backend
+              featArtists: [],    // 🔥 THÊM TRƯỜNG NÀY: Dùng để lưu Object {id, name} hiển thị trên UI
+              categoryIds: [],
+              fileName: file.name,
+              progress: 0,
+              status: "idle",
+          };
+      });
 
-    setTracks((prev) => [...prev, ...newTracksEntries]);
+      setTracks((prev) => [...prev, ...newTracksEntries]);
   };
 
   // 🌟 BƯỚC 3: Cập nhật thông tin chữ nghĩa tự do khi người dùng chỉnh sửa trên UI
@@ -243,7 +312,7 @@ const CreateAlbumPage = () => {
       await axiosClient.post("/tracks/bulk-json", finalBulkPayload);
 
       alert(
-        "🎉 Đỉnh cao bồ ơi! Album và toàn bộ danh sách nhạc đã được phát hành thành công mà không tốn 1MB bộ nhớ rác nào!",
+        "🎉 Album và toàn bộ danh sách nhạc đã được phát hành thành công!",
       );
       navigate(`/artist/${userId}`);
     } catch (error) {
@@ -449,56 +518,92 @@ const CreateAlbumPage = () => {
                       />
                     </div>
 
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">
-                        Ca Sĩ Hợp Tác (Feat)
-                      </label>
-                      <select
-                        multiple
-                        disabled={isSubmitting}
-                        value={track.artistIds.map(String)}
-                        onChange={(e) =>
-                          handleFeatArtistsChange(
-                            track.id,
-                            e.target.selectedOptions,
-                          )
-                        }
-                        className="w-full bg-white/[0.04] border border-white/[0.05] focus:border-sky-500 rounded-lg px-2 py-1 text-white text-xs outline-none h-[38px] overflow-y-auto disabled:opacity-50 custom-scrollbar"
-                      >
-                        {dbArtists.map((art) => (
-                          <option
-                            key={art.id}
-                            value={art.id}
-                            className="py-1 px-1 rounded hover:bg-white/[0.06] bg-[#0f1722]"
-                          >
-                            {art.name || art.stageName}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                      <div className="relative">
+                          <label className="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wider">
+                              Nghệ sĩ hợp tác (Feat)
+                          </label>
+
+                          <input
+                              type="text"
+                              placeholder="Tìm nghệ sĩ..."
+                              className="w-full bg-white/[0.04] border border-white/[0.05] rounded-lg px-3 py-2 text-sm text-white focus:border-sky-500 outline-none"
+                              // Chỉ hiện chữ tìm kiếm nếu đang mở đúng ô của bài hát đó
+                              value={activeDropdownId === track.id ? artistSearch : ""}
+                              onFocus={() => {
+                                  setActiveDropdownId(track.id);
+                                  setArtistSearch("");
+                              }}
+                              onChange={(e) => setArtistSearch(e.target.value)}
+                          />
+
+                          {activeDropdownId === track.id && (
+                              <div className="absolute z-50 w-full bg-[#131c26] border border-white/[0.1] mt-1 rounded-lg max-h-40 overflow-y-auto shadow-2xl">
+                                  {dbArtists
+                                      .filter(a =>
+                                          a.name.toLowerCase().includes(artistSearch.toLowerCase()) &&
+                                          !track.artistIds.includes(a.id) // Ngăn không cho chọn nghệ sĩ đã có trong list
+                                      )
+                                      .map(artist => (
+                                          <div
+                                              key={artist.id}
+                                              className="p-3 text-xs hover:bg-sky-500/20 cursor-pointer text-slate-200"
+                                              onClick={() => {
+                                                  setTracks(prev => prev.map(t => t.id === track.id ? {
+                                                      ...t,
+                                                      featArtists: [...t.featArtists, artist],
+                                                      artistIds: [...t.artistIds, artist.id]
+                                                  } : t));
+                                                  setActiveDropdownId(null); // Đóng dropdown sau khi chọn
+                                                  setArtistSearch("");
+                                              }}
+                                          >
+                                              {artist.name}
+                                          </div>
+                                      ))}
+                              </div>
+                          )}
+
+                          {/* Hiển thị Tag */}
+                          <div className="flex flex-wrap gap-2 mt-2">
+                              {track.featArtists && track.featArtists.map(artist => (
+                                  <span key={artist.id} className="bg-sky-500/20 text-sky-300 px-2 py-1 rounded text-[10px] flex items-center gap-1">
+                {artist.name}
+                                      <X size={10} className="cursor-pointer hover:text-red-400" onClick={() => {
+                                          setTracks(prev => prev.map(t => t.id === track.id ? {
+                                              ...t,
+                                              featArtists: t.featArtists.filter(a => a.id !== artist.id),
+                                              artistIds: t.artistIds.filter(id => id !== artist.id)
+                                          } : t));
+                                      }} />
+            </span>
+                              ))}
+                          </div>
+                      </div>
 
                     <div>
                       <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">
                         Thể loại phân phối
                       </label>
-                      <div className="flex flex-wrap gap-2 pt-0.5">
-                        {mockCategories.map((cat) => {
-                          const isChecked = track.categoryIds.includes(cat.id);
-                          return (
-                            <button
-                              key={cat.id}
-                              type="button"
-                              disabled={isSubmitting}
-                              onClick={() =>
-                                handleCategoryToggle(track.id, cat.id)
-                              }
-                              className={`px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all border-none cursor-pointer disabled:opacity-50 ${isChecked ? "bg-sky-500 text-white font-bold shadow-[0_2px_8px_rgba(14,165,233,0.3)]" : "bg-white/[0.04] text-slate-400 border border-white/[0.02] hover:bg-white/[0.08] hover:text-slate-200"}`}
-                            >
-                              {cat.name}
-                            </button>
-                          );
-                        })}
-                      </div>
+                        <div className="flex flex-wrap gap-2 pt-0.5">
+                            {categories.map((cat) => {
+                                const isChecked = track.categoryIds.includes(cat.id);
+                                return (
+                                    <button
+                                        key={cat.id}
+                                        type="button"
+                                        disabled={isSubmitting}
+                                        onClick={() => handleCategoryToggle(track.id, cat.id)}
+                                        className={`px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all border-none cursor-pointer disabled:opacity-50 
+            ${isChecked
+                                            ? "bg-sky-500 text-white font-bold shadow-[0_2px_8px_rgba(14,165,233,0.3)]"
+                                            : "bg-white/[0.04] text-slate-400 border border-white/[0.02] hover:bg-white/[0.08] hover:text-slate-200"
+                                        }`}
+                                    >
+                                        {cat.name}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                   </div>
 

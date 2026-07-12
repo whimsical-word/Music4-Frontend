@@ -3,7 +3,7 @@ import { Search, Bell, User, LogOut, ChevronDown, LayoutDashboard, Check, X } fr
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../features/auth/useAuthStore';
 import MusicImage from './MusicImage.jsx';
-import axios from 'axios';
+import axiosClient from "../../app/axios/axiosClient";
 
 const Navbar = () => {
     const navigate = useNavigate();
@@ -24,8 +24,8 @@ const Navbar = () => {
     useEffect(() => {
         if (!isAuthenticated || !id) return;
 
-        // 1. Lấy thông báo lịch sử từ Database
-        axios.get(`http://localhost:8080/api/notifications/user/${id}`)
+        // Dùng axiosClient để lấy thông báo lịch sử (tự động đính kèm Token và tránh lỗi CORS)
+        axiosClient.get(`/notifications/user/${id}`)
             .then((res) => {
                 setNotifications(res.data);
                 const unread = res.data.filter((n) => !n.isRead).length;
@@ -33,7 +33,7 @@ const Navbar = () => {
             })
             .catch((err) => console.error("Lỗi lấy thông báo cũ:", err));
 
-        // 2. Mở kết nối SSE lắng nghe thông báo mới tinh
+        // Mở kết nối SSE lắng nghe thông báo mới (SSE vẫn dùng URL tuyệt đối)
         const eventSource = new EventSource(`http://localhost:8080/api/notifications/subscribe/${id}`);
 
         eventSource.addEventListener("NEW_TRACK", (event) => {
@@ -55,7 +55,7 @@ const Navbar = () => {
     const handleNotiClick = async (noti) => {
         try {
             if (!noti.isRead) {
-                await axios.put(`http://localhost:8080/api/notifications/${noti.id}/read`);
+                await axiosClient.put(`/notifications/${noti.id}/read`);
                 setNotifications((prev) =>
                     prev.map((n) => (n.id === noti.id ? { ...n, isRead: true } : n))
                 );
@@ -63,8 +63,8 @@ const Navbar = () => {
             }
 
             if (noti.trackId) {
-                navigate(`/tracks/${noti.trackId}`); // Chuyển sang trang chi tiết bài hát
-                setNotiDropdownOpen(false); // Đóng menu thả xuống
+                navigate(`/tracks/${noti.trackId}`);
+                setNotiDropdownOpen(false);
             }
         } catch (err) {
             console.error("Lỗi khi xử lý click thông báo:", err);
@@ -73,9 +73,9 @@ const Navbar = () => {
 
     //XÓA 1 THÔNG BÁO CỤ THỂ
     const handleDeleteNoti = async (e, notiId, isRead) => {
-        e.stopPropagation(); // 🔴 CHÍ MẠNG: Chặn nổi bọt để nút Xóa không kích hoạt click nhảy trang bài hát
+        e.stopPropagation();
         try {
-            await axios.delete(`http://localhost:8080/api/notifications/${notiId}`);
+            await axiosClient.delete(`/notifications/${notiId}`);
             setNotifications((prev) => prev.filter((n) => n.id !== notiId));
             if (!isRead) {
                 setUnreadCount((prev) => Math.max(0, prev - 1));
@@ -85,10 +85,10 @@ const Navbar = () => {
         }
     };
 
-    //XÓA SẠCH THÔNG BÁO (CLEAR ALL)
+    // 2. XÓA SẠCH THÔNG BÁO (Sửa endpoint khớp với @DeleteMapping("/clear-all") của Backend)
     const handleClearAll = async () => {
         try {
-            await axios.delete(`http://localhost:8080/api/notifications/clear-all`);
+            await axiosClient.delete(`/notifications/clear-all`);
             setNotifications([]);
             setUnreadCount(0);
         } catch (err) {
@@ -96,11 +96,11 @@ const Navbar = () => {
         }
     };
 
-    // HÀM XỬ LÝ ĐÁNH DẤU ĐÃ ĐỌC (NÚT ĐỌC XONG CŨ CỦA BỒ)
+    // HÀM XỬ LÝ ĐÁNH DẤU ĐÃ ĐỌC
     const handleMarkAsRead = async (e, notiId) => {
-        e.stopPropagation(); // 🔴 Chặn nổi bọt để không trigger handleNotiClick
+        e.stopPropagation();
         try {
-            await axios.put(`http://localhost:8080/api/notifications/${notiId}/read`);
+            await axiosClient.put(`/notifications/${notiId}/read`);
             setNotifications((prev) =>
                 prev.map((n) => (n.id === notiId ? { ...n, isRead: true } : n))
             );
@@ -189,7 +189,7 @@ const Navbar = () => {
                                         notifications.map((noti) => (
                                             <div
                                                 key={noti.id}
-                                                onClick={() => handleNotiClick(noti)} // 🟢 Click vào nguyên thẻ để đọc + nhảy sang bài hát
+                                                onClick={() => handleNotiClick(noti)}
                                                 className={`px-4 py-3 border-b border-[#1e1e1e] flex flex-col gap-1 transition-colors relative group cursor-pointer ${!noti.isRead ? 'bg-[#333333]' : 'hover:bg-[#343434]'}`}
                                             >
                                                 {/* Nút ✕ nhỏ góc phải hiện lên khi hover vào thông báo */}
