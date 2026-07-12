@@ -24,7 +24,6 @@ export const engagementService = {
         return res.data || res;
     },
 
-
     // 4. KIỂM TRA TRẠNG THÁI TIM HIỆN TẠI
     checkIsLiked: async (trackId) => {
         try {
@@ -43,8 +42,31 @@ export const engagementService = {
             return { liked: false };
         }
     },
+
     getFavoritesMeRaw: async () => {
         const res = await axiosClient.get('/favorites/me');
         return res.data || res || []; // Trả về mảng chứa danh sách bài hát đã thích
+    },
+
+    // 5: GỬI ĐÁNH GIÁ SAO (RATING) LÊN BACKEND
+    rateTrack: async (trackId, ratingValue, userId) => {
+        const res = await axiosClient.post('/ratings', {
+            trackId: Number(trackId),
+            userId: Number(userId),
+            ratingValue: Number(ratingValue)
+        });
+        return res.data || res;
+    },
+
+    // 6: LẤY ĐIỂM SỐ RATING CŨ CỦA NGƯỜI DÙNG ĐỂ HIỂN THỊ LÊN MODAL
+    getTrackRating: async (trackId, userId) => {
+        try {
+            const res = await axiosClient.get(`/ratings/track/${trackId}/user/${userId}`);
+
+            return res.data || res;
+        } catch (error) {
+            console.warn("Chưa có dữ liệu rating cũ cho track này:", trackId);
+            return { rating: 0 };
+        }
     }
 };

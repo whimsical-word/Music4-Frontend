@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, User as UserIcon, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Play } from "lucide-react";
+import trackService from '../features/tracks/trackService';
+import TrackEngagementModal from "../layouts/components/TrackEngagementModal";
 import axiosClient from "../app/axios/axiosClient.js";
+import { ArrowLeft, User as UserIcon, ChevronLeft, ChevronRight, Play, MessageSquare } from 'lucide-react';
 
 const AllTracksPage = () => {
     const [tracks, setTracks] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
+
+    // 🟢 STATE MỚI: Theo dõi bài hát nào đang được chọn để mở Modal tương tác
+    const [selectedTrack, setSelectedTrack] = useState(null);
+
     const S3_BASE_URL = "https://music4-v3-storage-kenz.s3.ap-southeast-1.amazonaws.com/";
 
     // --- 1. BỔ SUNG CÁC STATE PHÂN TRANG ---
@@ -66,7 +71,7 @@ const AllTracksPage = () => {
         }
     };
 
-    // 2. Hàm helper đổi số giây thành định dạng phút:giây (ví dụ: 223s -> 3:43)
+    // 2. Hàm helper đổi số giây thành định dạng phút:giây
     const formatDuration = (seconds) => {
         if (!seconds) return "0:00";
         const mins = Math.floor(seconds / 60);
@@ -74,7 +79,7 @@ const AllTracksPage = () => {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    // 3. Hàm lọc bài hát theo ô tìm kiếm (Tìm theo Tên bài hát hoặc Tên nghệ sĩ)
+    // 3. Hàm lọc bài hát theo ô tìm kiếm
     const filteredTracks = tracks.filter(track => {
         const nameMatch = track.name?.toLowerCase().includes(searchTerm.toLowerCase());
         const artistMatch = track.artists?.some(artist =>
@@ -124,113 +129,134 @@ const AllTracksPage = () => {
             </div>
 
             {/* Xử lý trường hợp không tìm thấy kết quả phù hợp */}
-                <div className="overflow-x-auto bg-[#0f1722] rounded-2xl border border-white/[0.05] shadow-2xl backdrop-blur-md">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                        <tr className="border-b border-white/[0.05] text-slate-400 text-xs font-bold uppercase tracking-wider bg-white/[0.02]">
-                            <th className="p-4 w-16 text-center">#</th>
-                            <th className="p-4">Thông tin bài hát</th>
-                            <th className="p-4">Nghệ sĩ</th>
-                            <th className="p-4">Album</th>
-                            <th className="p-4">Thể loại</th>
-                            <th className="p-4 text-center">Ngày đăng</th>
-                            <th className="p-4 text-center">Thời lượng</th>
-                            <th className="p-4 text-center">Lượt nghe</th>
-                        </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/[0.03] text-sm text-slate-300">
-                        {filteredTracks.map((track, index) => (
-                            <tr
-                                key={track.id}
-                                className="hover:bg-white/[0.03] transition-colors duration-150 group"
-                            >
-                                {/* 1. Số thứ tự / Nút Play khi hover */}
-                                <td className="p-4 text-center font-medium text-slate-500 group-hover:text-sky-400 transition-colors">
-                                    <span className="group-hover:hidden">{index + 1}</span>
-                                    <Play className="hidden group-hover:inline-block cursor-pointer w-4 h-4 text-sky-400 hover:scale-110 transition-transform ml-1" fill="currentColor" />
-                                </td>
+            <div className="overflow-x-auto bg-[#0f1722] rounded-2xl border border-white/[0.05] shadow-2xl backdrop-blur-md">
+                <table className="w-full text-left border-collapse">
+                    <thead>
+                    <tr className="border-b border-white/[0.05] text-slate-400 text-xs font-bold uppercase tracking-wider bg-white/[0.02]">
+                        <th className="p-4 w-16 text-center">#</th>
+                        <th className="p-4">Thông tin bài hát</th>
+                        <th className="p-4">Nghệ sĩ</th>
+                        <th className="p-4">Album</th>
+                        <th className="p-4">Thể loại</th>
+                        <th className="p-4 text-center">Ngày đăng</th>
+                        <th className="p-4 text-center">Thời lượng</th>
+                        <th className="p-4 text-center">Lượt nghe</th>
+                        <th className="p-4 w-20 text-center">Tương tác</th> {/* 🟢 Thêm cột tiêu đề Tương tác */}
+                    </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.03] text-sm text-slate-300">
+                    {filteredTracks.map((track, index) => (
+                        <tr
+                            key={track.id}
+                            className="hover:bg-white/[0.03] transition-colors duration-150 group"
+                        >
+                            {/* 1. Số thứ tự / Nút Play khi hover */}
+                            <td className="p-4 text-center font-medium text-slate-500 group-hover:text-sky-400 transition-colors">
+                                <span className="group-hover:hidden">{index + 1}</span>
+                                <Play className="hidden group-hover:inline-block cursor-pointer w-4 h-4 text-sky-400 hover:scale-110 transition-transform ml-1" fill="currentColor" />
+                            </td>
 
-                                {/* 2. Ảnh & Tên bài hát */}
-                                <td className="p-4">
-                                    <div className="flex items-center gap-3">
-                                        <img
-                                            src={track.img ? `${S3_BASE_URL}${track.img}` : 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&q=80'}
-                                            alt={track.name}
-                                            className="w-11 h-11 object-cover rounded-lg shadow-md border border-white/[0.05]"
-                                            onError={(e) => {
-                                                e.target.src = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&q=80';
-                                            }}
-                                        />
-                                        <div className="max-w-[180px] md:max-w-[240px]">
-                                            <div className="font-semibold text-white truncate group-hover:text-sky-400 transition-colors" title={track.name}>
-                                                {track.name}
-                                            </div>
+                            {/* 2. Ảnh & Tên bài hát */}
+                            <td className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <img
+                                        src={track.img ? `${S3_BASE_URL}${track.img}` : 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&q=80'}
+                                        alt={track.name}
+                                        className="w-11 h-11 object-cover rounded-lg shadow-md border border-white/[0.05]"
+                                        onError={(e) => {
+                                            e.target.src = 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&q=80';
+                                        }}
+                                    />
+                                    <div className="max-w-[180px] md:max-w-[240px]">
+                                        <div className="font-semibold text-white truncate group-hover:text-sky-400 transition-colors" title={track.name}>
+                                            {track.name}
                                         </div>
                                     </div>
-                                </td>
+                                </div>
+                            </td>
 
-                                {/* 3. Danh sách các nghệ sĩ thể hiện */}
-                                <td className="p-4 font-medium text-slate-300">
-                                    {track.artists && track.artists.length > 0 ? (
-                                        <span className="truncate block max-w-[150px]" title={track.artists.map(a => a.name).join(', ')}>
+                            {/* 3. Danh sách các nghệ sĩ thể hiện */}
+                            <td className="p-4 font-medium text-slate-300">
+                                {track.artists && track.artists.length > 0 ? (
+                                    <span className="truncate block max-w-[150px]" title={track.artists.map(a => a.name).join(', ')}>
                                                 {track.artists.map(a => a.name).join(', ')}
                                             </span>
-                                    ) : (
-                                        <span className="text-slate-500 italic">Ẩn danh</span>
-                                    )}
-                                </td>
+                                ) : (
+                                    <span className="text-slate-500 italic">Ẩn danh</span>
+                                )}
+                            </td>
 
-                                {/* 4. Tên Album */}
-                                <td className="p-4">
-                                    {track.album ? (
-                                        <div className="flex flex-col">
+                            {/* 4. Tên Album */}
+                            <td className="p-4">
+                                {track.album ? (
+                                    <div className="flex flex-col">
                                                 <span className="text-slate-300 font-medium truncate max-w-[150px]" title={track.album.title}>
                                                     💿 {track.album.title}
                                                 </span>
-                                        </div>
-                                    ) : (
-                                        <span className="inline-block px-2 py-0.5 bg-white/[0.04] text-slate-400 text-xs rounded border border-white/[0.05] italic">
+                                    </div>
+                                ) : (
+                                    <span className="inline-block px-2 py-0.5 bg-white/[0.04] text-slate-400 text-xs rounded border border-white/[0.05] italic">
                                                 Single
                                             </span>
-                                    )}
-                                </td>
+                                )}
+                            </td>
 
-                                {/* 5. Thể loại (Render các tag nhỏ gọn) */}
-                                <td className="p-4">
-                                    <div className="flex flex-wrap gap-1 max-w-[160px]">
-                                        {track.categories && track.categories.length > 0 ? (
-                                            track.categories.map(c => (
-                                                <span key={c.id} className="px-2 py-0.5 bg-white/[0.06] text-slate-300 text-xs rounded-md border border-white/[0.05]">
+                            {/* 5. Thể loại */}
+                            <td className="p-4">
+                                <div className="flex flex-wrap gap-1 max-w-[160px]">
+                                    {track.categories && track.categories.length > 0 ? (
+                                        track.categories.map(c => (
+                                            <span key={c.id} className="px-2 py-0.5 bg-white/[0.06] text-slate-300 text-xs rounded-md border border-white/[0.05]">
                                                         {c.name}
                                                     </span>
-                                            ))
-                                        ) : (
-                                            <span className="text-slate-600">--</span>
-                                        )}
-                                    </div>
-                                </td>
+                                        ))
+                                    ) : (
+                                        <span className="text-slate-600">--</span>
+                                    )}
+                                </div>
+                            </td>
 
-                                {/* 6. Ngày đăng */}
-                                <td className="p-4 text-center text-slate-400 text-xs">
-                                    {track.uploadDate ? new Date(track.uploadDate).toLocaleDateString('vi-VN') : '---'}
-                                </td>
+                            {/* 6. Ngày đăng */}
+                            <td className="p-4 text-center text-slate-400 text-xs">
+                                {track.uploadDate ? new Date(track.uploadDate).toLocaleDateString('vi-VN') : '---'}
+                            </td>
 
-                                {/* 7. Thời lượng bài hát */}
-                                <td className="p-4 text-center text-slate-400 font-mono text-xs">
-                                    {formatDuration(track.duration)}
-                                </td>
+                            {/* 7. Thời lượng bài hát */}
+                            <td className="p-4 text-center text-slate-400 font-mono text-xs">
+                                {formatDuration(track.duration)}
+                            </td>
 
-                                {/* 8. Lượt nghe (View Count) */}
-                                <td className="p-4 text-center">
+                            {/* 8. Lượt nghe */}
+                            <td className="p-4 text-center">
                                         <span className="px-2.5 py-1 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-full text-xs font-bold font-mono">
                                             {track.viewCount?.toLocaleString() || 0}
                                         </span>
-                                </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
+                            </td>
+
+                            {/* 🟢 9. CỘT MỚI: Nút mở Modal tương tác phẳng (Ẩn mặc định, hiện khi Hover dòng) */}
+                            <td className="p-4 text-center">
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // Ngăn hành động click trúng dòng
+                                        // Chuẩn hóa lại object track để đảm bảo có đầy đủ .img hợp lệ gửi vào modal
+                                        const normalizedTrack = {
+                                            ...track,
+                                            img: track.img ? `${S3_BASE_URL}${track.img}` : 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&q=80'
+                                        };
+                                        setSelectedTrack(normalizedTrack);
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 text-[#b3b3b3] hover:text-sky-400 bg-transparent border-none cursor-pointer transition-all p-2 rounded-full hover:bg-white/[0.05]"
+                                    title="Mở bảng tương tác (Thích, Bình luận, Playlist)"
+                                >
+                                    <MessageSquare size={16} />
+                                </button>
+                            </td>
+                        </tr>
+                    ))}
+                    </tbody>
+                </table>
+            </div>
             {/* --- 3. GIAO DIỆN THANH PHÂN TRANG (PAGINATION BAR) --- */}
             {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-1 mt-16 pt-8 border-t border-white/[0.05]">
@@ -285,6 +311,14 @@ const AllTracksPage = () => {
                         »
                     </button>
                 </div>
+            )}
+
+            {/* 🟢 RENDERING MODAL: Tự động hiển thị khi selectedTrack khác null */}
+            {selectedTrack && (
+                <TrackEngagementModal
+                    track={selectedTrack}
+                    onClose={() => setSelectedTrack(null)}
+                />
             )}
         </div>
     );
