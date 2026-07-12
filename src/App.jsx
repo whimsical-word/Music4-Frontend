@@ -18,6 +18,7 @@ import LikedSongsPage from "./pages/LikedSongsPage.jsx";
 import OAuth2RedirectPage from "./pages/OAuth2RedirectPage.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import {ResetPassword} from "./pages/ResetPassword.jsx";
+import AllAlbumPage from "./pages/AllAlbumPage.jsx";
 
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
                     <Route path={"/reset-password"} element={<ResetPassword/>}/>
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="tracks" element={<AllTracksPage />} />
+                    <Route path="/albums" element={<AllAlbumPage />} />
                     <Route path="/artists" element={<AllArtistsPage />} />
                     <Route path="/search" element={<SearchPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
