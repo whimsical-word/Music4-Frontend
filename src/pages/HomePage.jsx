@@ -123,7 +123,7 @@ const HomePage = () => {
             axiosClient.get("/artists"),
             axiosClient.get("/albums"),
             axiosClient.get("tracks/top5-views"),
-            axiosClient.get("/recommendations", aiRequestParams),
+            // axiosClient.get("/recommendations", aiRequestParams),
           ]);
 
         setTracks(tracksRes.data || []);

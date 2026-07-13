@@ -3,6 +3,7 @@ import trackService from '../features/tracks/trackService';
 import TrackEngagementModal from "../layouts/components/TrackEngagementModal";
 import axiosClient from "../app/axios/axiosClient.js";
 import { ArrowLeft, User as UserIcon, ChevronLeft, ChevronRight, Play, MessageSquare } from 'lucide-react';
+import {usePlayerStore} from "../features/player/usePlayerStore.js";
 
 const AllTracksPage = () => {
     const [tracks, setTracks] = useState([]);
@@ -13,6 +14,7 @@ const AllTracksPage = () => {
     const [selectedTrack, setSelectedTrack] = useState(null);
 
     const S3_BASE_URL = "https://music4-v3-storage-kenz.s3.ap-southeast-1.amazonaws.com/";
+    const playTrack = usePlayerStore((state) => state.playTrack);
 
     // --- 1. BỔ SUNG CÁC STATE PHÂN TRANG ---
     const [currentPage, setCurrentPage] = useState(0);
@@ -148,6 +150,7 @@ const AllTracksPage = () => {
                     {filteredTracks.map((track, index) => (
                         <tr
                             key={track.id}
+                            onClick={() => playTrack(track, filteredTracks)}
                             className="hover:bg-white/[0.03] transition-colors duration-150 group"
                         >
                             {/* 1. Số thứ tự / Nút Play khi hover */}
