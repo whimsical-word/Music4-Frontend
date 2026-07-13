@@ -9,9 +9,18 @@ export default function OAuth2RedirectPage() {
 
   useEffect(() => {
     const token = params.get("token");
-    const ok    = loginWithGoogle(token);
-    navigate(ok ? "/" : "/login", { replace: true });
-  }, []);
+    const ok = loginWithGoogle(token);
 
-  return <p>Đang đăng nhập...</p>;
+    if (ok) {
+      navigate("/", { replace: true });
+    } else {
+      navigate("/login", { replace: true });
+    }
+  }, [params, loginWithGoogle, navigate]);
+
+  return (
+      <div className="bg-[#121212] min-h-screen flex items-center justify-center text-white">
+        <p className="animate-pulse font-medium">Đang đăng nhập hệ thống...</p>
+      </div>
+  );
 }
