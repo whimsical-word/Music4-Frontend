@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Play, ArrowLeft, Clock, Trash2, Camera, X, Music } from 'lucide-react';
 import { usePlayerStore } from '../features/player/usePlayerStore';
-import { usePlaylistStore } from '../features/playlist/usePlaylistStore'; // Đảm bảo đúng đường dẫn 1 cấp lùi
+import { usePlaylistStore } from '../features/playlist/usePlaylistStore';
 import axiosClient from '../app/axios/axiosClient';
 import MusicImage from '../layouts/components/MusicImage';
 
@@ -16,25 +16,26 @@ const PlaylistPage = () => {
     const isPlaying = usePlayerStore(state => state.isPlaying);
 
     // Quản lý store playlist
-    const { updatePlaylist } = usePlaylistStore();
+    const { updatePlaylist, uploadPlaylistImage, addTrackToPlaylist } = usePlaylistStore();
 
     const [playlistInfo, setPlaylistInfo] = useState(null);
     const [tracks, setTracks] = useState([]);
+    const [allTracks, setAllTracks] = useState([]); // State chứa toàn bộ bài hát hệ thống để chọn thêm
     const [isLoading, setIsLoading] = useState(true);
 
     // States quản lý đóng/mở và dữ liệu form chỉnh sửa thông tin Playlist
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editName, setEditName] = useState('');
     const [editDescription, setEditDescription] = useState('');
-    const [editAvatar, setEditAvatar] = useState(null); // Lưu file binary để upload
-    const [avatarPreview, setAvatarPreview] = useState(''); // Lưu link tạm blob để preview
+    const [editAvatar, setEditAvatar] = useState(null);
+    const [avatarPreview, setAvatarPreview] = useState('');
 
     // Đổ dữ liệu hiện tại của playlist vào form khi mở modal
     useEffect(() => {
         if (playlistInfo) {
             setEditName(playlistInfo.name || '');
             setEditDescription(playlistInfo.description || '');
-            setAvatarPreview(playlistInfo.img || ''); // Map trúng trường img từ DB
+            setAvatarPreview(playlistInfo.img || '');
         }
     }, [playlistInfo, isEditModalOpen]);
 
@@ -59,9 +60,21 @@ const PlaylistPage = () => {
         }
     };
 
+    // Tải danh sách toàn bộ bài hát từ hệ thống để làm phần gợi ý thêm
+    const fetchAllTracks = async () => {
+        try {
+            const res = await axiosClient.get('/tracks');
+            const data = res.data || res;
+            setAllTracks(Array.isArray(data) ? data : data.content || []);
+        } catch (error) {
+            console.error("Lỗi lấy danh sách bài hát hệ thống:", error);
+        }
+    };
+
     useEffect(() => {
         if (id) {
             fetchPlaylistDetails();
+            fetchAllTracks();
         }
     }, [id]);
 
@@ -74,48 +87,48 @@ const PlaylistPage = () => {
         }
     };
 
-    // Xử lý submit lưu thông tin (Tên, Mô tả, Ảnh) lên Backend thông qua store
-    // Xử lý submit lưu thông tin (Tên, Mô tả, Ảnh) lên Backend thông qua store
+    // Xử lý submit lưu thông tin văn bản và ảnh tách biệt
     const handleSave = async (e) => {
         e.preventDefault();
         if (!editName.trim()) return alert("Tên playlist không được để trống!");
 
-        // 1. Chuẩn bị request JSON cho thông tin text (Tên và Mô tả)
-        const playlistRequest = {
-            name: editName.trim(),
-            description: editDescription.trim()
-        };
-
-        // Lấy thêm hàm uploadPlaylistImage từ store để xử lý hình ảnh
-        const { uploadPlaylistImage } = usePlaylistStore.getState();
-
         try {
-            // 2. Gọi API cập nhật Tên và Mô tả trước
-            const textResult = await updatePlaylist(id, playlistRequest);
+            const textResult = await updatePlaylist(id, {
+                name: editName.trim(),
+                description: editDescription.trim()
+            });
 
             if (!textResult.success) {
-                alert("❌ Cập nhật thông tin playlist thất bại!");
+                alert("❌ Cập nhật thông tin thất bại!");
                 return;
             }
 
-            // 3. Nếu người dùng có chọn file ảnh mới -> Tiến hành gọi API upload ảnh riêng
             if (editAvatar) {
-                const imageResult = await uploadPlaylistImage(id, editAvatar);
-                if (!imageResult.success) {
-                    alert("⚠️ Thông tin đã lưu nhưng upload hình ảnh thất bại!");
+                const imgResult = await uploadPlaylistImage(id, editAvatar);
+                if (!imgResult.success) {
+                    alert("⚠️ Lưu chữ thành công nhưng upload hình ảnh thất bại!");
                     fetchPlaylistDetails();
                     return;
                 }
             }
 
-            // 4. Hoàn tất thành công toàn bộ
             setIsEditModalOpen(false);
             alert("🎉 Cập nhật thông tin playlist thành công!");
-            fetchPlaylistDetails(); // Kéo lại data mới để UI hiển thị ảnh ngay lập tức
-
+            fetchPlaylistDetails();
         } catch (error) {
-            console.error("Lỗi khi xử lý lưu playlist:", error);
+            console.error("Lỗi lưu thông tin:", error);
             alert("❌ Có lỗi xảy ra trong quá trình cập nhật!");
+        }
+    };
+
+    // Xử lý thêm bài hát vào Playlist
+    const handleAddTrack = async (track) => {
+        const result = await addTrackToPlaylist(id, track.id);
+        if (result.success) {
+            alert(`🎉 Đã thêm bài hát "${track.name}" vào playlist!`);
+            fetchPlaylistDetails();
+        } else {
+            alert(result.message || "Thêm bài hát thất bại.");
         }
     };
 
@@ -133,6 +146,47 @@ const PlaylistPage = () => {
             console.error("Lỗi khi xóa bài hát khỏi playlist:", error);
             alert("Xóa bài hát thất bại, vui lòng thử lại.");
         }
+    };
+
+    // Hàm bổ trợ giúp hiển thị tên nghệ sĩ thông minh, bao quét mọi kiểu dữ liệu từ Backend giống HomePage
+    const renderArtistName = (track) => {
+        console.log("=== CHECK TRACK DATA ===", track);
+        if (track.artists && track.artists.length > 0) {
+            return track.artists.map((artist, idx) => (
+                <span key={artist.id || idx} className="inline-block max-w-full truncate">
+                    <span
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/artist/${artist.id}`);
+                        }}
+                        className="hover:text-sky-400 hover:underline cursor-pointer transition-colors text-slate-400 font-medium"
+                    >
+                        {artist.name}
+                    </span>
+                    {idx < track.artists.length - 1 && ", "}
+                </span>
+            ));
+        }
+
+        if (track.artist && track.artist.name) {
+            return (
+                <span
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/artist/${track.artist.id}`);
+                    }}
+                    className="hover:text-sky-400 hover:underline cursor-pointer transition-colors text-slate-400 font-medium"
+                >
+                    {track.artist.name}
+                </span>
+            );
+        }
+
+        if (track.artistName) {
+            return <span className="text-slate-400 font-medium">{track.artistName}</span>;
+        }
+
+        return "Nghệ sĩ hệ thống";
     };
 
     if (isLoading) {
@@ -163,7 +217,7 @@ const PlaylistPage = () => {
                 </button>
             </div>
 
-            {/* KHU VỰC BANNER TRÊN ĐẦU - CLICK ĐỂ SỬA */}
+            {/* KHU VỰC BANNER TRÊN ĐẦU */}
             <div
                 onClick={() => setIsEditModalOpen(true)}
                 className="bg-gradient-to-b from-sky-900/40 to-[#121212] p-8 flex items-end gap-6 h-[280px] pt-0 cursor-pointer group select-none"
@@ -195,7 +249,7 @@ const PlaylistPage = () => {
                 </div>
             </div>
 
-            {/* KHU VỰC ĐIỀU KHIỂN & BẢNG BÀI HÁT */}
+            {/* KHU VỰC ĐIỀU KHIỂN & BẢNG BÀI HÁT HIỆN TẠI */}
             <div className="p-8">
                 {tracks.length > 0 && (
                     <button
@@ -233,8 +287,9 @@ const PlaylistPage = () => {
                                         </div>
                                         <div className="truncate">
                                             <p className={`font-semibold truncate ${isCurrentPlaying ? "text-sky-400" : "text-white"}`}>{track.name}</p>
-                                            <p className="text-xs text-slate-400 truncate">
-                                                {track.artists && track.artists.length > 0 ? track.artists[0].name : "Nghệ sĩ"}
+                                            <p className="text-xs text-slate-400 truncate flex gap-1 items-center w-full">
+                                                {/* 🟢 Đã fix: Đồng bộ render nghệ sĩ thông minh cho bảng trên */}
+                                                {renderArtistName(track)}
                                             </p>
                                         </div>
                                     </div>
@@ -259,6 +314,48 @@ const PlaylistPage = () => {
                         <div className="text-center py-16 text-slate-500 font-medium">
                             Danh sách phát này hiện chưa có bài hát nào.
                         </div>
+                    )}
+                </div>
+            </div>
+
+            {/* 🟢 KHU VỰC GỢI Ý THÊM BÀI HÁT MỚI */}
+            <div className="p-8 border-t border-white/[0.05] mt-12 max-w-5xl mx-auto">
+                <h2 className="text-xl font-bold text-white mb-1">Hãy cùng thêm nội dung cho danh sách phát của bạn</h2>
+                <p className="text-xs text-slate-400 mb-6">Đề xuất các bài hát hiện có trên hệ thống</p>
+
+                <div className="flex flex-col gap-2">
+                    {allTracks
+                        .filter(track => !tracks.some(t => Number(t.id) === Number(track.id)))
+                        .slice(0, 5)
+                        .map((track) => (
+                            <div
+                                key={track.id}
+                                className="flex items-center justify-between p-3 hover:bg-white/[0.05] rounded-xl transition-colors group"
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 rounded bg-[#282828] overflow-hidden flex-shrink-0">
+                                        <MusicImage src={track.img} type="track" className="w-full h-full object-cover" />
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-sm text-white">{track.name}</p>
+                                        <p className="text-xs text-slate-400 truncate flex gap-1 items-center w-full">
+                                            {/* 🟢 Đã fix: Sử dụng chung hàm render nghệ sĩ thông minh cho danh sách dưới */}
+                                            {renderArtistName(track)}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => handleAddTrack(track)}
+                                    className="px-4 py-1.5 border border-slate-500 hover:border-white text-white rounded-full text-xs font-bold bg-transparent transition-all cursor-pointer"
+                                >
+                                    Thêm
+                                </button>
+                            </div>
+                        ))}
+
+                    {allTracks.filter(track => !tracks.some(t => Number(t.id) === Number(track.id))).length === 0 && (
+                        <p className="text-xs text-slate-500 italic py-4">Hiện tại không còn bài hát nào mới trên hệ thống để thêm.</p>
                     )}
                 </div>
             </div>

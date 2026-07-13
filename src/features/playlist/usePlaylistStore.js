@@ -51,12 +51,12 @@ export const usePlaylistStore = create((set, get) => ({
         }
     },
 
+    // 4. Upload/Cập nhật ảnh riêng biệt cho Playlist
     uploadPlaylistImage: async (id, file) => {
         try {
             const formData = new FormData();
             formData.append("file", file);
 
-            // Gọi đúng endpoint upload ảnh dạng multipart/form-data
             const res = await axiosClient.put(`/playlists/${id}/image`, formData, {
                 headers: {
                     "Content-Type": "multipart/form-data",
@@ -64,7 +64,6 @@ export const usePlaylistStore = create((set, get) => ({
             });
             const updatedPlaylist = res.data || res;
 
-            // Cập nhật lại state của danh sách playlist để giao diện React tự re-render ảnh mới
             set((state) => ({
                 playlists: state.playlists.map((pl) => (pl.id === id ? updatedPlaylist : pl)),
             }));
@@ -75,7 +74,7 @@ export const usePlaylistStore = create((set, get) => ({
         }
     },
 
-    // 4. Xóa Playlist
+    // 5. Xóa Playlist
     deletePlaylist: async (id) => {
         try {
             await axiosClient.delete(`/playlists/${id}`);
@@ -89,7 +88,7 @@ export const usePlaylistStore = create((set, get) => ({
         }
     },
 
-    // 5. Thêm bài hát vào Playlist
+    // 6. Thêm bài hát vào Playlist
     addTrackToPlaylist: async (playlistId, trackId) => {
         try {
             await axiosClient.post(`/playlists/${playlistId}/tracks`, { trackId });
@@ -100,7 +99,7 @@ export const usePlaylistStore = create((set, get) => ({
         }
     },
 
-    // 6. Xóa bài hát khỏi Playlist
+    // 7. Xóa bài hát khỏi Playlist
     removeTrackFromPlaylist: async (playlistId, trackId) => {
         try {
             await axiosClient.delete(`/playlists/${playlistId}/tracks/${trackId}`);

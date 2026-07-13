@@ -69,6 +69,20 @@ const ArtistProfilePage = () => {
 
   const [selectedTrack, setSelectedTrack] = useState(null);
 
+    const [followers, setFollowers] = useState([]);
+    const [isFollowerModalOpen, setIsFollowerModalOpen] = useState(false);
+
+    const fetchFollowers = async () => {
+        try {
+            const res = await axiosClient.get(`/artists/${id}/followers`);
+            setFollowers(res.data);
+            setIsFollowerModalOpen(true);
+        } catch (error) {
+            console.error("Lỗi lấy danh sách người theo dõi:", error);
+            alert("Không thể tải danh sách người theo dõi.");
+        }
+    };
+
     useEffect(() => {
         if (userId) {
             fetchFollowedArtists();
@@ -391,12 +405,14 @@ const ArtistProfilePage = () => {
                 color="bg-rose-500/10 text-rose-500"
               />
 
-              <StatCard
-                title="Tổng người theo dõi"
-                value={stats.totalFollowers}
-                icon={Users}
-                color="bg-amber-500/10 text-amber-500"
-              />
+                <div onClick={fetchFollowers} className="cursor-pointer transition-transform hover:scale-[1.02]">
+                    <StatCard
+                        title="Tổng người theo dõi"
+                        value={stats.totalFollowers}
+                        icon={Users}
+                        color="bg-amber-500/10 text-amber-500"
+                    />
+                </div>
 
               <StatCard
                 title="Tổng bình luận"
@@ -996,6 +1012,33 @@ const ArtistProfilePage = () => {
           </div>
         </div>
       )}
+        {isFollowerModalOpen && (
+            <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
+                <div className="bg-[#182232] border border-white/[0.1] w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-bold text-white">Người theo dõi</h3>
+                        <button
+                            onClick={() => setIsFollowerModalOpen(false)}
+                            className="text-slate-400 hover:text-white"
+                        >✕</button>
+                    </div>
+
+                    <div className="max-h-[300px] overflow-y-auto pr-2">
+                        {followers.length > 0 ? followers.map(user => (
+                            <div key={user.id} className="flex items-center gap-3 py-2 border-b border-white/[0.05]">
+                                <img src={user.img || '/default-avatar.png'} className="w-10 h-10 rounded-full object-cover" />
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-medium text-white">{user.name}</span>
+                                    <span className="text-xs text-slate-400">@{user.username}</span>
+                                </div>
+                            </div>
+                        )) : (
+                            <p className="text-center text-slate-500 text-sm">Chưa có ai theo dõi bạn.</p>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )}
         {selectedTrack && (
             <TrackEngagementModal
                 track={selectedTrack}
