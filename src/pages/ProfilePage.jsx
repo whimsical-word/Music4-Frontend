@@ -56,17 +56,21 @@ const ProfilePage = () => {
                     // axiosClient.get('/playlists/me')     // API lấy playlist
                 ]);
 
+                const apiName = profileRes.data.name || username;
+                const apiAvatar = profileRes.data.img || img;
+
                 setProfile({
-                    name: profileRes.data.name,
-                    avatar: profileRes.data.img || img,
+                    name: apiName,
+                    avatar: apiAvatar,
                 })
 
-                setPreviewImg(profile.avatar)
+
 
                 console.log("Name " + profileRes.data.name);
                 console.log("Avatar " + profileRes.data.avatar);
 
-                setEditName(profileRes.data.name);
+                setEditName(apiName);
+                setPreviewImg(apiAvatar);
                 // setPlaylists(playlistRes.data || []);
             } catch (error) {
                 console.error("Lỗi tải playlist:", error);
@@ -77,7 +81,7 @@ const ProfilePage = () => {
             }
         };
         fetchProfileAndPlaylist();
-    }, [userId, name, img]);
+    }, [userId, img, username]);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -112,7 +116,7 @@ const ProfilePage = () => {
 
             setProfile({
                 name: updatedName,
-                avatar: IMAGE_URL + updatedAvatarUrl
+                avatar: updatedAvatarUrl
             });
 
             // const accessToken = localStorage.getItem('accessToken');
