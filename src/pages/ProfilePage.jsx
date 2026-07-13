@@ -42,7 +42,7 @@ const ProfilePage = () => {
         if (userId) {
             fetchFollowedArtists();
         }
-    }, [userId]);
+    }, [fetchFollowedArtists, userId]);
 
     useEffect(() => {
         const fetchDetails = async () => {
