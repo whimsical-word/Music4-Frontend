@@ -67,21 +67,20 @@ export const useAuthStore = create((set) => ({
 
     // Dùng chung key với loginSuccess → không xung đột
     localStorage.setItem("accessToken", token);
-    localStorage.setItem("userId",   payload.id  ?? "");
-    localStorage.setItem("username", payload.sub  ?? "");
-    localStorage.setItem("role",     finalRole);
+    localStorage.setItem("userId", payload.id ?? "");
+    localStorage.setItem("username", payload.sub ?? "");
+    localStorage.setItem("role", finalRole);
     if (payload.img) localStorage.setItem("userImg", payload.img);
 
     set({
-      id:              payload.id   ?? null,
-      username:        payload.sub  ?? null,
-      img:             payload.img  ?? null,
-      role:            finalRole,
+      id: payload.id ?? null,
+      username: payload.sub ?? null,
+      img: payload.img ?? null,
+      role: finalRole,
       isAuthenticated: true,
-      error:           null,
+      error: null,
     });
 
     return true;
   },
 }));
-

@@ -39,7 +39,7 @@ const MusicPlayer = () => {
     toggleRepeatMode,
   } = usePlayerStore();
 
-  const { isAuthenticated, id: userId } = useAuthStore();
+  const { isAuthenticated, userId } = useAuthStore();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -155,9 +155,15 @@ const MusicPlayer = () => {
 
     // Chỉ chạy khi user đã đăng nhập, đang có bài hát, và bài hát đang play
     if (isAuthenticated && userId && currentTrack && isPlaying) {
+      console.log(
+        `[DEBUG - PLAY] Bắt đầu interval sync-time cho bài: ${currentTrack.name}`,
+      );
       syncInterval = setInterval(async () => {
         if (audioRef.current) {
           const currentPosition = Math.floor(audioRef.current.currentTime);
+          console.log(
+            `[DEBUG - SYNC] Chuẩn bị đồng bộ thời gian. Position hiện tại: ${currentPosition}s`,
+          );
           // Chỉ gửi nếu đã nghe
           if (currentPosition > 0) {
             try {
@@ -166,8 +172,9 @@ const MusicPlayer = () => {
                 trackId: currentTrack.id,
                 position: currentPosition,
               });
+              console.log("[DEBUG - SYNC] Đồng bộ thời gian thành công!");
             } catch (error) {
-              console.error("Lỗi đồng bộ thời gian:", error);
+              console.error("[DEBUG - ERROR] Lỗi đồng bộ thời gian:", error);
             }
           }
         }
@@ -177,6 +184,7 @@ const MusicPlayer = () => {
     // Cleanup function: Tự động dọn dẹp interval khi đổi bài hoặc pause
     return () => {
       if (syncInterval) {
+        console.log("[DEBUG - PLAY] Dọn dẹp interval sync-time.");
         clearInterval(syncInterval);
       }
     };
@@ -202,24 +210,46 @@ const MusicPlayer = () => {
       }
       lastTimeRef.current = currentVal;
 
-      // Kiểm tra xem đã nghe đủ 90% thời lượng chưa
+      // In log theo dõi quá trình nghe (Cứ mỗi ~5 giây in 1 lần để đỡ spam)
+      if (Math.floor(currentVal) % 5 === 0 && Math.floor(currentVal) !== 0) {
+        console.log(
+          `[DEBUG - TRACKING] Tiến trình: ${Math.floor(accumulatedTimeRef.current)}s / ${Math.floor(duration)}s`,
+        );
+      }
+
+      // Kiểm tra xem đã nghe đủ 100% thời lượng chưa
       if (
         duration > 0 &&
         accumulatedTimeRef.current >= duration * 1 && // Nghe full
         !hasRecordedViewRef.current // Chưa cộng view bao giờ
       ) {
+        console.log(
+          "[DEBUG - TRACKING] Đã đạt đủ điều kiện thời gian nghe! Kiểm tra Auth...",
+        );
         hasRecordedViewRef.current = true; // Khóa lại, không cộng đúp nữa
 
         if (isAuthenticated && userId && currentTrack) {
+          console.log(
+            `[DEBUG - TRACKING] Auth hợp lệ (User: ${userId}). Gọi API tăng view...`,
+          );
           try {
             await axiosClient.post("/tracking/play", {
               trackId: currentTrack.id,
               userId: userId,
             });
-            console.log("✅ Đã nghe full bài hát, tăng View thành công!");
+            console.log(
+              "[SUCCESS] Đã nghe full bài hát, tăng View thành công!",
+            );
           } catch (error) {
-            console.error("Lỗi khi lưu lịch sử/tăng view:", error);
+            console.error("[DEBUG - ERROR] Lỗi khi gọi API tăng view:", error);
           }
+        } else {
+          console.warn(
+            "[DEBUG - WARN] Bị chặn tăng view do: Thiếu isAuthenticated HOẶC userId HOẶC currentTrack!",
+          );
+          console.log(`- isAuthenticated: ${isAuthenticated}`);
+          console.log(`- userId: ${userId}`);
+          console.log(`- currentTrack: ${!!currentTrack}`);
         }
       }
     }

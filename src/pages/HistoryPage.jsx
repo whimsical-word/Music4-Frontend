@@ -9,7 +9,7 @@ import { AppPagination } from "../layouts/components/AppPagination";
 
 const HistoryPage = () => {
   const navigate = useNavigate();
-  const userId = useAuthStore((state) => state.id);
+  const userId = useAuthStore((state) => state.userId);
   const playTrack = usePlayerStore((state) => state.playTrack);
 
   const [historyTracks, setHistoryTracks] = useState([]);
