@@ -67,18 +67,31 @@ const ProfilePage = () => {
 
     useEffect(() => {
         if (!userId) return;
+
         const fetchProfileAndPlaylist = async () => {
             setIsLoadingProfile(true);
+
             try {
                 const [profileRes] = await Promise.all([
                     axiosClient.get(`/users/${userId}`),
                 ]);
+
+                const apiName = profileRes.data.name || username;
+                const apiAvatar = profileRes.data.img || img;
+
                 setProfile({
-                    name: profileRes.data.name,
-                    avatar: profileRes.data.img || img,
-                });
-                setPreviewImg(profileRes.data.img || img);
-                setEditName(profileRes.data.name);
+                    name: apiName,
+                    avatar: apiAvatar,
+                })
+
+
+
+                console.log("Name " + profileRes.data.name);
+                console.log("Avatar " + profileRes.data.avatar);
+
+                setEditName(apiName);
+                setPreviewImg(apiAvatar);
+                // setPlaylists(playlistRes.data || []);
             } catch (error) {
                 console.error("Lỗi tải thông tin cá nhân:", error);
                 setProfile({ name: username, avatar: img });
@@ -88,7 +101,7 @@ const ProfilePage = () => {
             }
         };
         fetchProfileAndPlaylist();
-    }, [userId]);
+    }, [userId, img, username]);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -106,19 +119,29 @@ const ProfilePage = () => {
             if (editName && editName.trim() !== '') {
                 formData.append('name', editName.trim());
             }
+
             if (selectedFile) {
                 formData.append('img', selectedFile);
             }
             const res = await axiosClient.patch(`/users/${userId}`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
+
             const updatedUser = res.data;
+            const updatedAvatarUrl = updatedUser.img || profile.avatar;
+            const updatedName = updatedUser.name || editName;
+
             setProfile({
-                name: updatedUser.name || editName,
-                avatar: IMAGE_URL + (updatedUser.img || profile.avatar)
+                name: updatedName,
+                avatar: updatedAvatarUrl
             });
             alert("Cập nhật hồ sơ thành công!");
             setIsEditModalOpen(false);
+            // if (previewImg) {
+            //     URL.revokeObjectURL(previewImg);
+            //     setPreviewImg(null);
+            //     setSelectedFile(null);
+            // }
         } catch (error) {
             console.error("Lỗi cập nhật:", error);
             alert(error);
