@@ -210,12 +210,12 @@ const MusicPlayer = () => {
       }
       lastTimeRef.current = currentVal;
 
-      // In log theo dõi quá trình nghe (Cứ mỗi ~5 giây in 1 lần để đỡ spam)
-      if (Math.floor(currentVal) % 5 === 0 && Math.floor(currentVal) !== 0) {
-        console.log(
-          `[DEBUG - TRACKING] Tiến trình: ${Math.floor(accumulatedTimeRef.current)}s / ${Math.floor(duration)}s`,
-        );
-      }
+      // // In log theo dõi quá trình nghe (Cứ mỗi ~5 giây in 1 lần để đỡ spam)
+      // if (Math.floor(currentVal) % 5 === 0 && Math.floor(currentVal) !== 0) {
+      //   console.log(
+      //     `[DEBUG - TRACKING] Tiến trình: ${Math.floor(accumulatedTimeRef.current)}s / ${Math.floor(duration)}s`,
+      //   );
+      // }
 
       // Kiểm tra xem đã nghe đủ 100% thời lượng chưa
       if (
