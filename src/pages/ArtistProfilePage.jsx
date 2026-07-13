@@ -69,6 +69,11 @@ const ArtistProfilePage = () => {
 
   const [selectedTrack, setSelectedTrack] = useState(null);
 
+  useEffect(() => {
+    if (userId) {
+      fetchFollowedArtists();
+    }
+  }, [userId]);
     const [followers, setFollowers] = useState([]);
     const [isFollowerModalOpen, setIsFollowerModalOpen] = useState(false);
 
@@ -351,22 +356,26 @@ const ArtistProfilePage = () => {
             <h1 className="text-5xl md:text-7xl font-black mb-3 tracking-tighter bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
               {artistInfo.name}
             </h1>
-              <div className="flex items-center gap-6">
-                  {!isOwner && (
-                      <button
-                          onClick={handleFollowToggle}
-                          onMouseEnter={() => setIsBtnHovered(true)}
-                          onMouseLeave={() => setIsBtnHovered(false)}
-                          className={`px-6 py-2 font-bold uppercase text-xs hover:scale-105 transition-all cursor-pointer rounded-full min-w-[140px] text-center border bg-transparent ${
-                              isFollowing
-                                  ? "border-sky-500 bg-sky-500/10 text-sky-400 hover:border-red-500 hover:text-red-500 hover:bg-red-500/10"
-                                  : "border-white/20 text-white hover:text-sky-400 hover:border-sky-400"
-                          }`}
-                      >
-                          {isFollowing ? (isBtnHovered ? "Hủy theo dõi" : "Đang theo dõi") : "Theo dõi"}
-                      </button>
-                  )}
-              </div>
+            <div className="flex items-center gap-6">
+              {!isOwner && (
+                <button
+                  onClick={handleFollowToggle}
+                  onMouseEnter={() => setIsBtnHovered(true)}
+                  onMouseLeave={() => setIsBtnHovered(false)}
+                  className={`px-6 py-2 font-bold uppercase text-xs hover:scale-105 transition-all cursor-pointer rounded-full min-w-[140px] text-center border bg-transparent ${
+                    isFollowing
+                      ? "border-sky-500 bg-sky-500/10 text-sky-400 hover:border-red-500 hover:text-red-500 hover:bg-red-500/10"
+                      : "border-white/20 text-white hover:text-sky-400 hover:border-sky-400"
+                  }`}
+                >
+                  {isFollowing
+                    ? isBtnHovered
+                      ? "Hủy theo dõi"
+                      : "Đang theo dõi"
+                    : "Theo dõi"}
+                </button>
+              )}
+            </div>
             <p className="text-sm text-slate-400 font-medium mt-2">
               {artistInfo.trackTotal || 0} Bài hát •{" "}
               {artistInfo.albumTotal || 0} Album
@@ -564,7 +573,7 @@ const ArtistProfilePage = () => {
                         }
                         formatter={(value, name) => [
                           value.toLocaleString("vi-VN"),
-                          name === "views" ? "Lượt nghe" : "Lượt thích",
+                          name,
                         ]}
                       />
 
@@ -1011,6 +1020,12 @@ const ArtistProfilePage = () => {
             </form>
           </div>
         </div>
+      )}
+      {selectedTrack && (
+        <TrackEngagementModal
+          track={selectedTrack}
+          onClose={() => setSelectedTrack(null)}
+        />
       )}
         {isFollowerModalOpen && (
             <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">

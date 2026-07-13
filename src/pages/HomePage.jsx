@@ -9,7 +9,7 @@ import {
   User as UserIcon,
   Heart,
   MessageSquare,
-    Plus,
+  Plus,
   MoreHorizontal,
   Sparkles,
 } from "lucide-react";
@@ -51,12 +51,14 @@ const AutoScrollCarousel = ({ title, items, renderItem, onViewAll }) => {
           <span className="w-1.5 h-6 bg-sky-500 rounded-full"></span>
           {title}
         </h3>
-        <button
-          onClick={onViewAll}
-          className="text-xs font-bold text-slate-400 hover:text-white uppercase tracking-widest bg-transparent border-none cursor-pointer transition-colors"
-        >
-          Xem tất cả
-        </button>
+        {onViewAll && (
+          <button
+            onClick={onViewAll}
+            className="text-xs font-bold text-slate-400 hover:text-white uppercase tracking-widest bg-transparent border-none cursor-pointer transition-colors"
+          >
+            Xem tất cả
+          </button>
+        )}
       </div>
 
       {/* Lớp bọc có thêm nút chuyển dữ liệu thủ công qua Hover */}
@@ -113,24 +115,32 @@ const HomePage = () => {
     const fetchHomeData = async () => {
       setIsLoading(true);
       try {
-        const aiRequestParams = userId ? { params: { userId } } : {};
 
-        const [tracksRes, artistsRes, albumRes, top5TrackRes, aiRes] =
+        const [tracksRes, artistsRes, albumRes, top5TrackRes] =
           await Promise.all([
             axiosClient.get("/tracks"),
             axiosClient.get("/artists"),
             axiosClient.get("/albums"),
             axiosClient.get("tracks/top5-views"),
-            axiosClient.get("/recommendations", aiRequestParams),
           ]);
 
         setTracks(tracksRes.data || []);
         setArtists(artistsRes.data || []);
         setAlbums(albumRes.data || []);
         setTop5Tracks(top5TrackRes.data || []);
-        setAiRecommendations(aiRes.data || []);
       } catch (error) {
         console.error("Lỗi lấy dữ liệu trang chủ: ", error);
+      } finally {
+        setIsLoading(false);
+      }
+
+      try {
+        const aiRequestParams = userId ? { params: { userId } } : {};
+        const aiRes = await axiosClient.get("/recommendations", aiRequestParams);
+        setAiRecommendations(aiRes.data || []);
+      } catch (aiError) {
+        console.warn("AI Service hiện không khả dụng, bỏ qua hiển thị gợi ý: ", aiError.message);
+        setAiRecommendations([]);
       } finally {
         setIsLoading(false);
       }
@@ -172,7 +182,6 @@ const HomePage = () => {
               </span>
             }
             items={aiRecommendations}
-            onViewAll={() => navigate("/recommendations")}
             renderItem={(track) => {
               return (
                 <div
@@ -495,17 +504,17 @@ const HomePage = () => {
 
                       {/* CỘT 5: HÀNG CÔNG CỤ TƯƠNG TÁC PHẲNG (Đã thêm mới) */}
                       <div className="col-span-2 flex items-center justify-end gap-3 pr-2">
-                          {/*<button*/}
-                          {/*    type="button"*/}
-                          {/*    onClick={(e) => {*/}
-                          {/*        e.stopPropagation();*/}
-                          {/*        setSelectedTrack(track); // Trích xuất modal tương tác hoặc dropdown list phát*/}
-                          {/*    }}*/}
-                          {/*    className="opacity-0 group-hover:opacity-100 text-[#b3b3b3] hover:text-sky-400 bg-transparent border-none cursor-pointer transition-all p-1"*/}
-                          {/*    title="Thêm vào danh sách phát"*/}
-                          {/*>*/}
-                          {/*    <Plus size={16} />*/}
-                          {/*</button>*/}
+                        {/*<button*/}
+                        {/*    type="button"*/}
+                        {/*    onClick={(e) => {*/}
+                        {/*        e.stopPropagation();*/}
+                        {/*        setSelectedTrack(track); // Trích xuất modal tương tác hoặc dropdown list phát*/}
+                        {/*    }}*/}
+                        {/*    className="opacity-0 group-hover:opacity-100 text-[#b3b3b3] hover:text-sky-400 bg-transparent border-none cursor-pointer transition-all p-1"*/}
+                        {/*    title="Thêm vào danh sách phát"*/}
+                        {/*>*/}
+                        {/*    <Plus size={16} />*/}
+                        {/*</button>*/}
 
                         <button
                           type="button"
