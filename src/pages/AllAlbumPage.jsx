@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, User as UserIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import {ArrowLeft, User as UserIcon, ChevronLeft, ChevronRight, Play} from 'lucide-react';
 import axiosClient from '../app/axios/axiosClient';
 import MusicImage from "../layouts/components/MusicImage.jsx";
 
@@ -97,22 +97,25 @@ const AllAlbumPage = () => {
                         {artists.map((artist) => (
                             <div
                                 key={artist.id}
-                                onClick={() => navigate(`/artist/${artist.id}`)}
+                                onClick={() => navigate(`/albums/${artist.id}`)}
                                 className="bg-[#0f1722] p-5 rounded-2xl hover:bg-white/[0.03] transition-all duration-300 group cursor-pointer border border-white/[0.05] hover:border-sky-500/30 text-center shadow-lg shadow-black/20"
                             >
-                                {/* Khung hình tròn chuẩn Spotify */}
-                                <div className="w-28 h-28 md:w-32 md:h-32 mx-auto mb-4 rounded-full overflow-hidden border border-white/[0.05] relative bg-white/[0.02] shadow-inner">
+                                {/* Giới hạn khung chứa ảnh album tương ứng với độ rộng card */}
+                                <div className="relative aspect-square w-full h-[150px] md:h-[168px] mb-4 overflow-hidden bg-white/[0.02] shadow-md flex-shrink-0">
                                     <MusicImage
                                         src={artist.img}
-                                        type='artist'
+                                        type="album"
                                         alt={artist.name}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 object-top"
+                                        className="group-hover:scale-105 transition-transform duration-500"
                                     />
-                                    {/* Lớp phủ mờ nhẹ khi hover */}
                                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                                        <div className="w-10 h-10 bg-sky-600 rounded-full flex items-center justify-center shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                                            <UserIcon size={18} className="text-white" />
-                                        </div>
+                                        <button className="w-11 h-11 bg-gradient-to-r from-sky-500 to-blue-600 rounded-full flex items-center justify-center shadow-md transform translate-y-3 group-hover:translate-y-0 transition-all duration-300 border-none cursor-pointer">
+                                            <Play
+                                                size={20}
+                                                fill="currentColor"
+                                                className="text-white ml-0.5"
+                                            />
+                                        </button>
                                     </div>
                                 </div>
                                 <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors" title={artist.name}>
