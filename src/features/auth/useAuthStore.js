@@ -53,33 +53,35 @@ export const useAuthStore = create((set) => ({
   setAuthError: (errorMsg) => set({ error: errorMsg }),
   setLoading: (isLoading) => set({ isLoading }),
 
-  loginWithGoogle: (token) => {
-    const payload = decodeJwt(token);
-    if (!payload) {
-      set({ error: "Token Google không hợp lệ." });
-      return false;
-    }
+    loginWithGoogle: (token) => {
+        const payload = decodeJwt(token);
+        if (!payload) {
+            set({ error: "Token Google không hợp lệ." });
+            return false;
+        }
 
-    let finalRole = (payload.role || "listener")
-        .replace("ROLE_", "")
-        .toLowerCase();
-    if (finalRole === "user") finalRole = "listener";
+        let finalRole = (payload.role || "listener")
+            .replace("ROLE_", "")
+            .toLowerCase();
+        if (finalRole === "user") finalRole = "listener";
 
-    // Dùng chung key với loginSuccess → không xung đột
-    localStorage.setItem("accessToken", token);
-    localStorage.setItem("userId", payload.id ?? "");
-    localStorage.setItem("username", payload.sub ?? "");
-    localStorage.setItem("role", finalRole);
-    if (payload.img) localStorage.setItem("userImg", payload.img);
+        const finalUserId = payload.id ? String(payload.id) : null;
+        const finalUsername = payload.sub || null;
 
-    set({
-      id: payload.id ?? null,
-      username: payload.sub ?? null,
-      img: payload.img ?? null,
-      role: finalRole,
-      isAuthenticated: true,
-      error: null,
-    });
+        if (finalUserId) localStorage.setItem("userId", finalUserId);
+        if (finalUsername) localStorage.setItem("username", finalUsername);
+        localStorage.setItem("accessToken", token);
+        localStorage.setItem("role", finalRole);
+        if (payload.img && payload.img !== 'null') localStorage.setItem("userImg", payload.img);
+
+        set({
+            userId: finalUserId,
+            username: finalUsername,
+            img: payload.img && payload.img !== 'null' ? payload.img : null,
+            role: finalRole,
+            isAuthenticated: true,
+            error: null,
+        });
 
     return true;
   },
