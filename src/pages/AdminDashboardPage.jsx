@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import {Users, Mic2, LayoutGrid, Trash2, Edit, Eye, Plus, Play, RefreshCw, AlertTriangle, CheckCircle} from 'lucide-react';
+import {Users, Mic2, LayoutGrid, Trash2, Edit, Eye, Plus, Play, RefreshCw, AlertTriangle, CheckCircle, History} from 'lucide-react';
 import axiosClient from '../app/axios/axiosClient';
 import MusicImage from '../layouts/components/MusicImage';
 import { AppPagination } from "../layouts/components/AppPagination.jsx";
@@ -63,6 +63,11 @@ const AdminDashboardPage = () => {
     // State quản lý trạng thái đồng bộ
     const [isSyncing, setIsSyncing] = useState(false);
     const [showSyncModal, setShowSyncModal] = useState(false);
+
+    // State quản lý trạng thái dọn dẹp lịch sử
+    const [isCleaning, setIsCleaning] = useState(false);
+    const [showCleanupModal, setShowCleanupModal] = useState(false);
+
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
     const displayToast = (message, type = 'success') => {
@@ -71,7 +76,7 @@ const AdminDashboardPage = () => {
     };
 
     const handleConfirmSync = async () => {
-        setShowSyncModal(false); // Đóng popup xác nhận
+        setShowSyncModal(false);
         setIsSyncing(true);
         try {
             await axiosClient.post('/recommendations/sync');
@@ -81,6 +86,20 @@ const AdminDashboardPage = () => {
             displayToast(`Đồng bộ thất bại: ${error.response?.data?.message || error.message}`, "error");
         } finally {
             setIsSyncing(false);
+        }
+    };
+
+    const handleConfirmCleanup = async () => {
+        setShowCleanupModal(false);
+        setIsCleaning(true);
+        try {
+            await axiosClient.post('/admin/system/cleanup-history');
+            displayToast("Dọn dẹp lịch sử thành công!", "success");
+        } catch (error) {
+            console.error("Lỗi dọn dẹp lịch sử:", error);
+            displayToast(`Dọn dẹp thất bại: ${error.response?.data?.message || error.message}`, "error");
+        } finally {
+            setIsCleaning(false);
         }
     };
     
@@ -226,7 +245,17 @@ const AdminDashboardPage = () => {
                         {activeTab === 'overview' && (
                             <div>
                                 <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-2xl font-bold text-white">Hệ Thống Tổng Quan</h2>
+                                <h2 className="text-2xl font-bold text-white">Hệ Thống Tổng Quan</h2>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={() => setShowCleanupModal(true)}
+                                        disabled={isCleaning}
+                                        className="flex items-center gap-2 bg-[#282828] hover:bg-[#3e3e3e] text-white px-4 py-2.5 rounded-lg font-semibold transition-all cursor-pointer border border-[#3e3e3e] shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                        title="Dọn dẹp lịch sử nghe nhạc rác trong hệ thống"
+                                    >
+                                        <History size={18} className={isCleaning ? "animate-pulse" : ""} />
+                                        <span>{isCleaning ? "Đang dọn dẹp..." : "Dọn Dẹp Lịch Sử"}</span>
+                                    </button>
                                     <button
                                         onClick={() => setShowSyncModal(true)}
                                         disabled={isSyncing}
@@ -237,6 +266,7 @@ const AdminDashboardPage = () => {
                                         <span>{isSyncing ? "Đang đồng bộ..." : "Đồng Bộ Dữ Liệu AI"}</span>
                                     </button>
                                 </div>
+                            </div>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                                     <div className="bg-[#181818] p-6 rounded-xl border border-[#282828] flex items-center gap-4">
                                         <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500"><Users size={24}/></div>
@@ -638,7 +668,40 @@ const AdminDashboardPage = () => {
                 </div>
             )}
 
-            {/* TOAST THÔNG BÁO (Góc dưới bên phải) */}
+            {/* POPUP XÁC NHẬN DỌN DẸP LỊCH SỬ */}
+            {showCleanupModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-[#181818] p-6 rounded-2xl border border-[#282828] w-full max-w-md shadow-2xl">
+                        <h3 className="text-xl font-bold text-white mb-3 flex items-center gap-2">
+                            <AlertTriangle className="text-amber-500" size={24} />
+                            Xác nhận dọn dẹp lịch sử
+                        </h3>
+                        <div className="text-slate-300 text-sm mb-6 leading-relaxed">
+                            Bạn có chắc chắn muốn dọn dẹp lịch sử nghe nhạc rác trong hệ thống không?
+                            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-400 p-3 rounded-lg mt-3 text-xs flex gap-2">
+                                <AlertTriangle size={16} className="shrink-0" />
+                                <span>Thao tác này sẽ xóa các bản ghi lịch sử cũ/quá hạn, không thể hoàn tác.</span>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setShowCleanupModal(false)}
+                                className="px-5 py-2.5 rounded-lg text-[#a7a7a7] hover:text-white font-medium bg-[#282828] hover:bg-[#3e3e3e] transition-colors border-none cursor-pointer"
+                            >
+                                Hủy bỏ
+                            </button>
+                            <button
+                                onClick={handleConfirmCleanup}
+                                className="px-5 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium cursor-pointer border-none shadow-lg shadow-red-600/20 transition-all active:scale-95"
+                            >
+                                Bắt đầu dọn dẹp
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* TOAST THÔNG BÁO (Góc trên bên phải) */}
             {toast.show && (
                 <div className={`fixed top-24 right-10 z-100 flex items-center gap-3 px-5 py-4 rounded-xl shadow-2xl animate-in slide-in-from-top-5 fade-in duration-300 border ${
                     toast.type === 'success' 
