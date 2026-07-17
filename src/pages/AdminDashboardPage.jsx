@@ -194,7 +194,25 @@ const AdminDashboardPage = () => {
             }
         }
     };
+    const handleDeleteUser = async (id) => {
+        if (window.confirm("Bạn có chắc chắn muốn xóa người dùng này? (Dữ liệu liên quan sẽ được xử lý an toàn)")) {
+            try {
+                // Gọi API xóa người dùng từ backend
+                await axiosClient.delete(`/users/${id}`);
 
+                // Cập nhật lại state danh sách người dùng trên giao diện
+                setUsers(prev => prev.filter(u => u.id !== id));
+
+                // Giảm biến đếm tổng số User đi 1
+                setUserCount(prev => prev - 1);
+
+                displayToast("Xóa người dùng thành công!", "success");
+            } catch (error) {
+                console.error("Lỗi xóa người dùng:", error);
+                displayToast("Xóa người dùng thất bại!", "error");
+            }
+        }
+    };
     return (
         <div className="min-h-screen bg-[#121212] font-sans text-gray-200 p-6 pb-24">
             <main className="max-w-7xl mx-auto animate-in fade-in duration-300">
@@ -430,13 +448,22 @@ const AdminDashboardPage = () => {
                                                 {/* Thêm cột email cho đầy đủ thông tin */}
                                                 <td className="p-4 text-gray-300">{u.email || 'Không có email'}</td>
                                                 <td className="p-4 text-gray-400 font-mono">USR-{u.id}</td>
-                                                <td className="p-4 text-right">
+                                                {/* Cột Hành động của User */}
+                                                <td className="p-4 text-right flex justify-end gap-2">
                                                     <button
                                                         onClick={() => navigate('/profile')}
                                                         className="p-2 text-gray-400 hover:text-blue-500 rounded-lg transition-colors bg-transparent border-none cursor-pointer"
                                                         title="Xem hồ sơ người nghe"
                                                     >
                                                         <Eye size={18}/>
+                                                    </button>
+                                                    {/* Thêm nút Xóa ở đây */}
+                                                    <button
+                                                        onClick={() => handleDeleteUser(u.id)}
+                                                        className="p-2 text-gray-400 hover:text-red-500 rounded-lg transition-colors bg-transparent border-none cursor-pointer"
+                                                        title="Xóa người dùng"
+                                                    >
+                                                        <Trash2 size={18}/>
                                                     </button>
                                                 </td>
                                             </tr>
