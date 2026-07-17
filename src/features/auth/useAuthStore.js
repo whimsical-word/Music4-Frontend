@@ -8,6 +8,7 @@ const decodeJwt = (token) => {
   }
 };
 
+
 export const useAuthStore = create((set) => ({
     userId: localStorage.getItem('userId') || null,
     username: localStorage.getItem('username') || null,
