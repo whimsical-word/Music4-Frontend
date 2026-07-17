@@ -115,24 +115,32 @@ const HomePage = () => {
     const fetchHomeData = async () => {
       setIsLoading(true);
       try {
-        const aiRequestParams = userId ? { params: { userId } } : {};
 
-        const [tracksRes, artistsRes, albumRes, top5TrackRes, aiRes] =
+        const [tracksRes, artistsRes, albumRes, top5TrackRes] =
           await Promise.all([
             axiosClient.get("/tracks"),
             axiosClient.get("/artists"),
             axiosClient.get("/albums"),
             axiosClient.get("tracks/top5-views"),
-            // axiosClient.get("/recommendations", aiRequestParams),
           ]);
 
         setTracks(tracksRes.data || []);
         setArtists(artistsRes.data || []);
         setAlbums(albumRes.data || []);
         setTop5Tracks(top5TrackRes.data || []);
-        setAiRecommendations(aiRes.data || []);
       } catch (error) {
         console.error("Lỗi lấy dữ liệu trang chủ: ", error);
+      } finally {
+        setIsLoading(false);
+      }
+
+      try {
+        const aiRequestParams = userId ? { params: { userId } } : {};
+        const aiRes = await axiosClient.get("/recommendations", aiRequestParams);
+        setAiRecommendations(aiRes.data || []);
+      } catch (aiError) {
+        console.warn("AI Service hiện không khả dụng, bỏ qua hiển thị gợi ý: ", aiError.message);
+        setAiRecommendations([]);
       } finally {
         setIsLoading(false);
       }
