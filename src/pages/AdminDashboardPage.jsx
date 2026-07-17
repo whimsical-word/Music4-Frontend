@@ -232,6 +232,29 @@ const AdminDashboardPage = () => {
             }
         }
     };
+
+    const handleDeleteArtist = async (id) => {
+        if (window.confirm("Bạn có chắc chắn muốn xóa nghệ sĩ này? (Dữ liệu liên quan sẽ được xử lý an toàn)")) {
+            try {
+                // Gọi API xóa nghệ sĩ từ backend
+                await axiosClient.delete(`/artists/${id}`);
+
+                // Cập nhật lại state danh sách nghệ sĩ trên giao diện
+                setArtists(prev => prev.filter(a => a.id !== id));
+
+                // Giảm biến đếm tổng số Nghệ sĩ đi 1
+                setArtistCount(prev => prev - 1);
+
+                displayToast("Xóa nghệ sĩ thành công!", "success");
+            } catch (error) {
+                console.error("Lỗi xóa nghệ sĩ:", error);
+                displayToast("Xóa nghệ sĩ thất bại!", "error");
+            }
+        }
+    };
+
+
+
     return (
         <div className="min-h-screen bg-[#121212] font-sans text-gray-200 p-6 pb-24">
             <main className="max-w-7xl mx-auto animate-in fade-in duration-300">
@@ -481,7 +504,8 @@ const AdminDashboardPage = () => {
                                                 {/* Cột Hành động của User */}
                                                 <td className="p-4 text-right flex justify-end gap-2">
                                                     <button
-                                                        onClick={() => navigate('/profile')}
+                                                        // 🟢 SỬA DÒNG NÀY: Truyền thêm u.id vào đường dẫn
+                                                        onClick={() => navigate(`/profile/${u.id}`)}
                                                         className="p-2 text-gray-400 hover:text-blue-500 rounded-lg transition-colors bg-transparent border-none cursor-pointer"
                                                         title="Xem hồ sơ người nghe"
                                                     >
@@ -544,6 +568,13 @@ const AdminDashboardPage = () => {
                                                         title="Xem trang nghệ sĩ"
                                                     >
                                                         <Eye size={18}/>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteArtist(a.id)}
+                                                        className="p-2 text-gray-400 hover:text-red-500 rounded-lg transition-colors bg-transparent border-none cursor-pointer"
+                                                        title="Xóa nghệ sĩ"
+                                                    >
+                                                        <Trash2 size={18}/>
                                                     </button>
                                                 </td>
                                             </tr>
