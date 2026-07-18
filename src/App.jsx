@@ -19,17 +19,17 @@ import OAuth2RedirectPage from "./pages/OAuth2RedirectPage.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import {ResetPassword} from "./pages/ResetPassword.jsx";
 import AllAlbumPage from "./pages/AllAlbumPage.jsx";
-
+import RandomExplorePage from "./pages/RandomExplorePage.jsx";
 
 function App() {
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={<MainLayout />}>
-                    <Route path="/oauth2/redirect" element={<OAuth2RedirectPage />} />
-                    <Route index element={<HomePage />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/" element={<MainLayout/>}>
+                    <Route path="/oauth2/redirect" element={<OAuth2RedirectPage/>}/>
+                    <Route index element={<HomePage/>}/>
+                    <Route path="/login" element={<LoginPage/>}/>
+                    <Route path="/forgot-password" element={<ForgotPassword/>}/>
                     <Route path={"/reset-password"} element={<ResetPassword/>}/>
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="tracks" element={<AllTracksPage />} />
@@ -45,6 +45,7 @@ function App() {
                     <Route path="/studio/album" element={<CreateAlbumPage />} />
                     <Route path="/albums/:albumId" element={<AlbumDetailPage />} />
                     <Route path="/admin" element={<AdminDashboardPage/>}/>
+                    <Route path="/explore" element={<RandomExplorePage />} />
                     {/* Thêm các Route khác vào đây, ví dụ: */}
                     {/* <Route path="search" element={<SearchPage />} /> */}
                 </Route>
