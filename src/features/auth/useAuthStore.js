@@ -1,15 +1,22 @@
 import { create } from 'zustand';
 
+const decodeJwt = (token) => {
+  try {
+    return JSON.parse(atob(token.split(".")[1]));
+  } catch {
+    return null;
+  }
+};
+
 export const useAuthStore = create((set) => ({
-    id: localStorage.getItem('userId') || null,
+    userId: localStorage.getItem('userId') || null,
     username: localStorage.getItem('username') || null,
-    img: localStorage.getItem('userImg') || null, // 🟢 Bổ sung lưu ảnh
+    img: localStorage.getItem('userImg') || null,
     role: localStorage.getItem('role') || 'listener',
     isAuthenticated: !!localStorage.getItem('accessToken'),
     isLoading: false,
     error: null,
 
-    // 🟢 Hứng thêm id và img từ file LoginPage truyền sang
     loginSuccess: (accessToken, refreshToken, id, username, img, role) => {
         let finalRole = role.replace('ROLE_', '').toLowerCase();
         if (finalRole === 'user') finalRole = 'listener';
@@ -22,7 +29,7 @@ export const useAuthStore = create((set) => ({
         if (img && img !== 'null') localStorage.setItem('userImg', img);
 
         set({
-            id: id,
+            userId: id,
             username: username,
             img: img && img !== 'null' ? img : null,
             role: finalRole,
@@ -33,9 +40,49 @@ export const useAuthStore = create((set) => ({
 
     logout: () => {
         localStorage.clear();
-        set({ id: null, username: null, img: null, role: 'listener', isAuthenticated: false, error: null });
+        set({
+            userId: null,
+            username: null,
+            img: null,
+            role: 'listener',
+            isAuthenticated: false,
+            error: null
+        });
     },
 
-    setAuthError: (errorMsg) => set({ error: errorMsg }),
-    setLoading: (isLoading) => set({ isLoading }),
+  setAuthError: (errorMsg) => set({ error: errorMsg }),
+  setLoading: (isLoading) => set({ isLoading }),
+
+    loginWithGoogle: (token) => {
+        const payload = decodeJwt(token);
+        if (!payload) {
+            set({ error: "Token Google không hợp lệ." });
+            return false;
+        }
+
+        let finalRole = (payload.role || "listener")
+            .replace("ROLE_", "")
+            .toLowerCase();
+        if (finalRole === "user") finalRole = "listener";
+
+        const finalUserId = payload.id ? String(payload.id) : null;
+        const finalUsername = payload.sub || null;
+
+        if (finalUserId) localStorage.setItem("userId", finalUserId);
+        if (finalUsername) localStorage.setItem("username", finalUsername);
+        localStorage.setItem("accessToken", token);
+        localStorage.setItem("role", finalRole);
+        if (payload.img && payload.img !== 'null') localStorage.setItem("userImg", payload.img);
+
+        set({
+            userId: finalUserId,
+            username: finalUsername,
+            img: payload.img && payload.img !== 'null' ? payload.img : null,
+            role: finalRole,
+            isAuthenticated: true,
+            error: null,
+        });
+
+    return true;
+  },
 }));

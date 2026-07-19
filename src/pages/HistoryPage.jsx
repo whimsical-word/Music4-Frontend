@@ -9,7 +9,7 @@ import { AppPagination } from "../layouts/components/AppPagination";
 
 const HistoryPage = () => {
   const navigate = useNavigate();
-  const { id: userId } = useAuthStore();
+  const userId = useAuthStore((state) => state.userId);
   const playTrack = usePlayerStore((state) => state.playTrack);
 
   const [historyTracks, setHistoryTracks] = useState([]);
@@ -25,7 +25,7 @@ const HistoryPage = () => {
       try {
         // Gọi API lấy lịch sử nghe nhạc của User
         const response = await axiosClient.get(
-          `/api/tracking/history/1?page=${page}&size=20`,
+          `/tracking/history/${userId}?page=${page}&size=20`,
         );
         setHistoryTracks(response.data.content);
         setTotalPages(response.data.totalPages);
@@ -77,25 +77,29 @@ const HistoryPage = () => {
                   />
                 </div>
               </div>
-              <p className="text-xs text-[#a7a7a7] truncate flex gap-1 items-center">
-                {track.artists && track.artists.length > 0
-                  ? track.artists.map((artist, idx) => (
-                      <span key={artist.id}>
-                        <span
-                          onClick={(e) => {
-                            e.stopPropagation(); // Ngăn chặn sự kiện click lan ra thẻ cha (làm phát nhạc ngoài ý muốn)
-                            navigate(`/artist/${artist.id}`); // Chuyển hướng đến trang nghệ sĩ bằng ID
-                          }}
-                          className="hover:text-blue-500 hover:underline cursor-pointer transition-colors text-gray-400 font-medium"
-                        >
-                          {artist.name}
+              <div className="flex-1 min-w-0">
+                <h4 className="text-white font-semibold truncate">
+                  {track.name}
+                </h4>
+                <p className="text-xs text-[#a7a7a7] truncate flex gap-1 items-center">
+                  {track.artists && track.artists.length > 0
+                    ? track.artists.map((artist, idx) => (
+                        <span key={artist.id}>
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/artist/${artist.id}`);
+                            }}
+                            className="hover:text-blue-500 hover:underline cursor-pointer transition-colors text-gray-400 font-medium"
+                          >
+                            {artist.name}
+                          </span>
+                          {idx < track.artists.length - 1 && ", "}
                         </span>
-                        {/* Nếu bài hát có nhiều nghệ sĩ, thêm dấu phẩy ngăn cách ở giữa */}
-                        {idx < track.artists.length - 1 && ", "}
-                      </span>
-                    ))
-                  : "Nghệ sĩ hệ thống"}
-              </p>
+                      ))
+                    : "Nghệ sĩ hệ thống"}
+                </p>
+              </div>
               <div className="text-right">
                 <span className="bg-[#282828] px-2.5 py-1 rounded-full text-xs border border-[#3e3e3e]">
                   {track.viewCount || 0} views
