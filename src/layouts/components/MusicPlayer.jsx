@@ -248,6 +248,12 @@ const MusicPlayer = () => {
               trackId: currentTrack.id,
               userId: userId,
             });
+            await axiosClient.put("/tracking/sync-time", {
+              trackId: currentTrack.id,
+              userId: userId,
+              position: Math.floor(currentVal),
+            });
+
             console.log("[SUCCESS] Đã lưu bài hát vào lịch sử!");
           } catch (error) {
             console.error(
