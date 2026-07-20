@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {BrowserRouter, Routes, Route} from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import HomePage from "./pages/HomePage";
 import RegisterPage from "./pages/RegisterPage.jsx";
@@ -19,32 +19,33 @@ import OAuth2RedirectPage from "./pages/OAuth2RedirectPage.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import {ResetPassword} from "./pages/ResetPassword.jsx";
 import AllAlbumPage from "./pages/AllAlbumPage.jsx";
-
+import RandomExplorePage from "./pages/RandomExplorePage.jsx";
 
 function App() {
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/" element={<MainLayout />}>
-                    <Route path="/oauth2/redirect" element={<OAuth2RedirectPage />} />
-                    <Route index element={<HomePage />} />
-                    <Route path="/login" element={<LoginPage />} />
-                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/" element={<MainLayout/>}>
+                    <Route path="/oauth2/redirect" element={<OAuth2RedirectPage/>}/>
+                    <Route index element={<HomePage/>}/>
+                    <Route path="/login" element={<LoginPage/>}/>
+                    <Route path="/forgot-password" element={<ForgotPassword/>}/>
                     <Route path={"/reset-password"} element={<ResetPassword/>}/>
-                    <Route path="/register" element={<RegisterPage />} />
-                    <Route path="tracks" element={<AllTracksPage />} />
-                    <Route path="/albums" element={<AllAlbumPage />} />
-                    <Route path="/artists" element={<AllArtistsPage />} />
-                    <Route path="/search" element={<SearchPage />} />
-                    <Route path="/profile" element={<ProfilePage />} />
-                    <Route path="/playlist/:id" element={<PlaylistPage />} />
-                    <Route path="/history" element={<HistoryPage />} />
-                    <Route path="/artist/:id" element={<ArtistProfilePage />} />
-                    <Route path="/favorites" element={<LikedSongsPage />} />
-                    <Route path="/studio/upload" element={<CreateTrackPage />} />
-                    <Route path="/studio/album" element={<CreateAlbumPage />} />
-                    <Route path="/albums/:albumId" element={<AlbumDetailPage />} />
+                    <Route path="/register" element={<RegisterPage/>}/>
+                    <Route path="tracks" element={<AllTracksPage/>}/>
+                    <Route path="/albums" element={<AllAlbumPage/>}/>
+                    <Route path="/artists" element={<AllArtistsPage/>}/>
+                    <Route path="/search" element={<SearchPage/>}/>
+                    <Route path="/profile" element={<ProfilePage/>}/>
+                    <Route path="/playlist/:id" element={<PlaylistPage/>}/>
+                    <Route path="/history" element={<HistoryPage/>}/>
+                    <Route path="/artist/:id" element={<ArtistProfilePage/>}/>
+                    <Route path="/favorites" element={<LikedSongsPage/>}/>
+                    <Route path="/studio/upload" element={<CreateTrackPage/>}/>
+                    <Route path="/studio/album" element={<CreateAlbumPage/>}/>
+                    <Route path="/albums/:albumId" element={<AlbumDetailPage/>}/>
                     <Route path="/admin" element={<AdminDashboardPage/>}/>
+                    <Route path="/explore" element={<RandomExplorePage />} />
                     {/* Thêm các Route khác vào đây, ví dụ: */}
                     {/* <Route path="search" element={<SearchPage />} /> */}
                 </Route>

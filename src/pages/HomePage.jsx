@@ -19,6 +19,7 @@ import { usePlayerStore } from "../features/player/usePlayerStore";
 import MusicImage from "../layouts/components/MusicImage";
 import TrackEngagementModal from "../layouts/components/TrackEngagementModal";
 
+const randomSeed = Math.floor(Math.random() * 10000) + 1;
 // =====================================================================
 // COMPONENT PHỤ: BĂNG CHUYỀN ĐIỀU HƯỚNG TAY (ĐÃ BỎ HOÀN TOÀN AUTO-SCROLL)
 // =====================================================================
@@ -115,27 +116,56 @@ const HomePage = () => {
     const fetchHomeData = async () => {
       setIsLoading(true);
       try {
-        const aiRequestParams = userId ? { params: { userId } } : {};
-
-        const [tracksRes, artistsRes, albumRes, top5TrackRes, aiRes] =
+        const [tracksRes, artistsRes, albumRes, top5TrackRes] =
           await Promise.all([
-            axiosClient.get("/tracks"),
+            axiosClient.get("/tracks/random", {
+              params: { seed: randomSeed, page: 0, size: 12 },
+            }),
             axiosClient.get("/artists"),
             axiosClient.get("/albums"),
             axiosClient.get("tracks/top5-views"),
-            // axiosClient.get("/recommendations", aiRequestParams),
           ]);
 
-        setTracks(tracksRes.data || []);
-        setArtists(artistsRes.data || []);
-        setAlbums(albumRes.data || []);
-        setTop5Tracks(top5TrackRes.data || []);
-        setAiRecommendations(aiRes.data || []);
+        setTracks(
+          tracksRes.data?.content ||
+            tracksRes.data?.data ||
+            tracksRes.data ||
+            [],
+        );
+        setArtists(
+          artistsRes.data?.content ||
+            artistsRes.data?.data ||
+            artistsRes.data ||
+            [],
+        );
+        setAlbums(
+          albumRes.data?.content || albumRes.data?.data || albumRes.data || [],
+        );
+        setTop5Tracks(
+          top5TrackRes.data?.content ||
+            top5TrackRes.data?.data ||
+            top5TrackRes.data ||
+            [],
+        );
       } catch (error) {
         console.error("Lỗi lấy dữ liệu trang chủ: ", error);
-      } finally {
-        setIsLoading(false);
       }
+
+      if (userId) {
+        try {
+          const aiRes = await axiosClient.get("/recommendations", {
+            params: { userId },
+          });
+          setAiRecommendations(aiRes.data || []);
+        } catch (aiError) {
+          console.warn("AI Service không khả dụng: ", aiError.message);
+          setAiRecommendations([]);
+        }
+      } else {
+        setAiRecommendations([]);
+      }
+
+      setIsLoading(false);
     };
 
     fetchHomeData();
@@ -165,7 +195,7 @@ const HomePage = () => {
 
       <div className="space-y-12 animate-fadeIn">
         {/* 0. BĂNG CHUYỀN GỢI Ý AI (DÀNH RIÊNG CHO BẠN) */}
-        {aiRecommendations.length > 0 && (
+        {userId && aiRecommendations.length > 0 && (
           <AutoScrollCarousel
             title={
               <span className="flex items-center gap-2 text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-fuchsia-500">
@@ -180,7 +210,6 @@ const HomePage = () => {
                   key={track.id}
                   className="w-[160px] md:w-[200px] flex-shrink-0 snap-start bg-[#121a24] p-4 rounded-2xl hover:bg-[#1a2332] transition-all duration-300 group cursor-pointer border border-sky-500/10 hover:border-sky-500/30 relative shadow-lg hover:shadow-sky-900/20"
                 >
-                  {/* Khung chứa ảnh (Đã bỏ Badge % Hợp gu) */}
                   <div className="relative w-full h-[150px] md:h-[168px] mb-4 rounded-xl overflow-hidden bg-[#0a0f14] shadow-inner flex-shrink-0">
                     <MusicImage
                       src={track.img}
@@ -189,7 +218,6 @@ const HomePage = () => {
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                     />
 
-                    {/* Lớp mờ và Nút Play */}
                     <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
                       <button
                         onClick={(e) => {
@@ -207,7 +235,6 @@ const HomePage = () => {
                     </div>
                   </div>
 
-                  {/* Thông tin bài hát */}
                   <div className="relative pr-6 group/title w-full">
                     <h4 className="font-bold text-slate-100 truncate text-sm mb-1.5 max-w-[85%] group-hover:text-sky-400 transition-colors">
                       {track.name}
@@ -250,7 +277,44 @@ const HomePage = () => {
             }}
           />
         )}
-
+        {/* 3. BĂNG CHUYỀN ALBUM */}
+        <AutoScrollCarousel
+          title="Album Nổi Bật"
+          items={albums}
+          onViewAll={() => navigate("/albums")}
+          renderItem={(album) => (
+            <div
+              key={album.id}
+              onClick={() => navigate(`/albums/${album.id}`)}
+              className="w-[160px] md:w-[200px] flex-shrink-0 snap-start bg-[#0f1722] p-4 rounded-xl hover:bg-white/[0.04] transition-all duration-300 group cursor-pointer border border-transparent hover:border-white/[0.1]"
+            >
+              {/* Giới hạn khung chứa ảnh album tương ứng với độ rộng card */}
+              <div className="relative aspect-square w-full h-[150px] md:h-[168px] mb-4 overflow-hidden bg-white/[0.02] shadow-md flex-shrink-0">
+                <MusicImage
+                  src={album.img}
+                  type="album"
+                  alt={album.name}
+                  className="group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                  <button className="w-11 h-11 bg-gradient-to-r from-sky-500 to-blue-600 rounded-full flex items-center justify-center shadow-md transform translate-y-3 group-hover:translate-y-0 transition-all duration-300 border-none cursor-pointer">
+                    <Play
+                      size={20}
+                      fill="currentColor"
+                      className="text-white ml-0.5"
+                    />
+                  </button>
+                </div>
+              </div>
+              <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors w-full">
+                {album.name}
+              </h4>
+              <p className="text-[11px] text-slate-400 font-medium tracking-wider uppercase">
+                Album
+              </p>
+            </div>
+          )}
+        />
         {/* 1. BĂNG CHUYỀN BÀI HÁT (TRACKS CAROUSEL) */}
         <AutoScrollCarousel
           title="Khám phá Bài Hát"
@@ -357,45 +421,6 @@ const HomePage = () => {
               </h4>
               <p className="text-[11px] text-slate-400 font-medium tracking-wider uppercase">
                 Artist
-              </p>
-            </div>
-          )}
-        />
-
-        {/* 3. BĂNG CHUYỀN ALBUM */}
-        <AutoScrollCarousel
-          title="Album Nổi Bật"
-          items={albums}
-          onViewAll={() => navigate("/albums")}
-          renderItem={(album) => (
-            <div
-              key={album.id}
-              onClick={() => navigate(`/albums/${album.id}`)}
-              className="w-[160px] md:w-[200px] flex-shrink-0 snap-start bg-[#0f1722] p-4 rounded-xl hover:bg-white/[0.04] transition-all duration-300 group cursor-pointer border border-transparent hover:border-white/[0.1]"
-            >
-              {/* Giới hạn khung chứa ảnh album tương ứng với độ rộng card */}
-              <div className="relative aspect-square w-full h-[150px] md:h-[168px] mb-4 overflow-hidden bg-white/[0.02] shadow-md flex-shrink-0">
-                <MusicImage
-                  src={album.img}
-                  type="album"
-                  alt={album.name}
-                  className="group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                  <button className="w-11 h-11 bg-gradient-to-r from-sky-500 to-blue-600 rounded-full flex items-center justify-center shadow-md transform translate-y-3 group-hover:translate-y-0 transition-all duration-300 border-none cursor-pointer">
-                    <Play
-                      size={20}
-                      fill="currentColor"
-                      className="text-white ml-0.5"
-                    />
-                  </button>
-                </div>
-              </div>
-              <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors w-full">
-                {album.name}
-              </h4>
-              <p className="text-[11px] text-slate-400 font-medium tracking-wider uppercase">
-                Album
               </p>
             </div>
           )}

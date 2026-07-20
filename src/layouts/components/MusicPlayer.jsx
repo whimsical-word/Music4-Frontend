@@ -11,6 +11,8 @@ import {
   Repeat1,
   Repeat,
   Shuffle,
+  ChevronDown, // THÊM ICON ĐỂ ẨN
+  ChevronUp, // THÊM ICON ĐỂ HIỆN
 } from "lucide-react";
 import { usePlayerStore } from "../../features/player/usePlayerStore";
 import { useAuthStore } from "../../features/auth/useAuthStore";
@@ -25,6 +27,9 @@ const MusicPlayer = () => {
   const [hoverTime, setHoverTime] = useState(null);
   const [hoverPosition, setHoverPosition] = useState(0);
   const [duration, setDuration] = useState(0);
+
+  // THÊM STATE ĐỂ QUẢN LÝ TRẠNG THÁI ẨN/HIỆN CỦA THANH BAR
+  const [isMinimized, setIsMinimized] = useState(false);
 
   // 1. Rút thêm playNext, playPrev từ Store
   const {
@@ -41,11 +46,11 @@ const MusicPlayer = () => {
 
   const { isAuthenticated, userId } = useAuthStore();
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      usePlayerStore.getState().stop();
-    }
-  }, [isAuthenticated]);
+  // useEffect(() => {
+  //     if (!isAuthenticated) {
+  //         usePlayerStore.getState().stop();
+  //     }
+  // }, [isAuthenticated]);
 
   const audioRef = useRef(null);
   const [progress, setProgress] = useState(0);
@@ -259,6 +264,9 @@ const MusicPlayer = () => {
   const handleTrackEnded = () => {
     const audio = audioRef.current;
 
+    // Lấy toàn bộ state mới nhất trực tiếp từ Store để tránh lỗi Stale State
+    const { repeatMode, currentIndex, queue } = usePlayerStore.getState();
+
     if (repeatMode === "one") {
       audio.currentTime = 0;
       audio.play();
@@ -266,13 +274,10 @@ const MusicPlayer = () => {
     }
 
     if (repeatMode === "off") {
-      const { currentIndex, queue } = usePlayerStore.getState();
-
       if (currentIndex === queue.length - 1) {
         usePlayerStore.setState({
           isPlaying: false,
         });
-
         return;
       }
     }
@@ -327,217 +332,239 @@ const MusicPlayer = () => {
   if (!currentTrack) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-24 bg-[#181818] border-t border-[#282828] flex items-center justify-between px-6 z-[100] animate-fadeIn">
-      <audio
-        ref={audioRef}
-        src={currentTrack?.id ? getStreamUrl(currentTrack.id) : ""}
-        onTimeUpdate={handleTimeUpdate}
-        onEnded={handleTrackEnded}
-        onLoadedMetadata={handleLoadedMetadata}
-        onError={(e) => {
-          console.error("Lỗi không thể tải nguồn nhạc:", e.target.error);
-        }}
-      />
+    // THÊM FRAGMENT ĐỂ BỌC NÚT TOGGLE VÀ THANH BAR
+    <>
+      {/* NÚT TOGGLE ẨN/HIỆN THANH NHẠC TRÔI NỔI */}
+      <button
+        onClick={() => setIsMinimized(!isMinimized)}
+        className={`fixed right-6 z-[101] p-2 bg-[#282828] text-[#a7a7a7] hover:text-white hover:bg-[#3e3e3e] rounded-full shadow-lg transition-all duration-300 ${
+          isMinimized ? "bottom-4" : "bottom-28"
+        }`}
+        title={isMinimized ? "Hiện trình phát nhạc" : "Ẩn trình phát nhạc"}
+      >
+        {isMinimized ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+      </button>
 
-      {/* KHU VỰC 1: THÔNG TIN BÀI HÁT */}
-      <div className="flex items-center gap-4 w-1/4">
-        <div className="w-14 h-14 rounded-md overflow-hidden bg-[#282828] shrink shadow-md">
-          <MusicImage
-            src={currentTrack.img}
-            type="track"
-            alt={currentTrack.name}
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="min-w-0">
-          <h4 className="text-white text-sm font-bold truncate">
-            {currentTrack.name}
-          </h4>
-          <p className="text-xs text-[#a7a7a7] truncate">
-            {currentTrack.artists && currentTrack.artists.length > 0
-              ? currentTrack.artists.map((artist, idx) => (
-                  <span key={artist.id}>
-                    <span
-                      onClick={() => navigate(`/artist/${artist.id}`)}
-                      className="hover:text-white hover:underline cursor-pointer transition-all"
-                    >
-                      {artist.name}
+      {/* THÊM LOGIC ĐỔI CLASS ĐỂ CHẠY HIỆU ỨNG TRANSLATE */}
+      <div
+        className={`fixed bottom-0 left-0 right-0 h-24 bg-[#181818] border-t border-[#282828] flex items-center justify-between px-6 z-[100] transition-transform duration-300 ${
+          isMinimized ? "translate-y-full" : "translate-y-0 animate-fadeIn"
+        }`}
+      >
+        <audio
+          ref={audioRef}
+          src={currentTrack?.id ? getStreamUrl(currentTrack.id) : ""}
+          onTimeUpdate={handleTimeUpdate}
+          onEnded={handleTrackEnded}
+          onLoadedMetadata={handleLoadedMetadata}
+          loop={
+            repeatMode === "one"
+          } /* THÊM DÒNG NÀY ĐỂ TRÌNH DUYỆT TỰ ĐỘNG LOOP */
+          onError={(e) => {
+            console.error("Lỗi không thể tải nguồn nhạc:", e.target.error);
+          }}
+        />
+
+        {/* KHU VỰC 1: THÔNG TIN BÀI HÁT */}
+        <div className="flex items-center gap-4 w-1/4">
+          <div className="w-14 h-14 rounded-md overflow-hidden bg-[#282828] shrink shadow-md">
+            <MusicImage
+              src={currentTrack.img}
+              type="track"
+              alt={currentTrack.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="min-w-0">
+            <h4 className="text-white text-sm font-bold truncate">
+              {currentTrack.name}
+            </h4>
+            <p className="text-xs text-[#a7a7a7] truncate">
+              {currentTrack.artists && currentTrack.artists.length > 0
+                ? currentTrack.artists.map((artist, idx) => (
+                    <span key={artist.id}>
+                      <span
+                        onClick={() => navigate(`/artist/${artist.id}`)}
+                        className="hover:text-white hover:underline cursor-pointer transition-all"
+                      >
+                        {artist.name}
+                      </span>
+                      {idx < currentTrack.artists.length - 1 && ", "}
                     </span>
-                    {idx < currentTrack.artists.length - 1 && ", "}
-                  </span>
-                ))
-              : "Nghệ sĩ hệ thống"}
-          </p>
-        </div>
-      </div>
-
-      {/* KHU VỰC 2: CONTROLS & TIẾN TRÌNH */}
-      <div className="flex flex-col items-center justify-center w-2/4 gap-2">
-        <div className="flex items-center gap-5">
-          {/* Shuffle */}
-          <button
-            onClick={toggleShuffle}
-            className={`border-none bg-transparent cursor-pointer transition-colors ${
-              isShuffle ? "text-green-500" : "text-[#a7a7a7] hover:text-white"
-            }`}
-          >
-            <Shuffle size={18} />
-          </button>
-
-          {/* Prev */}
-          <button
-            onClick={playPrev}
-            className="text-[#a7a7a7] hover:text-white transition-colors cursor-pointer border-none bg-transparent"
-          >
-            <SkipBack size={20} />
-          </button>
-
-          {/* Play / Pause */}
-          <button
-            onClick={togglePlay}
-            className="w-8 h-8 flex items-center justify-center bg-white rounded-full hover:scale-105 transition-transform cursor-pointer border-none shadow-lg"
-          >
-            {isPlaying ? (
-              <Pause size={16} fill="black" className="text-black" />
-            ) : (
-              <Play size={16} fill="black" className="text-black ml-0.5" />
-            )}
-          </button>
-
-          {/* Next */}
-          <button
-            onClick={playNext}
-            className="text-[#a7a7a7] hover:text-white transition-colors cursor-pointer border-none bg-transparent"
-          >
-            <SkipForward size={20} />
-          </button>
-
-          {/* Repeat */}
-          <button
-            onClick={toggleRepeatMode}
-            className={`border-none bg-transparent cursor-pointer transition-colors ${
-              repeatMode !== "off"
-                ? "text-green-500"
-                : "text-[#a7a7a7] hover:text-white"
-            }`}
-          >
-            {repeatMode === "one" ? (
-              <Repeat1 size={18} />
-            ) : (
-              <Repeat size={18} />
-            )}
-          </button>
+                  ))
+                : "Nghệ sĩ hệ thống"}
+            </p>
+          </div>
         </div>
 
-        {/* Thanh tiến trình chuẩn Spotify */}
-        <div className="w-full max-w-md flex items-center gap-3 group">
-          {/* BÊN TRÁI: Thời gian đã nghe (currentTime) */}
-          <span className="text-[11px] font-mono text-[#a7a7a7] min-w-[35px] text-right">
-            {formatTime(currentTime)}
-          </span>
-
-          <div
-            className="group h-1.5 flex-1 bg-[#3e3e3e] rounded-full cursor-pointer relative"
-            onClick={handleSeek}
-            onMouseMove={handleProgressHover}
-            onMouseLeave={handleProgressLeave}
-          >
-            {hoverTime !== null && (
-              <>
-                {/* 1. Thanh hover mờ đổ đầy từ đầu đến vị trí chuột (Chuẩn Spotify) */}
-                <div
-                  className="absolute top-0 left-0 h-full bg-white/30 rounded-full pointer-events-none z-10"
-                  style={{
-                    width: `${hoverPosition}px`,
-                  }}
-                />
-
-                {/* 2. Tooltip thời gian (tinh chỉnh màu nền cho giống Spotify) */}
-                <div
-                  className="absolute -top-10 px-2 py-1 text-xs rounded bg-[#282828] text-white shadow-lg whitespace-nowrap z-30 pointer-events-none"
-                  style={{
-                    left: `${hoverPosition}px`,
-                    transform: "translateX(-50%)",
-                  }}
-                >
-                  {formatTime(hoverTime)}
-                </div>
-              </>
-            )}
-
-            {/* Progress hiện tại */}
-            {/* Đổi sang absolute và thêm z-20 để nó luôn nổi lên trên thanh hover mờ */}
-            <div
-              className="absolute top-0 left-0 h-full bg-white group-hover:bg-blue-500 transition-colors rounded-full z-20"
-              style={{ width: `${progress}%` }}
+        {/* KHU VỰC 2: CONTROLS & TIẾN TRÌNH */}
+        <div className="flex flex-col items-center justify-center w-2/4 gap-2">
+          <div className="flex items-center gap-5">
+            {/* Shuffle */}
+            <button
+              onClick={toggleShuffle}
+              className={`border-none bg-transparent cursor-pointer transition-colors ${
+                isShuffle ? "text-green-500" : "text-[#a7a7a7] hover:text-white"
+              }`}
             >
-              {/* Nút tròn */}
+              <Shuffle size={18} />
+            </button>
+
+            {/* Prev */}
+            <button
+              onClick={playPrev}
+              className="text-[#a7a7a7] hover:text-white transition-colors cursor-pointer border-none bg-transparent"
+            >
+              <SkipBack size={20} />
+            </button>
+
+            {/* Play / Pause */}
+            <button
+              onClick={togglePlay}
+              className="w-8 h-8 flex items-center justify-center bg-white rounded-full hover:scale-105 transition-transform cursor-pointer border-none shadow-lg"
+            >
+              {isPlaying ? (
+                <Pause size={16} fill="black" className="text-black" />
+              ) : (
+                <Play size={16} fill="black" className="text-black ml-0.5" />
+              )}
+            </button>
+
+            {/* Next */}
+            <button
+              onClick={playNext}
+              className="text-[#a7a7a7] hover:text-white transition-colors cursor-pointer border-none bg-transparent"
+            >
+              <SkipForward size={20} />
+            </button>
+
+            {/* Repeat */}
+            <button
+              onClick={toggleRepeatMode}
+              className={`border-none bg-transparent cursor-pointer transition-colors ${
+                repeatMode !== "off"
+                  ? "text-green-500"
+                  : "text-[#a7a7a7] hover:text-white"
+              }`}
+            >
+              {repeatMode === "one" ? (
+                <Repeat1 size={18} />
+              ) : (
+                <Repeat size={18} />
+              )}
+            </button>
+          </div>
+
+          {/* Thanh tiến trình chuẩn Spotify */}
+          <div className="w-full max-w-md flex items-center gap-3 group">
+            {/* BÊN TRÁI: Thời gian đã nghe (currentTime) */}
+            <span className="text-[11px] font-mono text-[#a7a7a7] min-w-[35px] text-right">
+              {formatTime(currentTime)}
+            </span>
+
+            <div
+              className="group h-1.5 flex-1 bg-[#3e3e3e] rounded-full cursor-pointer relative"
+              onClick={handleSeek}
+              onMouseMove={handleProgressHover}
+              onMouseLeave={handleProgressLeave}
+            >
+              {hoverTime !== null && (
+                <>
+                  {/* 1. Thanh hover mờ đổ đầy từ đầu đến vị trí chuột (Chuẩn Spotify) */}
+                  <div
+                    className="absolute top-0 left-0 h-full bg-white/30 rounded-full pointer-events-none z-10"
+                    style={{
+                      width: `${hoverPosition}px`,
+                    }}
+                  />
+
+                  {/* 2. Tooltip thời gian (tinh chỉnh màu nền cho giống Spotify) */}
+                  <div
+                    className="absolute -top-10 px-2 py-1 text-xs rounded bg-[#282828] text-white shadow-lg whitespace-nowrap z-30 pointer-events-none"
+                    style={{
+                      left: `${hoverPosition}px`,
+                      transform: "translateX(-50%)",
+                    }}
+                  >
+                    {formatTime(hoverTime)}
+                  </div>
+                </>
+              )}
+
+              {/* Progress hiện tại */}
+              {/* Đổi sang absolute và thêm z-20 để nó luôn nổi lên trên thanh hover mờ */}
               <div
-                className="
-                  absolute right-0 top-1/2
-                  -translate-y-1/2 translate-x-1/2
-                  w-3 h-3 bg-white rounded-full shadow
-                  opacity-0 group-hover:opacity-100
-                  transition-opacity
-                "
+                className="absolute top-0 left-0 h-full bg-white group-hover:bg-blue-500 transition-colors rounded-full z-20"
+                style={{ width: `${progress}%` }}
+              >
+                {/* Nút tròn */}
+                <div
+                  className="
+                    absolute right-0 top-1/2
+                    -translate-y-1/2 translate-x-1/2
+                    w-3 h-3 bg-white rounded-full shadow
+                    opacity-0 group-hover:opacity-100
+                    transition-opacity
+                  "
+                />
+              </div>
+            </div>
+
+            {/* BÊN PHẢI: Tổng thời lượng (currentTrack.duration) */}
+            <span className="text-[11px] font-mono text-[#a7a7a7] min-w-[35px] text-left">
+              {formatTime(duration || currentTrack?.duration)}
+            </span>
+          </div>
+        </div>
+
+        {/* KHU VỰC 3: ÂM LƯỢNG */}
+        <div className="flex items-center justify-end w-1/4 gap-3 text-[#a7a7a7]">
+          {/* Đổi icon nếu tắt tiếng hoàn toàn */}
+          {volume === 0 ? (
+            <VolumeX
+              size={20}
+              className="cursor-pointer hover:text-white transition-colors"
+              onClick={() => setVolume(1)}
+            />
+          ) : volume <= 0.3 ? (
+            <Volume
+              size={20}
+              className="cursor-pointer hover:text-white transition-colors"
+              onClick={() => setVolume(0)}
+            />
+          ) : volume <= 0.7 ? (
+            <Volume1
+              size={20}
+              className="cursor-pointer hover:text-white transition-colors"
+              onClick={() => setVolume(0)}
+            />
+          ) : (
+            <Volume2
+              size={20}
+              className="cursor-pointer hover:text-white transition-colors"
+              onClick={() => setVolume(0)}
+            />
+          )}
+
+          {/* Thanh kéo Âm lượng đã được biến thành thanh có thể kéo thả */}
+          <div
+            ref={volumeBarRef}
+            className="w-24 h-1.5 bg-[#3e3e3e] rounded-full cursor-pointer group relative"
+            onMouseDown={handleVolumeMouseDown}
+          >
+            <div
+              className="h-full bg-white group-hover:bg-blue-500 transition-colors rounded-full relative"
+              style={{ width: `${volume * 100}%` }}
+            >
+              <div
+                className="absolute right-0 top-1/2 transform -translate-y-1/2
+                   w-3 h-3 bg-white rounded-full shadow"
               />
             </div>
           </div>
-
-          {/* BÊN PHẢI: Tổng thời lượng (currentTrack.duration) */}
-          <span className="text-[11px] font-mono text-[#a7a7a7] min-w-[35px] text-left">
-            {formatTime(duration || currentTrack?.duration)}
-          </span>
         </div>
       </div>
-
-      {/* KHU VỰC 3: ÂM LƯỢNG */}
-      <div className="flex items-center justify-end w-1/4 gap-3 text-[#a7a7a7]">
-        {/* Đổi icon nếu tắt tiếng hoàn toàn */}
-        {volume === 0 ? (
-          <VolumeX
-            size={20}
-            className="cursor-pointer hover:text-white transition-colors"
-            onClick={() => setVolume(1)}
-          />
-        ) : volume <= 0.3 ? (
-          <Volume
-            size={20}
-            className="cursor-pointer hover:text-white transition-colors"
-            onClick={() => setVolume(0)}
-          />
-        ) : volume <= 0.7 ? (
-          <Volume1
-            size={20}
-            className="cursor-pointer hover:text-white transition-colors"
-            onClick={() => setVolume(0)}
-          />
-        ) : (
-          <Volume2
-            size={20}
-            className="cursor-pointer hover:text-white transition-colors"
-            onClick={() => setVolume(0)}
-          />
-        )}
-
-        {/* Thanh kéo Âm lượng đã được biến thành thanh có thể kéo thả */}
-        <div
-          ref={volumeBarRef}
-          className="w-24 h-1.5 bg-[#3e3e3e] rounded-full cursor-pointer group relative"
-          onMouseDown={handleVolumeMouseDown}
-        >
-          <div
-            className="h-full bg-white group-hover:bg-blue-500 transition-colors rounded-full relative"
-            style={{ width: `${volume * 100}%` }}
-          >
-            <div
-              className="absolute right-0 top-1/2 transform -translate-y-1/2
-                 w-3 h-3 bg-white rounded-full shadow"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+    </>
   );
 };
 
