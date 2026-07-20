@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Play, Pause, Clock, Music, ArrowLeft, Disc, ListMusic, Heart, Trash2 } from 'lucide-react';
+import { Play, Pause, Clock, Music, ArrowLeft, Disc, ListMusic, Heart, Trash2, MoreHorizontal } from 'lucide-react';
 import axiosClient from '../app/axios/axiosClient';
 import MusicImage from "../layouts/components/MusicImage.jsx";
 import { usePlayerStore } from "../features/player/usePlayerStore.js";
-// 🌟 BỒ CHÚ Ý: Nếu bồ có useAuthStore, hãy uncomment dòng dưới để lấy real data nhé:
+import TrackEngagementModal from "../layouts/components/TrackEngagementModal.jsx";
+
 // import { useAuthStore } from "../features/auth/useAuthStore.js";
 
 const AlbumDetailPage = () => {
@@ -26,6 +27,7 @@ const AlbumDetailPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [playingTrackId, setPlayingTrackId] = useState(null);
+    const [selectedTrack, setSelectedTrack] = useState(null);
 
     // --- Quyền sở hữu album: Nghệ sĩ đăng nhập phải trùng với chủ Album ---
     const isOwner = role === 'artist' && Number(loggedInId) === Number(albumInfo?.artistId || tracks[0]?.artistId);
@@ -181,6 +183,7 @@ const AlbumDetailPage = () => {
             </div>
 
             {/* BẢNG DANH SÁCH BÀI HÁT CHI TIẾT */}
+            {/* BẢNG DANH SÁCH BÀI HÁT CHI TIẾT */}
             <section className="px-8 pb-24 mt-6">
                 <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-200">
                     <ListMusic size={20} className="text-sky-400" /> Danh sách bài hát thuộc Album
@@ -221,7 +224,7 @@ const AlbumDetailPage = () => {
                                     </div>
                                 </div>
 
-                                {/* Khối bên phải: Lượt nghe, Thời lượng, Nút Xóa */}
+                                {/* Khối bên phải: Lượt nghe, Thời lượng, Nút Xóa/More */}
                                 <div className="flex items-center gap-6 ml-4">
                                     <span className="text-xs text-slate-400 hidden sm:block">
                                         {track.viewCount?.toLocaleString() || 0} lượt nghe
@@ -230,19 +233,23 @@ const AlbumDetailPage = () => {
                                         {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : "--:--"}
                                     </span>
 
-                                    {/* NÚT XÓA BÀI HÁT */}
-                                    {isOwner && (
+                                    <div className="flex items-center gap-2">
                                         <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteTrack(track.id, track.name || track.title);
-                                            }}
-                                            className="text-slate-400 hover:text-red-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
-                                            title="Xóa bài hát khỏi Album"
+                                            onClick={(e) => { e.stopPropagation(); setSelectedTrack(track); }}
+                                            className="text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/[0.08] transition-colors bg-transparent border-none cursor-pointer"
                                         >
-                                            <Trash2 size={18}/>
+                                            <MoreHorizontal size={18} />
                                         </button>
-                                    )}
+                                        {isOwner && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteTrack(track.id, track.name); }}
+                                                className="text-slate-400 hover:text-red-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors bg-transparent border-none cursor-pointer"
+                                                title="Xóa bài hát khỏi Album"
+                                            >
+                                                <Trash2 size={18}/>
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -254,8 +261,13 @@ const AlbumDetailPage = () => {
                     </div>
                 )}
             </section>
+            {selectedTrack && (
+                <TrackEngagementModal
+                    track={selectedTrack}
+                    onClose={() => setSelectedTrack(null)}
+                />
+            )}
         </div>
     );
 };
-
 export default AlbumDetailPage;

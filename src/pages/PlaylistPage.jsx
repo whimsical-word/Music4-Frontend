@@ -75,30 +75,37 @@ const PlaylistPage = () => {
   };
 
   // Xử lý submit lưu thông tin (Tên, Mô tả, Ảnh) lên Backend thông qua store
-  const handleSave = async (e) => {
-    e.preventDefault();
-    if (!editName.trim()) return alert("Tên playlist không được để trống!");
+    const handleSave = async (e) => {
+        e.preventDefault();
+        if (!editName.trim()) return alert("Tên playlist không được để trống!");
 
-    const formData = new FormData();
-    formData.append("name", editName.trim());
-    formData.append("description", editDescription.trim());
-    if (editAvatar) {
-      formData.append("coverFile", editAvatar); // Khớp trúng RequestPart bên Spring Boot
-    }
+        try {
 
-    // Gọi hàm update từ Zustand Store đã chỉnh sửa
-    const result = await updatePlaylist(id, formData);
+            await axiosClient.put(`/playlists/${id}`, {
+                name: editName,
+                description: editDescription
+            });
 
-    if (result.success) {
-      setIsEditModalOpen(false);
-      alert("🎉 Cập nhật thông tin playlist thành công!");
-      fetchPlaylistDetails(); // Kéo lại data mới về UI lập tức
-    } else {
-      alert(
-        "❌ Cập nhật thất bại. Vui lòng kiểm tra lại cấu trúc API Backend!",
-      );
-    }
-  };
+            // BƯỚC 2: Nếu có ảnh mới, cập nhật ảnh (gọi API PUT /{id}/image)
+            if (editAvatar) {
+                const formData = new FormData();
+                formData.append("file", editAvatar); // PHẢI KHỚP VỚI @RequestParam("file") trong Controller
+
+                await axiosClient.put(`/playlists/${id}/image`, formData, {
+                    headers: { "Content-Type": "multipart/form-data" }
+                });
+            }
+
+            setIsEditModalOpen(false);
+            alert(" Cập nhật playlist thành công!");
+
+            // Refresh lại dữ liệu và ép load lại ảnh bằng cách thêm timestamp
+            await fetchPlaylistDetails();
+        } catch (error) {
+            console.error(error);
+            alert(" Cập nhật thất bại!");
+        }
+    };
 
   // Xử lý xóa bài hát khỏi Playlist
   const handleRemoveTrack = async (e, trackId, trackName) => {
