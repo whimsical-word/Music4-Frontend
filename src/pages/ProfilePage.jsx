@@ -9,7 +9,7 @@ import MusicImage from '../layouts/components/MusicImage';
 const ProfilePage = () => {
     const IMAGE_URL = "https://music4-v3-storage-kenz.s3.ap-southeast-1.amazonaws.com/";
     const navigate = useNavigate();
-    const { userId, username, img } = useAuthStore();
+    const { updateProfile, userId, username, img } = useAuthStore();
 
     const { followedArtistIds, fetchFollowedArtists } = useFollowStore();
     const [followedArtistsDetails, setFollowedArtistsDetails] = useState([]);
@@ -137,6 +137,8 @@ const ProfilePage = () => {
             });
             alert("Cập nhật hồ sơ thành công!");
             setIsEditModalOpen(false);
+
+            updateProfile(updatedName, updatedAvatarUrl);
             // if (previewImg) {
             //     URL.revokeObjectURL(previewImg);
             //     setPreviewImg(null);

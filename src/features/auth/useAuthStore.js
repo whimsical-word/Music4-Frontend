@@ -85,4 +85,17 @@ export const useAuthStore = create((set) => ({
 
     return true;
   },
+    updateProfile: (newName, newImg) => {
+        set((state) => {
+            if (newName) localStorage.setItem('username', newName);
+            if (newImg && newImg !== 'null') {
+                localStorage.setItem('userImg', newImg);
+            }
+
+            return {
+                username: newName || state.username,
+                img: newImg && newImg !== 'null' ? newImg : state.img
+            };
+        });
+    },
 }));
