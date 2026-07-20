@@ -11,14 +11,18 @@ import {
   Repeat1,
   Repeat,
   Shuffle,
-  ChevronDown, // THÊM ICON ĐỂ ẨN
-  ChevronUp, // THÊM ICON ĐỂ HIỆN
+  ChevronDown,
+  ChevronUp,
+  Lock, // THÊM ICON ĐỂ HIỂN THỊ MODAL GUEST
 } from "lucide-react";
 import { usePlayerStore } from "../../features/player/usePlayerStore";
 import { useAuthStore } from "../../features/auth/useAuthStore";
 import axiosClient from "../../app/axios/axiosClient";
 import MusicImage from "./MusicImage.jsx";
 import { useNavigate } from "react-router-dom";
+
+// GIỚI HẠN THỜI GIAN NGHE THỬ CHO GUEST (30 GIÂY)
+const PREVIEW_LIMIT = 30;
 
 const MusicPlayer = () => {
   const navigate = useNavigate();
@@ -30,6 +34,9 @@ const MusicPlayer = () => {
 
   // THÊM STATE ĐỂ QUẢN LÝ TRẠNG THÁI ẨN/HIỆN CỦA THANH BAR
   const [isMinimized, setIsMinimized] = useState(false);
+
+  // THÊM STATE ĐỂ QUẢN LÝ MODAL YÊU CẦU ĐĂNG NHẬP
+  const [showGuestModal, setShowGuestModal] = useState(false);
 
   // 1. Rút thêm playNext, playPrev từ Store
   const {
@@ -46,11 +53,11 @@ const MusicPlayer = () => {
 
   const { isAuthenticated, userId } = useAuthStore();
 
-  // useEffect(() => {
-  //     if (!isAuthenticated) {
-  //         usePlayerStore.getState().stop();
-  //     }
-  // }, [isAuthenticated]);
+  useEffect(() => {
+    if (!isAuthenticated) {
+      usePlayerStore.getState().stop();
+    }
+  }, [isAuthenticated]);
 
   const audioRef = useRef(null);
   const [progress, setProgress] = useState(0);
@@ -143,27 +150,18 @@ const MusicPlayer = () => {
     setHoverTime(null);
   };
 
-  // Effect A: Khi ĐỔI BÀI (next/prev/shuffle/click track mới) -> load lại nguồn và play
+  // 2b. Xử lý Play/Pause và Chuyển bài (Chuyển đổi mượt mà)
   useEffect(() => {
     if (audioRef.current && currentTrack) {
-      audioRef.current.load(); // bắt buộc, để trình duyệt nạp lại file mới từ src đã đổi
-      audioRef.current.play().catch((error) => {
-        console.log("Trình duyệt chặn Auto-play hoặc đợi tương tác:", error);
-      });
+      if (isPlaying) {
+        audioRef.current.play().catch((error) => {
+          console.log("Trình duyệt chặn Auto-play hoặc đợi tương tác:", error);
+        });
+      } else {
+        audioRef.current.pause();
+      }
     }
-  }, [currentTrack?.id]); // chỉ chạy khi ID bài hát thay đổi
-
-  // Effect B: Khi chỉ TOGGLE PLAY/PAUSE (không đổi bài)
-  useEffect(() => {
-    if (!audioRef.current || !currentTrack) return;
-    if (isPlaying) {
-      audioRef.current.play().catch((error) => {
-        console.log("Trình duyệt chặn Auto-play hoặc đợi tương tác:", error);
-      });
-    } else {
-      audioRef.current.pause();
-    }
-  }, [isPlaying]);
+  }, [isPlaying, currentTrack]); // Theo dõi sát sao 2 biến này
 
   // Sync Playback Position (Đồng bộ thời gian nghe mỗi 10 giây)
   useEffect(() => {
@@ -210,11 +208,20 @@ const MusicPlayer = () => {
   const handleTimeUpdate = async () => {
     if (audioRef.current) {
       const currentVal = audioRef.current.currentTime;
-      const duration = audioRef.current.duration;
+      const durationReal = audioRef.current.duration;
+
+      // 🛑 LOGIC MỚI: CHẶN GUEST KHI NGHE TỚI GIÂY THỨ 30
+      if (!isAuthenticated && currentVal >= PREVIEW_LIMIT) {
+        audioRef.current.pause(); // Ép dừng nhạc
+        usePlayerStore.setState({ isPlaying: false }); // Đổi nút Play trên UI
+        audioRef.current.currentTime = 0; // Kéo thanh nhạc về 0
+        setShowGuestModal(true); // Bật Modal bắt đăng nhập
+        return; // Ngưng toàn bộ thuật toán bên dưới
+      }
 
       setCurrentTime(currentVal);
-      if (duration) {
-        setProgress((currentVal / duration) * 100);
+      if (durationReal) {
+        setProgress((currentVal / durationReal) * 100);
       }
 
       // Bắt đầu tính toán thời gian nghe thực
@@ -254,14 +261,14 @@ const MusicPlayer = () => {
       // In log theo dõi quá trình nghe (Cứ mỗi ~5 giây in 1 lần để đỡ spam)
       if (Math.floor(currentVal) % 5 === 0 && Math.floor(currentVal) !== 0) {
         console.log(
-          `[DEBUG - TRACKING] Tiến trình: ${Math.floor(accumulatedTimeRef.current)}s / ${Math.floor(duration)}s`,
+          `[DEBUG - TRACKING] Tiến trình: ${Math.floor(accumulatedTimeRef.current)}s / ${Math.floor(durationReal)}s`,
         );
       }
 
       // Kiểm tra xem đã nghe đủ 100% thời lượng chưa
       if (
-        duration > 0 &&
-        accumulatedTimeRef.current >= duration * 1 && // Nghe full
+        durationReal > 0 &&
+        accumulatedTimeRef.current >= durationReal * 1 && // Nghe full
         !hasRecordedViewRef.current // Chưa cộng view bao giờ
       ) {
         console.log(
@@ -288,9 +295,6 @@ const MusicPlayer = () => {
           console.warn(
             "[DEBUG - WARN] Bị chặn tăng view do: Thiếu isAuthenticated HOẶC userId HOẶC currentTrack!",
           );
-          console.log(`- isAuthenticated: ${isAuthenticated}`);
-          console.log(`- userId: ${userId}`);
-          console.log(`- currentTrack: ${!!currentTrack}`);
         }
       }
     }
@@ -299,6 +303,14 @@ const MusicPlayer = () => {
   // Khi kết thúc bài -> Lưu lịch sử -> TỰ ĐỘNG NEXT BÀI TIẾP THEO
   const handleTrackEnded = () => {
     const audio = audioRef.current;
+
+    // 🛑 Nếu là Guest mà chạy hết bài (dưới 30s) thì cũng chặn và bung Modal
+    if (!isAuthenticated) {
+      usePlayerStore.setState({ isPlaying: false });
+      audio.currentTime = 0;
+      setShowGuestModal(true);
+      return;
+    }
 
     // Lấy toàn bộ state mới nhất trực tiếp từ Store để tránh lỗi Stale State
     const { repeatMode, currentIndex, queue } = usePlayerStore.getState();
@@ -340,6 +352,14 @@ const MusicPlayer = () => {
       const clickX = e.clientX - rect.left;
       const newTime = (clickX / rect.width) * audioRef.current.duration;
 
+      // 🛑 GUEST KHÔNG ĐƯỢC TUA QUÁ GIỚI HẠN 30S
+      if (!isAuthenticated && newTime >= PREVIEW_LIMIT) {
+        audioRef.current.pause();
+        usePlayerStore.setState({ isPlaying: false });
+        setShowGuestModal(true);
+        return;
+      }
+
       if (isFinite(newTime)) {
         audioRef.current.currentTime = newTime;
       }
@@ -368,9 +388,7 @@ const MusicPlayer = () => {
   if (!currentTrack) return null;
 
   return (
-    // THÊM FRAGMENT ĐỂ BỌC NÚT TOGGLE VÀ THANH BAR
     <>
-      {/* NÚT TOGGLE ẨN/HIỆN THANH NHẠC TRÔI NỔI */}
       <button
         onClick={() => setIsMinimized(!isMinimized)}
         className={`fixed right-6 z-[101] p-2 bg-[#282828] text-[#a7a7a7] hover:text-white hover:bg-[#3e3e3e] rounded-full shadow-lg transition-all duration-300 ${
@@ -381,7 +399,6 @@ const MusicPlayer = () => {
         {isMinimized ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
       </button>
 
-      {/* THÊM LOGIC ĐỔI CLASS ĐỂ CHẠY HIỆU ỨNG TRANSLATE */}
       <div
         className={`fixed bottom-0 left-0 right-0 h-24 bg-[#181818] border-t border-[#282828] flex items-center justify-between px-6 z-[100] transition-transform duration-300 ${
           isMinimized ? "translate-y-full" : "translate-y-0 animate-fadeIn"
@@ -393,12 +410,12 @@ const MusicPlayer = () => {
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleTrackEnded}
           onLoadedMetadata={handleLoadedMetadata}
+          loop={repeatMode === "one"}
           onError={(e) => {
             console.error("Lỗi không thể tải nguồn nhạc:", e.target.error);
           }}
         />
 
-        {/* KHU VỰC 1: THÔNG TIN BÀI HÁT */}
         <div className="flex items-center gap-4 w-1/4">
           <div className="w-14 h-14 rounded-md overflow-hidden bg-[#282828] shrink shadow-md">
             <MusicImage
@@ -430,20 +447,17 @@ const MusicPlayer = () => {
           </div>
         </div>
 
-        {/* KHU VỰC 2: CONTROLS & TIẾN TRÌNH */}
         <div className="flex flex-col items-center justify-center w-2/4 gap-2">
           <div className="flex items-center gap-5">
-            {/* Shuffle */}
             <button
               onClick={toggleShuffle}
               className={`border-none bg-transparent cursor-pointer transition-colors ${
-                isShuffle ? "text-sky-400" : "text-[#a7a7a7] hover:text-white"
+                isShuffle ? "text-green-500" : "text-[#a7a7a7] hover:text-white"
               }`}
             >
               <Shuffle size={18} />
             </button>
 
-            {/* Prev */}
             <button
               onClick={playPrev}
               className="text-[#a7a7a7] hover:text-white transition-colors cursor-pointer border-none bg-transparent"
@@ -451,7 +465,6 @@ const MusicPlayer = () => {
               <SkipBack size={20} />
             </button>
 
-            {/* Play / Pause */}
             <button
               onClick={togglePlay}
               className="w-8 h-8 flex items-center justify-center bg-white rounded-full hover:scale-105 transition-transform cursor-pointer border-none shadow-lg"
@@ -463,7 +476,6 @@ const MusicPlayer = () => {
               )}
             </button>
 
-            {/* Next */}
             <button
               onClick={playNext}
               className="text-[#a7a7a7] hover:text-white transition-colors cursor-pointer border-none bg-transparent"
@@ -471,12 +483,11 @@ const MusicPlayer = () => {
               <SkipForward size={20} />
             </button>
 
-            {/* Repeat */}
             <button
               onClick={toggleRepeatMode}
               className={`border-none bg-transparent cursor-pointer transition-colors ${
                 repeatMode !== "off"
-                  ? "text-sky-400"
+                  ? "text-green-500"
                   : "text-[#a7a7a7] hover:text-white"
               }`}
             >
@@ -488,9 +499,7 @@ const MusicPlayer = () => {
             </button>
           </div>
 
-          {/* Thanh tiến trình chuẩn Spotify */}
           <div className="w-full max-w-md flex items-center gap-3 group">
-            {/* BÊN TRÁI: Thời gian đã nghe (currentTime) */}
             <span className="text-[11px] font-mono text-[#a7a7a7] min-w-[35px] text-right">
               {formatTime(currentTime)}
             </span>
@@ -503,15 +512,12 @@ const MusicPlayer = () => {
             >
               {hoverTime !== null && (
                 <>
-                  {/* 1. Thanh hover mờ đổ đầy từ đầu đến vị trí chuột (Chuẩn Spotify) */}
                   <div
                     className="absolute top-0 left-0 h-full bg-white/30 rounded-full pointer-events-none z-10"
                     style={{
                       width: `${hoverPosition}px`,
                     }}
                   />
-
-                  {/* 2. Tooltip thời gian (tinh chỉnh màu nền cho giống Spotify) */}
                   <div
                     className="absolute -top-10 px-2 py-1 text-xs rounded bg-[#282828] text-white shadow-lg whitespace-nowrap z-30 pointer-events-none"
                     style={{
@@ -524,35 +530,25 @@ const MusicPlayer = () => {
                 </>
               )}
 
-              {/* Progress hiện tại */}
-              {/* Đổi sang absolute và thêm z-20 để nó luôn nổi lên trên thanh hover mờ */}
               <div
                 className="absolute top-0 left-0 h-full bg-white group-hover:bg-blue-500 transition-colors rounded-full z-20"
                 style={{ width: `${progress}%` }}
               >
-                {/* Nút tròn */}
-                <div
-                  className="
-                    absolute right-0 top-1/2
-                    -translate-y-1/2 translate-x-1/2
-                    w-3 h-3 bg-white rounded-full shadow
-                    opacity-0 group-hover:opacity-100
-                    transition-opacity
-                  "
-                />
+                <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3 h-3 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             </div>
 
-            {/* BÊN PHẢI: Tổng thời lượng (currentTrack.duration) */}
             <span className="text-[11px] font-mono text-[#a7a7a7] min-w-[35px] text-left">
-              {formatTime(duration || currentTrack?.duration)}
+              {formatTime(
+                !isAuthenticated
+                  ? PREVIEW_LIMIT
+                  : duration || currentTrack?.duration,
+              )}
             </span>
           </div>
         </div>
 
-        {/* KHU VỰC 3: ÂM LƯỢNG */}
         <div className="flex items-center justify-end w-1/4 gap-3 text-[#a7a7a7]">
-          {/* Đổi icon nếu tắt tiếng hoàn toàn */}
           {volume === 0 ? (
             <VolumeX
               size={20}
@@ -579,7 +575,6 @@ const MusicPlayer = () => {
             />
           )}
 
-          {/* Thanh kéo Âm lượng đã được biến thành thanh có thể kéo thả */}
           <div
             ref={volumeBarRef}
             className="w-24 h-1.5 bg-[#3e3e3e] rounded-full cursor-pointer group relative"
@@ -589,14 +584,47 @@ const MusicPlayer = () => {
               className="h-full bg-white group-hover:bg-blue-500 transition-colors rounded-full relative"
               style={{ width: `${volume * 100}%` }}
             >
-              <div
-                className="absolute right-0 top-1/2 transform -translate-y-1/2
-                   w-3 h-3 bg-white rounded-full shadow"
-              />
+              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow" />
             </div>
           </div>
         </div>
       </div>
+
+      {/* MODAL BẮT BUỘC ĐĂNG NHẬP DÀNH CHO GUEST */}
+      {showGuestModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#181818] border border-[#3e3e3e] p-8 rounded-2xl w-[90%] max-w-md shadow-2xl text-center flex flex-col items-center">
+            <div className="w-16 h-16 bg-blue-500/20 text-blue-500 flex items-center justify-center rounded-full mb-5 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+              <Lock size={32} />
+            </div>
+            <h3 className="text-2xl font-black text-white mb-3 tracking-tight">
+              Khám phá không giới hạn
+            </h3>
+            <p className="text-sm text-[#a7a7a7] mb-8 leading-relaxed px-2">
+              Bạn đang sử dụng phiên bản dùng thử 30 giây. Hãy đăng nhập tài
+              khoản miễn phí để mở khóa toàn bộ bài hát, tạo danh sách phát,
+              tương tác cộng đồng và nhiều đặc quyền khác!
+            </p>
+            <div className="flex w-full gap-4">
+              <button
+                onClick={() => setShowGuestModal(false)}
+                className="flex-1 py-3.5 px-4 rounded-full text-sm font-bold text-white bg-transparent border border-[#3e3e3e] hover:border-[#a7a7a7] hover:bg-white/5 transition-all cursor-pointer"
+              >
+                Bỏ qua
+              </button>
+              <button
+                onClick={() => {
+                  setShowGuestModal(false);
+                  navigate("/login");
+                }}
+                className="flex-1 py-3.5 px-4 rounded-full text-sm font-bold text-black bg-white hover:scale-105 shadow-[0_0_15px_rgba(255,255,255,0.2)] transition-all cursor-pointer border-none"
+              >
+                Đăng nhập ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
