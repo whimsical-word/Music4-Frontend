@@ -30,14 +30,19 @@ export const usePlayerStore = create((set, get) => ({
     if (queue.length === 0) return;
 
     if (isShuffle) {
-      const randomIndex = Math.floor(Math.random() * queue.length);
-
+      let randomIndex;
+      if (queue.length > 1) {
+        do {
+          randomIndex = Math.floor(Math.random() * queue.length);
+        } while (randomIndex === currentIndex);
+      } else {
+        randomIndex = 0;
+      }
       set({
         currentTrack: queue[randomIndex],
         currentIndex: randomIndex,
         isPlaying: true,
       });
-
       return;
     }
 
@@ -57,14 +62,19 @@ export const usePlayerStore = create((set, get) => ({
     if (queue.length === 0) return;
 
     if (isShuffle) {
-      const randomIndex = Math.floor(Math.random() * queue.length);
-
+      let randomIndex;
+      if (queue.length > 1) {
+        do {
+          randomIndex = Math.floor(Math.random() * queue.length);
+        } while (randomIndex === currentIndex);
+      } else {
+        randomIndex = 0;
+      }
       set({
         currentTrack: queue[randomIndex],
         currentIndex: randomIndex,
         isPlaying: true,
       });
-
       return;
     }
 
