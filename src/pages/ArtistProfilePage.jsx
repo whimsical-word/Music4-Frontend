@@ -17,7 +17,7 @@ import {
   Users,
   MessageSquare,
   TrendingUp,
-  MoreHorizontal,
+    MoreHorizontal,
 } from "lucide-react";
 import {
   BarChart,
@@ -38,15 +38,15 @@ import MusicImage from "../layouts/components/MusicImage";
 import { useFollowStore } from "../features/follow/useFollowStore";
 import TrackEngagementModal from "../layouts/components/TrackEngagementModal";
 
+
 const ArtistProfilePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const playTrack = usePlayerStore((state) => state.playTrack);
 
-  const { userId, role } = useAuthStore();
-  const isOwner = role === "artist" && Number(userId) === Number(id);
-  const { followedArtistIds, toggleFollowArtist, fetchFollowedArtists } =
-    useFollowStore();
+    const { userId, role } = useAuthStore();
+    const isOwner = role === "artist" && Number(userId) === Number(id);
+    const { followedArtistIds, toggleFollowArtist, fetchFollowedArtists } = useFollowStore();
 
   const [artistInfo, setArtistInfo] = useState(null);
   const [albums, setAlbums] = useState([]);
@@ -74,6 +74,25 @@ const ArtistProfilePage = () => {
       fetchFollowedArtists();
     }
   }, [userId]);
+    const [followers, setFollowers] = useState([]);
+    const [isFollowerModalOpen, setIsFollowerModalOpen] = useState(false);
+
+    const fetchFollowers = async () => {
+        try {
+            const res = await axiosClient.get(`/artists/${id}/followers`);
+            setFollowers(res.data);
+            setIsFollowerModalOpen(true);
+        } catch (error) {
+            console.error("Lỗi lấy danh sách người theo dõi:", error);
+            alert("Không thể tải danh sách người theo dõi.");
+        }
+    };
+
+    useEffect(() => {
+        if (userId) {
+            fetchFollowedArtists();
+        }
+    }, [userId]);
 
   useEffect(() => {
     const fetchArtistData = async () => {
@@ -121,17 +140,17 @@ const ArtistProfilePage = () => {
     fetchArtistData();
   }, [id, isOwner]);
 
-  const handleFollowToggle = async () => {
-    if (!userId) {
-      alert("Vui lòng đăng nhập để thực hiện tính năng này!");
-      return;
-    }
-    try {
-      await toggleFollowArtist(Number(id));
-    } catch (error) {
-      console.error("Lỗi khi thay đổi trạng thái theo dõi:", error);
-    }
-  };
+    const handleFollowToggle = async () => {
+        if (!userId) {
+            alert("Vui lòng đăng nhập để thực hiện tính năng này!");
+            return;
+        }
+        try {
+            await toggleFollowArtist(Number(id));
+        } catch (error) {
+            console.error("Lỗi khi thay đổi trạng thái theo dõi:", error);
+        }
+    };
   const handlePlayTrack = (track) => {
     if (playingTrackId === track.id) {
       setPlayingTrackId(null);
@@ -148,35 +167,31 @@ const ArtistProfilePage = () => {
     });
   };
 
-  const handleDeleteAlbum = async (albumId, albumName) => {
-    const isConfirm = window.confirm(
-      `❗ Bạn có chắc chắn muốn xóa album "${albumName}" không?\nCác bài hát trong album sẽ không bị xóa mà sẽ trở thành bài hát đơn lẻ.`,
-    );
-    if (!isConfirm) return;
+    const handleDeleteAlbum = async (albumId, albumName) => {
+        const isConfirm = window.confirm(
+            `❗ Bạn có chắc chắn muốn xóa album "${albumName}" không?\nCác bài hát trong album sẽ không bị xóa mà sẽ trở thành bài hát đơn lẻ.`
+        );
+        if (!isConfirm) return;
 
-    try {
-      await axiosClient.delete(`/albums/${albumId}`); // Đảm bảo URL khớp với API của bạn
-      alert("🎉 Đã xóa album thành công!");
+        try {
+            await axiosClient.delete(`/albums/${albumId}`); // Đảm bảo URL khớp với API của bạn
+            alert("🎉 Đã xóa album thành công!");
 
-      // Cập nhật State để xóa album khỏi giao diện ngay lập tức
-      setAlbums((prevAlbums) =>
-        prevAlbums.filter((album) => album.id !== albumId),
-      );
+            // Cập nhật State để xóa album khỏi giao diện ngay lập tức
+            setAlbums((prevAlbums) => prevAlbums.filter((album) => album.id !== albumId));
 
-      // Giảm số lượng album trên UI
-      if (artistInfo) {
-        setArtistInfo((prev) => ({
-          ...prev,
-          albumTotal: Math.max(0, prev.albumTotal - 1),
-        }));
-      }
-    } catch (error) {
-      console.error("Lỗi khi xóa album:", error);
-      alert(
-        `❌ Xóa album thất bại: ${error.response?.data?.message || "Vui lòng kiểm tra lại!"}`,
-      );
-    }
-  };
+            // Giảm số lượng album trên UI
+            if (artistInfo) {
+                setArtistInfo((prev) => ({
+                    ...prev,
+                    albumTotal: Math.max(0, prev.albumTotal - 1),
+                }));
+            }
+        } catch (error) {
+            console.error("Lỗi khi xóa album:", error);
+            alert(`❌ Xóa album thất bại: ${error.response?.data?.message || "Vui lòng kiểm tra lại!"}`);
+        }
+    };
 
   // Hàm xử lý xóa bài hát (Chỉ thực hiện được nếu là chính chủ)
   const handleDeleteTrack = async (trackId, trackName) => {
@@ -399,12 +414,14 @@ const ArtistProfilePage = () => {
                 color="bg-rose-500/10 text-rose-500"
               />
 
-              <StatCard
-                title="Tổng người theo dõi"
-                value={stats.totalFollowers}
-                icon={Users}
-                color="bg-amber-500/10 text-amber-500"
-              />
+                <div onClick={fetchFollowers} className="cursor-pointer transition-transform hover:scale-[1.02]">
+                    <StatCard
+                        title="Tổng người theo dõi"
+                        value={stats.totalFollowers}
+                        icon={Users}
+                        color="bg-amber-500/10 text-amber-500"
+                    />
+                </div>
 
               <StatCard
                 title="Tổng bình luận"
@@ -700,39 +717,39 @@ const ArtistProfilePage = () => {
           )}
         </div>
 
-        {/* 4. DANH SÁCH BÀI HÁT ĐÃ PHÁT HÀNH */}
-        <section>
-          <h2 className="text-xl font-bold mb-6 text-slate-200">
-            Bài hát đã phát hành
-          </h2>
-          {tracks.length > 0 ? (
-            <div className="bg-[#111a24]/30 border border-white/[0.04] p-4 rounded-xl space-y-1 backdrop-blur-sm">
-              {tracks.map((track, index) => (
-                <div
-                  key={track.id}
-                  className="flex items-center justify-between p-3 rounded-lg hover:bg-white/[0.05] transition-colors group cursor-pointer"
-                  onClick={() => handlePlayTrack(track)}
-                >
-                  {/* Khối bên trái: Số thứ tự, Ảnh nhỏ, Tên bài hát */}
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <span className="text-slate-500 font-medium w-6 text-center group-hover:hidden">
-                      {index + 1}
-                    </span>
-                    <div className="hidden group-hover:flex text-sky-400 w-6 justify-center">
-                      {playingTrackId === track.id ? (
-                        <Pause size={16} fill="currentColor" />
-                      ) : (
-                        <Play size={16} fill="currentColor" />
-                      )}
-                    </div>
+          {/* 4. DANH SÁCH BÀI HÁT ĐÃ PHÁT HÀNH */}
+          <section>
+              <h2 className="text-xl font-bold mb-6 text-slate-200">
+                  Bài hát đã phát hành
+              </h2>
+              {tracks.length > 0 ? (
+                  <div className="bg-[#111a24]/30 border border-white/[0.04] p-4 rounded-xl space-y-1 backdrop-blur-sm">
+                      {tracks.map((track, index) => (
+                          <div
+                              key={track.id}
+                              className="flex items-center justify-between p-3 rounded-lg hover:bg-white/[0.05] transition-colors group cursor-pointer"
+                              onClick={() => handlePlayTrack(track)}
+                          >
+                              {/* Khối bên trái: Số thứ tự, Ảnh nhỏ, Tên bài hát */}
+                              <div className="flex items-center gap-4 flex-1 min-w-0">
+            <span className="text-slate-500 font-medium w-6 text-center group-hover:hidden">
+              {index + 1}
+            </span>
+                                  <div className="hidden group-hover:flex text-sky-400 w-6 justify-center">
+                                      {playingTrackId === track.id ? (
+                                          <Pause size={16} fill="currentColor" />
+                                      ) : (
+                                          <Play size={16} fill="currentColor" />
+                                      )}
+                                  </div>
 
-                    <div className="w-10 h-10 rounded overflow-hidden bg-[#16222f] flex-shrink-0 shadow-sm">
-                      <MusicImage
-                        src={track.img}
-                        type="track"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+                                  <div className="w-10 h-10 rounded overflow-hidden bg-[#16222f] flex-shrink-0 shadow-sm">
+                                      <MusicImage
+                                          src={track.img}
+                                          type="track"
+                                          className="w-full h-full object-cover"
+                                      />
+                                  </div>
 
                     <div className="truncate">
                       <p
@@ -741,163 +758,156 @@ const ArtistProfilePage = () => {
                         {track.name}
                       </p>
                       <p className="text-xs text-slate-400 truncate">
-                        {track.artists?.map((a) => a.name).join(", ") ||
-                          "Nghệ sĩ"}
+                          {track.artists?.map(a => a.name).join(', ') || "Nghệ sĩ"}
                       </p>
                     </div>
                   </div>
 
-                  {/* Khối bên phải: Lượt nghe, Thời lượng, Các nút thao tác */}
-                  <div className="flex items-center gap-6 ml-4">
-                    <span className="text-xs text-slate-400 hidden sm:block">
-                      {track.viewCount?.toLocaleString() || 0} lượt nghe
-                    </span>
-                    <span className="text-sm text-slate-400 hidden md:block font-mono">
-                      {track.duration
-                        ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, "0")}`
-                        : "--:--"}
-                    </span>
+                              {/* Khối bên phải: Lượt nghe, Thời lượng, Các nút thao tác */}
+                              <div className="flex items-center gap-6 ml-4">
+            <span className="text-xs text-slate-400 hidden sm:block">
+              {track.viewCount?.toLocaleString() || 0} lượt nghe
+            </span>
+                                  <span className="text-sm text-slate-400 hidden md:block font-mono">
+              {track.duration
+                  ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, "0")}`
+                  : "--:--"}
+            </span>
 
-                    {/* 🟢 NÚT BA CHẤM KÍCH HOẠT MODAL TƯƠNG TÁC (ĐÃ ĐƯỢC CHUẨN HÓA DỮ LIỆU ĐỂ TRÁNH LỖI MODAL) */}
-                    {userId && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation(); // Chặn hành vi click dòng gây phát nhạc
+                                  {/* 🟢 NÚT BA CHẤM KÍCH HOẠT MODAL TƯƠNG TÁC (ĐÃ ĐƯỢC CHUẨN HÓA DỮ LIỆU ĐỂ TRÁNH LỖI MODAL) */}
+                                  {userId && (
+                                      <button
+                                          type="button"
+                                          onClick={(e) => {
+                                              e.stopPropagation(); // Chặn hành vi click dòng gây phát nhạc
 
-                          // Ép dữ liệu chuẩn hóa gửi sang Modal (bù đắp các trường bị thiếu từ API Artist)
-                          const normalizedTrack = {
-                            ...track,
-                            // Nếu track không có artist list, tự lấy thông tin artistInfo của trang gán vào
-                            artists:
-                              track.artists && track.artists.length > 0
-                                ? track.artists
-                                : [
-                                    {
-                                      id: artistInfo.id,
-                                      name: artistInfo.name,
-                                    },
-                                  ],
-                          };
+                                              // Ép dữ liệu chuẩn hóa gửi sang Modal (bù đắp các trường bị thiếu từ API Artist)
+                                              const normalizedTrack = {
+                                                  ...track,
+                                                  // Nếu track không có artist list, tự lấy thông tin artistInfo của trang gán vào
+                                                  artists: track.artists && track.artists.length > 0
+                                                      ? track.artists
+                                                      : [{ id: artistInfo.id, name: artistInfo.name }],
+                                              };
 
-                          setSelectedTrack(normalizedTrack); // Kích hoạt mở Modal tương tác phẳng
-                        }}
-                        className="text-slate-400 hover:text-sky-400 bg-transparent border-none cursor-pointer transition-all p-2 rounded-full hover:bg-white/[0.05]"
-                        title="Mở bảng tương tác (Thích, Bình luận, Playlist)"
-                      >
-                        <MoreHorizontal size={18} />
-                      </button>
-                    )}
+                                              setSelectedTrack(normalizedTrack); // Kích hoạt mở Modal tương tác phẳng
+                                          }}
+                                          className="text-slate-400 hover:text-sky-400 bg-transparent border-none cursor-pointer transition-all p-2 rounded-full hover:bg-white/[0.05]"
+                                          title="Mở bảng tương tác (Thích, Bình luận, Playlist)"
+                                      >
+                                          <MoreHorizontal size={18} />
+                                      </button>
+                                  )}
 
-                    {/* NÚT UPDATE BÀI HÁT (Chỉ hiển thị khi là chủ sở hữu kênh) */}
-                    {track.artists?.find((a) => a.role === "MAIN") &&
-                      Number(
-                        track.artists.find((a) => a.role === "MAIN").id,
-                      ) === Number(userId) && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditTrack(track);
-                          }}
-                          className="text-slate-400 hover:text-sky-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
-                          title="Chỉnh sửa bài hát"
-                        >
-                          <Pencil size={18} />
-                        </button>
-                      )}
+                                  {/* NÚT UPDATE BÀI HÁT (Chỉ hiển thị khi là chủ sở hữu kênh) */}
+                                  {track.artists?.find((a) => a.role === "MAIN") &&
+                                      Number(
+                                          track.artists.find((a) => a.role === "MAIN").id,
+                                      ) === Number(userId) && (
+                                          <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleEditTrack(track);
+                                              }}
+                                              className="text-slate-400 hover:text-sky-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
+                                              title="Chỉnh sửa bài hát"
+                                          >
+                                              <Pencil size={18} />
+                                          </button>
+                                      )}
 
-                    {/* NÚT XÓA BÀI HÁT (Chỉ hiển thị khi là chủ sở hữu kênh) */}
-                    {track.artists?.find((a) => a.role === "MAIN") &&
-                      Number(
-                        track.artists.find((a) => a.role === "MAIN").id,
-                      ) === Number(userId) && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteTrack(track.id, track.name);
-                          }}
-                          className="text-slate-400 hover:text-red-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
-                          title="Xóa bài hát"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      )}
+                                  {/* NÚT XÓA BÀI HÁT (Chỉ hiển thị khi là chủ sở hữu kênh) */}
+                                  {track.artists?.find((a) => a.role === "MAIN") &&
+                                      Number(
+                                          track.artists.find((a) => a.role === "MAIN").id,
+                                      ) === Number(userId) && (
+                                          <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleDeleteTrack(track.id, track.name);
+                                              }}
+                                              className="text-slate-400 hover:text-red-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
+                                              title="Xóa bài hát"
+                                          >
+                                              <Trash2 size={18} />
+                                          </button>
+                                      )}
+                              </div>
+                          </div>
+                      ))}
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-slate-400 text-sm bg-[#111a24]/20 p-4 rounded-xl border border-white/[0.04]">
-              Nghệ sĩ này chưa đăng bài hát nào.
-            </p>
-          )}
-        </section>
-
-        {/* 5. DANH SÁCH ALBUM CỦA NGHỆ SĨ */}
-        <section>
-          <h2 className="text-xl font-bold mb-6 hover:text-sky-400 transition-colors cursor-pointer inline-block">
-            Album
-          </h2>
-          {albums.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-              {albums.map((album) => (
-                <div
-                  key={album.id}
-                  className="bg-[#111a24]/40 border border-white/[0.04] p-4 rounded-xl hover:bg-white/[0.06] transition-all duration-300 group cursor-pointer shadow-md relative"
-                >
-                  {/* NÚT XÓA ALBUM - GÓC DƯỚI BÊN PHẢI */}
-                  {isOwner && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteAlbum(album.id, album.name);
-                      }}
-                      className="absolute bottom-4 right-4 z-20 p-2 bg-black/50 rounded-full text-slate-400 hover:text-red-400 hover:bg-red-500/20 transition-all cursor-pointer border-none"
-                      title="Xóa album"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-
-                  <div
-                    onClick={() => navigate(`/albums/${album.id}`)}
-                    className="relative aspect-square w-full mb-4 rounded-lg overflow-hidden bg-[#16222f] shadow-md"
-                  >
-                    <MusicImage
-                      src={album.img}
-                      type="album"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-xs">
-                      <button className="w-10 h-10 bg-sky-600 hover:bg-sky-500 rounded-full flex items-center justify-center shadow-md border-none cursor-pointer text-white transition-colors">
-                        <Play
-                          size={18}
-                          fill="currentColor"
-                          className="ml-0.5"
-                        />
-                      </button>
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors">
-                    {album.name}
-                  </h4>
-                  <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">
-                    {album.uploadDate
-                      ? new Date(album.uploadDate).getFullYear()
-                      : "----"}{" "}
-                    • Album
+              ) : (
+                  <p className="text-slate-400 text-sm bg-[#111a24]/20 p-4 rounded-xl border border-white/[0.04]">
+                      Nghệ sĩ này chưa đăng bài hát nào.
                   </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-slate-400 text-sm bg-[#111a24]/20 p-4 rounded-xl border border-white/[0.04]">
-              Nghệ sĩ này chưa phát hành album nào.
-            </p>
-          )}
-        </section>
+              )}
+          </section>
+
+          {/* 5. DANH SÁCH ALBUM CỦA NGHỆ SĨ */}
+          <section>
+              <h2 className="text-xl font-bold mb-6 hover:text-sky-400 transition-colors cursor-pointer inline-block">
+                  Album
+              </h2>
+              {albums.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                      {albums.map((album) => (
+                          <div
+                              key={album.id}
+                              className="bg-[#111a24]/40 border border-white/[0.04] p-4 rounded-xl hover:bg-white/[0.06] transition-all duration-300 group cursor-pointer shadow-md relative"
+                          >
+                              {/* NÚT XÓA ALBUM - GÓC DƯỚI BÊN PHẢI */}
+                              {isOwner && (
+                                  <button
+                                      onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteAlbum(album.id, album.name);
+                                      }}
+                                      className="absolute bottom-4 right-4 z-20 p-2 bg-black/50 rounded-full text-slate-400 hover:text-red-400 hover:bg-red-500/20 transition-all cursor-pointer border-none"
+                                      title="Xóa album"
+                                  >
+                                      <Trash2 size={16} />
+                                  </button>
+                              )}
+
+                              <div
+                                  onClick={() => navigate(`/albums/${album.id}`)}
+                                  className="relative aspect-square w-full mb-4 rounded-lg overflow-hidden bg-[#16222f] shadow-md"
+                              >
+                                  <MusicImage
+                                      src={album.img}
+                                      type="album"
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                  />
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-xs">
+                                      <button className="w-10 h-10 bg-sky-600 hover:bg-sky-500 rounded-full flex items-center justify-center shadow-md border-none cursor-pointer text-white transition-colors">
+                                          <Play
+                                              size={18}
+                                              fill="currentColor"
+                                              className="ml-0.5"
+                                          />
+                                      </button>
+                                  </div>
+                              </div>
+                              <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors">
+                                  {album.name}
+                              </h4>
+                              <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">
+                                  {album.uploadDate
+                                      ? new Date(album.uploadDate).getFullYear()
+                                      : "----"}{" "}
+                                  • Album
+                              </p>
+                          </div>
+                      ))}
+                  </div>
+              ) : (
+                  <p className="text-slate-400 text-sm bg-[#111a24]/20 p-4 rounded-xl border border-white/[0.04]">
+                      Nghệ sĩ này chưa phát hành album nào.
+                  </p>
+              )}
+          </section>
       </div>
 
       {/* 6. MODAL POPUP CHỈNH SỬA THÔNG TIN */}
@@ -1017,6 +1027,48 @@ const ArtistProfilePage = () => {
           onClose={() => setSelectedTrack(null)}
         />
       )}
+        {isFollowerModalOpen && (
+            <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
+                <div className="bg-[#182232] border border-white/[0.1] w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-bold text-white">Người theo dõi</h3>
+                        <button
+                            onClick={() => setIsFollowerModalOpen(false)}
+                            className="text-slate-400 hover:text-white"
+                        >✕</button>
+                    </div>
+
+                    <div className="max-h-[300px] overflow-y-auto pr-2">
+                        {followers.length > 0 ? followers.map(user => (
+                            <div key={user.id} className="flex items-center gap-3 py-2 border-b border-white/[0.05]">
+                                <img
+                                    src={`http://localhost:8080/${user.img}`}
+                                    alt={user.name}
+                                    className="w-10 h-10 rounded-full object-cover bg-gray-500 flex-shrink-0"
+                                    // Bỏ cái onError lỗi thời đi, thay vào đó hãy để trình duyệt tự xử lý fallback
+                                    onError={(e) => {
+                                        // Chỉ đổi nguồn ảnh nếu lỗi, KHÔNG ẩn thẻ img (không dùng display: none)
+                                        e.target.onerror = null;
+                                        e.target.src = '/default-avatar.png';
+                                    }}
+                                />
+                                <div className="flex flex-col overflow-hidden">
+                                    <span className="text-sm font-medium text-white truncate">{user.name}</span>
+                                </div>
+                            </div>
+                        )) : (
+                            <p className="text-center text-slate-500 text-sm py-4">Chưa có ai theo dõi bạn.</p>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )}
+        {selectedTrack && (
+            <TrackEngagementModal
+                track={selectedTrack}
+                onClose={() => setSelectedTrack(null)}
+            />
+        )}
     </div>
   );
 };
