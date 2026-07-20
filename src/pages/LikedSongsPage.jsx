@@ -91,11 +91,8 @@ const LikedSongsPage = () => {
                                 </div>
 
                                 <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedTrack(fav);
-                                    }}
-                                    className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-white p-2 border-none bg-transparent cursor-pointer"
+                                    onClick={(e) => { e.stopPropagation(); setSelectedTrack(fav); }}
+                                    className="text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/[0.08] transition-colors bg-transparent border-none cursor-pointer"
                                 >
                                     <MoreHorizontal size={18} />
                                 </button>
@@ -109,7 +106,11 @@ const LikedSongsPage = () => {
 
             {selectedTrack && (
                 <TrackEngagementModal
-                    track={selectedTrack}
+                    track={{
+                        ...selectedTrack,
+                        id: selectedTrack.trackId,
+                        isLiked: true
+                    }}
                     onClose={() => {
                         setSelectedTrack(null);
                         fetchLikedTracks();

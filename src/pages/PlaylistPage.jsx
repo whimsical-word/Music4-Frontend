@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Play, ArrowLeft, Clock, Trash2, Camera, X, Music } from "lucide-react";
 import { usePlayerStore } from "../features/player/usePlayerStore";
 import { usePlaylistStore } from "../features/playlist/usePlaylistStore"; // Đảm bảo đúng đường dẫn 1 cấp lùi
 import axiosClient from "../app/axios/axiosClient";
 import MusicImage from "../layouts/components/MusicImage";
+import { Play, ArrowLeft, Clock, Trash2, Camera, X, Music, MoreHorizontal } from "lucide-react"; // Đã thêm MoreHorizontal
+import TrackEngagementModal from "../layouts/components/TrackEngagementModal.jsx";
 
 const PlaylistPage = () => {
   const { id } = useParams();
@@ -28,7 +29,7 @@ const PlaylistPage = () => {
   const [editDescription, setEditDescription] = useState("");
   const [editAvatar, setEditAvatar] = useState(null); // Lưu file binary để upload
   const [avatarPreview, setAvatarPreview] = useState(""); // Lưu link tạm blob để preview
-
+    const [selectedTrack, setSelectedTrack] = useState(null);
   // Đổ dữ liệu hiện tại của playlist vào form khi mở modal
   useEffect(() => {
     if (playlistInfo) {
@@ -269,6 +270,12 @@ const PlaylistPage = () => {
                   </div>
 
                   <div className="col-span-1 text-center">
+                      <button
+                          onClick={(e) => { e.stopPropagation(); setSelectedTrack(track); }}
+                          className="text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
+                      >
+                          <MoreHorizontal size={16} /> {/* Đảm bảo đã import MoreHorizontal từ lucide-react */}
+                      </button>
                     <button
                       onClick={(e) =>
                         handleRemoveTrack(e, track.id, track.name)
@@ -382,6 +389,13 @@ const PlaylistPage = () => {
           </div>
         </div>
       )}
+        {selectedTrack && (
+            <TrackEngagementModal
+                track={selectedTrack}
+                onClose={() => setSelectedTrack(null)}
+            />
+        )}
+
     </div>
   );
 };
