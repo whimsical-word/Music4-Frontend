@@ -97,6 +97,7 @@ const AutoScrollCarousel = ({ title, items, renderItem, onViewAll }) => {
 const HomePage = () => {
   const navigate = useNavigate();
   const { username, role, id: userId } = useAuthStore();
+  const actualUserId = useAuthStore((state) => state.userId) || userId;
 
   const playTrack = usePlayerStore((state) => state.playTrack);
 
@@ -151,25 +152,23 @@ const HomePage = () => {
         console.error("Lỗi lấy dữ liệu trang chủ: ", error);
       }
 
-      if (userId) {
+      if (actualUserId) {
         try {
           const aiRes = await axiosClient.get("/recommendations", {
-            params: { userId },
+            params: { userId: actualUserId },
           });
           setAiRecommendations(aiRes.data || []);
         } catch (aiError) {
-          console.warn("AI Service không khả dụng: ", aiError.message);
+          console.warn("AI Service kh ng kh ng: ", aiError.message);
           setAiRecommendations([]);
         }
       } else {
         setAiRecommendations([]);
       }
-
       setIsLoading(false);
     };
-
     fetchHomeData();
-  }, [userId]);
+  }, [actualUserId]);
 
   if (isLoading) {
     return (
@@ -195,7 +194,7 @@ const HomePage = () => {
 
       <div className="space-y-12 animate-fadeIn">
         {/* 0. BĂNG CHUYỀN GỢI Ý AI (DÀNH RIÊNG CHO BẠN) */}
-        {userId && aiRecommendations.length > 0 && (
+        {actualUserId && aiRecommendations.length > 0 && (
           <AutoScrollCarousel
             title={
               <span className="flex items-center gap-2 text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-fuchsia-500">

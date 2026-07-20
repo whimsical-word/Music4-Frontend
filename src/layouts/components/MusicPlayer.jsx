@@ -141,18 +141,27 @@ const MusicPlayer = () => {
     setHoverTime(null);
   };
 
-  // 2b. Xử lý Play/Pause và Chuyển bài (Chuyển đổi mượt mà)
+  // Effect A: Khi ĐỔI BÀI (next/prev/shuffle/click track mới) -> load lại nguồn và play
   useEffect(() => {
     if (audioRef.current && currentTrack) {
-      if (isPlaying) {
-        audioRef.current.play().catch((error) => {
-          console.log("Trình duyệt chặn Auto-play hoặc đợi tương tác:", error);
-        });
-      } else {
-        audioRef.current.pause();
-      }
+      audioRef.current.load(); // bắt buộc, để trình duyệt nạp lại file mới từ src đã đổi
+      audioRef.current.play().catch((error) => {
+        console.log("Trình duyệt chặn Auto-play hoặc đợi tương tác:", error);
+      });
     }
-  }, [isPlaying, currentTrack]); // Theo dõi sát sao 2 biến này
+  }, [currentTrack?.id]); // chỉ chạy khi ID bài hát thay đổi
+
+  // Effect B: Khi chỉ TOGGLE PLAY/PAUSE (không đổi bài)
+  useEffect(() => {
+    if (!audioRef.current || !currentTrack) return;
+    if (isPlaying) {
+      audioRef.current.play().catch((error) => {
+        console.log("Trình duyệt chặn Auto-play hoặc đợi tương tác:", error);
+      });
+    } else {
+      audioRef.current.pause();
+    }
+  }, [isPlaying]);
 
   // Sync Playback Position (Đồng bộ thời gian nghe mỗi 10 giây)
   useEffect(() => {
@@ -357,9 +366,6 @@ const MusicPlayer = () => {
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleTrackEnded}
           onLoadedMetadata={handleLoadedMetadata}
-          loop={
-            repeatMode === "one"
-          } /* THÊM DÒNG NÀY ĐỂ TRÌNH DUYỆT TỰ ĐỘNG LOOP */
           onError={(e) => {
             console.error("Lỗi không thể tải nguồn nhạc:", e.target.error);
           }}
@@ -404,7 +410,7 @@ const MusicPlayer = () => {
             <button
               onClick={toggleShuffle}
               className={`border-none bg-transparent cursor-pointer transition-colors ${
-                isShuffle ? "text-green-500" : "text-[#a7a7a7] hover:text-white"
+                isShuffle ? "text-sky-400" : "text-[#a7a7a7] hover:text-white"
               }`}
             >
               <Shuffle size={18} />
@@ -443,7 +449,7 @@ const MusicPlayer = () => {
               onClick={toggleRepeatMode}
               className={`border-none bg-transparent cursor-pointer transition-colors ${
                 repeatMode !== "off"
-                  ? "text-green-500"
+                  ? "text-sky-400"
                   : "text-[#a7a7a7] hover:text-white"
               }`}
             >
