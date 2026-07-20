@@ -60,12 +60,14 @@ const MusicPlayer = () => {
   const lastTimeRef = useRef(0);
   const accumulatedTimeRef = useRef(0);
   const hasRecordedViewRef = useRef(false);
+  const hasSavedHistoryRef = useRef(false);
 
   // RESET LẠI BỘ ĐẾM KHI CHUYỂN BÀI HÁT MỚI
   useEffect(() => {
     lastTimeRef.current = 0;
     accumulatedTimeRef.current = 0;
     hasRecordedViewRef.current = false;
+    hasSavedHistoryRef.current = false;
   }, [currentTrack?.id]);
 
   const getStreamUrl = (trackId) => {
@@ -223,6 +225,31 @@ const MusicPlayer = () => {
         accumulatedTimeRef.current += timeDifference;
       }
       lastTimeRef.current = currentVal;
+
+      // LƯU LỊCH SỬ SAU 10 GIÂY THỰC TẾ
+      if (
+        accumulatedTimeRef.current >= 10 && // Đã nghe thực tế đủ 10 giây
+        !hasSavedHistoryRef.current // Chưa lưu lịch sử cho bài này
+      ) {
+        hasSavedHistoryRef.current = true; // Khóa cờ lại
+
+        if (isAuthenticated && userId && currentTrack) {
+          console.log("[DEBUG - TRACKING] Nghe đủ 10s. Gọi API lưu lịch sử...");
+          try {
+            // THAY ĐỔI ENDPOINT DƯỚI ĐÂY THEO API BACKEND CỦA BẠN
+            await axiosClient.post("/tracking/history", {
+              trackId: currentTrack.id,
+              userId: userId,
+            });
+            console.log("[SUCCESS] Đã lưu bài hát vào lịch sử!");
+          } catch (error) {
+            console.error(
+              "[DEBUG - ERROR] Lỗi khi gọi API lưu lịch sử:",
+              error,
+            );
+          }
+        }
+      }
 
       // In log theo dõi quá trình nghe (Cứ mỗi ~5 giây in 1 lần để đỡ spam)
       if (Math.floor(currentVal) % 5 === 0 && Math.floor(currentVal) !== 0) {
