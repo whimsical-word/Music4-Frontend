@@ -67,6 +67,7 @@ const MusicPlayer = () => {
   const accumulatedTimeRef = useRef(0);
   const hasRecordedViewRef = useRef(false);
   const hasSavedHistoryRef = useRef(false);
+  const lastSyncPositionRef = useRef(0);
 
   // RESET LẠI BỘ ĐẾM KHI CHUYỂN BÀI HÁT MỚI
   useEffect(() => {
@@ -74,6 +75,7 @@ const MusicPlayer = () => {
     accumulatedTimeRef.current = 0;
     hasRecordedViewRef.current = false;
     hasSavedHistoryRef.current = false;
+    lastSyncPositionRef.current = 0;
   }, [currentTrack?.id]);
 
   const getStreamUrl = (trackId) => {
@@ -203,7 +205,7 @@ const MusicPlayer = () => {
     };
   }, [isAuthenticated, userId, currentTrack, isPlaying]);
 
-  // THUẬT TOÁN ANTI-CHEAT
+  // THUẬT TOÁN ANTI-CHEAT & SYNC TIME
   const handleTimeUpdate = async () => {
     if (audioRef.current) {
       const currentVal = audioRef.current.currentTime;
@@ -221,6 +223,35 @@ const MusicPlayer = () => {
       setCurrentTime(currentVal);
       if (durationReal) {
         setProgress((currentVal / durationReal) * 100);
+      }
+
+      const currentSecond = Math.floor(currentVal);
+      // Nếu chạm mốc chia hết cho 10 (10, 20, 30, 40, 50...) và chưa đồng bộ mốc này
+      if (
+        currentSecond > 0 &&
+        currentSecond % 10 === 0 &&
+        currentSecond !== lastSyncPositionRef.current
+      ) {
+        lastSyncPositionRef.current = currentSecond; // Khóa lại để không gọi API trùng lặp
+
+        if (isAuthenticated && userId && currentTrack) {
+          console.log(
+            `[DEBUG - SYNC] Chuẩn bị đồng bộ thời gian. Position hiện tại: ${currentSecond}s`,
+          );
+          // Dùng then/catch thay cho await để không block luồng đếm thời gian thực của Audio
+          axiosClient
+            .put("/tracking/sync-time", {
+              userId: userId,
+              trackId: currentTrack.id,
+              position: currentSecond,
+            })
+            .then(() =>
+              console.log("[DEBUG - SYNC] Đồng bộ thời gian thành công!"),
+            )
+            .catch((error) =>
+              console.error("[DEBUG - ERROR] Lỗi đồng bộ thời gian:", error),
+            );
+        }
       }
 
       // Bắt đầu tính toán thời gian nghe thực
