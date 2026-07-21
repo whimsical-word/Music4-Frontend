@@ -278,7 +278,7 @@ const Navbar = () => {
                                             onClick={() => {
                                                 setDropdownOpen(false);
                                                 if (role === 'artist') navigate(`/artist/${id}`);
-                                                else navigate('/profile');
+                                                else navigate(`/profile/${id}`);
                                             }}
                                             className="w-full text-left px-4 py-2.5 text-sm font-medium text-white hover:bg-[#3e3e3e] flex items-center gap-2.5 transition-colors bg-transparent border-none cursor-pointer"
                                         >

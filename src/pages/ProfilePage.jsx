@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 import { Edit2, Clock, Music, X, Camera, Users, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuthStore } from '../features/auth/useAuthStore';
 import { useFollowStore } from '../features/follow/useFollowStore';
@@ -11,8 +11,8 @@ import {NotificationModal} from "../layouts/components/Modal";
 const ProfilePage = () => {
     const IMAGE_URL = "https://music4-v3-storage-kenz.s3.ap-southeast-1.amazonaws.com/";
     const navigate = useNavigate();
-    const { updateProfile, userId, username, img } = useAuthStore();
-
+    const {updateProfile, userId, username, img, role } = useAuthStore();
+    const { id } = useParams();
     const { followedArtistIds, fetchFollowedArtists } = useFollowStore();
     const [followedArtistsDetails, setFollowedArtistsDetails] = useState([]);
     const [isLoadingFollowings, setIsLoadingFollowings] = useState(false);
@@ -24,6 +24,12 @@ const ProfilePage = () => {
         name: username || '',
         avatar: img || null
     });
+
+    const isOwner = role === "listener" && Number(userId) === Number(id);
+
+
+    const targetUserId = id || userId;
+
 
     const [modalConfig, setModalConfig] = useState({
         isOpen: false,
@@ -78,14 +84,14 @@ const ProfilePage = () => {
     }, [followedArtistIds]);
 
     useEffect(() => {
-        if (!userId) return;
+        if (!targetUserId) return; // Đổi userId thành targetUserId
 
         const fetchProfileAndPlaylist = async () => {
             setIsLoadingProfile(true);
 
             try {
                 const [profileRes] = await Promise.all([
-                    axiosClient.get(`/users/${userId}`),
+                    axiosClient.get(`/users/${targetUserId}`), // Đổi userId thành targetUserId
                 ]);
 
                 const apiName = profileRes.data.name || username;
@@ -188,17 +194,23 @@ const ProfilePage = () => {
             {/* HEADER GRADIENT */}
             <div className="bg-gradient-to-b from-[#535353] to-[#121212] h-[340px] px-8 flex items-end pb-8">
                 <div className="flex items-center gap-6">
-                    <div onClick={() => setIsEditModalOpen(true)} className="relative w-48 h-48 rounded-full shadow-2xl group cursor-pointer bg-[#282828]">
+                    <div
+                        onClick={() => isOwner && setIsEditModalOpen(true)}
+                        className={`relative w-48 h-48 rounded-full shadow-2xl group bg-[#282828] ${isOwner ? 'cursor-pointer' : ''}`}
+                    >
                         <MusicImage
                             src={profile.avatar && profile.avatar !== 'null' ? profile.avatar : fallbackAvatar}
                             type="user"
                             alt="Profile"
-                            className="w-full h-full rounded-full group-hover:brightness-50 transition-all duration-300"
+                            className={`w-full h-full rounded-full transition-all duration-300 ${isOwner ? 'group-hover:brightness-50' : ''}`}
                         />
-                        <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full">
-                            <Edit2 size={32} className="mb-2"/>
-                            <span className="text-sm font-bold">Chọn ảnh</span>
-                        </div>
+                        {/* Chỉ hiển thị lớp phủ "Chọn ảnh" nếu là chủ sở hữu */}
+                        {isOwner && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full">
+                                <Edit2 size={32} className="mb-2"/>
+                                <span className="text-sm font-bold">Chọn ảnh</span>
+                            </div>
+                        )}
                     </div>
                     <div className="flex flex-col">
                         <p className="text-sm font-bold uppercase tracking-widest">Hồ sơ</p>
@@ -216,12 +228,16 @@ const ProfilePage = () => {
 
             <div className="px-8 py-4 space-y-12 animate-fadeIn">
 
-                <section>
-                    <button onClick={() => navigate('/history')} className="flex items-center gap-3 bg-[#181818] hover:bg-[#282828] border border-[#282828] hover:border-[#535353] px-6 py-4 rounded-full transition-all cursor-pointer shadow-md">
-                        <Clock size={20} className="text-blue-500"/>
-                        <span className="font-bold">Xem Lịch sử Nghe Nhạc Gần Đây</span>
-                    </button>
-                </section>
+                {/* NÚT LỊCH SỬ NGHE NHẠC */}
+                {/* Chỉ render Nút Lịch sử nếu là Chủ sở hữu */}
+                {isOwner && (
+                    <section>
+                        <button onClick={() => navigate('/history')} className="flex items-center gap-3 bg-[#181818] hover:bg-[#282828] border border-[#282828] hover:border-[#535353] px-6 py-4 rounded-full transition-all cursor-pointer shadow-md">
+                            <Clock size={20} className="text-blue-500"/>
+                            <span className="font-bold">Xem Lịch sử Nghe Nhạc Gần Đây</span>
+                        </button>
+                    </section>
+                )}
 
                 {/*DANH SÁCH NGHỆ SĨ ĐANG THEO DÕI ĐỘNG (ĐÃ THÊM LOGIC ẨN/HIỆN) */}
                 <section>
