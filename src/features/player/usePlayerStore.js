@@ -9,19 +9,14 @@ export const usePlayerStore = create((set, get) => ({
   repeatMode: "off", // off | all | one
   isFromHistory: false,
 
-  // Cập nhật playTrack: Nhận thêm 'newQueue' là danh sách bài hát ngữ cảnh
-  playTrack: (track, newQueue = []) => {
-    // Tìm xem bài hát này nằm ở đâu trong mảng được truyền vào
-    const index = newQueue.findIndex((t) => t.id === track.id);
+  playTrack: (track, queueParam = [], fromHistory = false) => {
+    const finalQueue = queueParam.length > 0 ? queueParam : [track];
+    const targetIndex = finalQueue.findIndex((t) => t.id === track.id);
 
     set({
       currentTrack: track,
-      isPlaying: true,
-      queue: newQueue.length > 0 ? newQueue : [track], // Nếu không có mảng, coi như chỉ phát 1 bài
-      currentIndex:
-        queue.findIndex((t) => t.id === track.id) !== -1
-          ? queue.findIndex((t) => t.id === track.id)
-          : 0,
+      queue: finalQueue,
+      currentIndex: targetIndex !== -1 ? targetIndex : 0,
       isPlaying: true,
       isFromHistory: fromHistory,
     });
