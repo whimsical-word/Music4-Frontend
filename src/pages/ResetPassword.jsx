@@ -1,15 +1,14 @@
 import { useState } from "react";
 import { authService } from "../features/auth/authService";
-import {useNavigate, useSearchParams} from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Lock, Music, Eye, EyeOff, ArrowLeft } from "lucide-react";
 
 export const ResetPassword = () => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-
-    const [focusedField, setFocusedField] = useState(null);
-
-    // Error state để thông báo nếu mật khẩu không khớp hoặc có lỗi từ API
     const [error, setError] = useState('');
 
     const navigate = useNavigate();
@@ -20,7 +19,6 @@ export const ResetPassword = () => {
         e.preventDefault();
         setError('');
 
-        // Kiểm tra mật khẩu khớp nhau ở client trước khi gửi API
         if (password !== confirmPassword) {
             setError('Mật khẩu xác nhận không trùng khớp.');
             return;
@@ -29,14 +27,12 @@ export const ResetPassword = () => {
         try {
             setIsLoading(true);
 
-            // Gọi API dịch vụ reset password (truyền token và password mới)
             const response = await authService.resetPassword({
                 token: token,
                 newPassword: password,
             });
 
             console.log(response);
-            // Sau khi thành công, chuyển hướng về trang đăng nhập
             navigate('/login');
         } catch (err) {
             console.log(err);
@@ -47,133 +43,98 @@ export const ResetPassword = () => {
     };
 
     return (
-        <div className="bg-black text-[#e2e2e2] min-h-screen flex flex-col relative font-sans antialiased overflow-hidden selection:bg-neutral-700 selection:text-white">
+        <div className="w-full h-full bg-black flex items-center justify-center p-4 font-sans text-gray-100">
+            <div className="w-full max-w-md bg-[#121212] border border-[#282828] p-8 rounded-2xl shadow-xl transition-all hover:border-[#3e3e3e]">
 
-            {/* Hiệu ứng mờ nền (Ambient Gradient Blur) */}
-            <div
-                className="fixed top-[-10%] left-1/2 -translate-x-1/2 w-[800px] h-[400px] pointer-events-none z-0"
-                style={{
-                    background: 'radial-gradient(circle, rgba(62, 107, 237, 0.15) 0%, rgba(0,0,0,0) 70%)',
-                    filter: 'blur(80px)'
-                }}
-            />
-
-            {/* Main Form Canvas */}
-            <main className="flex-grow flex items-center justify-center px-5 z-10">
-                <div className="w-full max-w-md space-y-8 animate-[fadeInUp_0.7s_ease-out]">
-
-                    {/* Tiêu đề biểu mẫu */}
-                    <div className="text-center space-y-3">
-                        <h2 className="text-[28px] md:text-[32px] font-bold text-white">
-                            Đặt lại mật khẩu
-                        </h2>
-                        <p className="text-neutral-400 text-base">
-                            Vui lòng nhập mật khẩu mới cho tài khoản của bạn.
-                        </p>
+                {/* Header Logo */}
+                <div className="flex flex-col items-center mb-8">
+                    <div className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+                        <Music className="text-white" size={26} />
                     </div>
-
-                    {/* Form nhập liệu */}
-                    <form className="space-y-6" onSubmit={handleSubmit}>
-
-                        {/* Hiển thị lỗi nếu có */}
-                        {error && (
-                            <div className="bg-red-950/30 border border-red-500/50 text-red-400 p-3 rounded-lg text-sm text-center animate-pulse">
-                                {error}
-                            </div>
-                        )}
-
-                        {/* Input: Mật khẩu mới */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-neutral-300 ml-1" htmlFor="password">
-                                Mật khẩu mới
-                            </label>
-                            <div
-                                className={`bg-[#1A1A1A] border rounded-lg overflow-hidden transition-all duration-200 ${
-                                    focusedField === 'password'
-                                        ? 'border-[#e2e2e2] shadow-[0_0_15px_rgba(255,255,255,0.05)]'
-                                        : 'border-[#333333]'
-                                }`}
-                            >
-                                <input
-                                    className="w-full bg-transparent border-none text-white placeholder:text-neutral-600 p-4 focus:ring-0 text-base focus:outline-none"
-                                    id="password"
-                                    name="password"
-                                    type="password"
-                                    placeholder="••••••••"
-                                    required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    onFocus={() => setFocusedField('password')}
-                                    onBlur={() => setFocusedField(null)}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Input: Xác nhận mật khẩu mới */}
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-neutral-300 ml-1" htmlFor="confirmPassword">
-                                Xác nhận mật khẩu mới
-                            </label>
-                            <div
-                                className={`bg-[#1A1A1A] border rounded-lg overflow-hidden transition-all duration-200 ${
-                                    focusedField === 'confirmPassword'
-                                        ? 'border-[#e2e2e2] shadow-[0_0_15px_rgba(255,255,255,0.05)]'
-                                        : 'border-[#333333]'
-                                }`}
-                            >
-                                <input
-                                    className="w-full bg-transparent border-none text-white placeholder:text-neutral-600 p-4 focus:ring-0 text-base focus:outline-none"
-                                    id="confirmPassword"
-                                    name="confirmPassword"
-                                    type="password"
-                                    placeholder="••••••••"
-                                    required
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    onFocus={() => setFocusedField('confirmPassword')}
-                                    onBlur={() => setFocusedField(null)}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Nút hành động */}
-                        <button
-                            className={`w-full py-4 bg-[#e2e2e2] text-black font-bold rounded-lg transition-all duration-200 text-base shadow-lg ${
-                                isLoading
-                                    ? 'opacity-70 cursor-not-allowed'
-                                    : 'hover:opacity-90 active:scale-[0.98]'
-                            }`}
-                            type="submit"
-                            disabled={isLoading}
-                        >
-                            {isLoading ? 'Updating...' : 'Reset Password'}
-                        </button>
-                    </form>
-
-                    {/* Các liên kết điều hướng phụ */}
-                    <div className="pt-4 flex flex-col items-center gap-6">
-                        <button
-                            className="flex items-center gap-2 text-neutral-400 hover:text-white text-sm font-medium transition-colors duration-200 group"
-                            onClick={() => navigate('/login')}
-                        >
-                            <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-1 transition-transform">
-                               Quay lại đăng nhập
-                            </span>
-                        </button>
-
-                        <div className="w-full h-[1px] bg-neutral-800 opacity-50"></div>
-
-                        <div className="flex gap-4">
-                            <button className="p-3 bg-neutral-900 rounded-full hover:bg-neutral-800 transition-colors border border-neutral-800">
-                                <span className="material-symbols-outlined text-neutral-400">help</span>
-                            </button>
-                            <button className="p-3 bg-neutral-900 rounded-full hover:bg-neutral-800 transition-colors border border-neutral-800">
-                                <span className="material-symbols-outlined text-neutral-400">language</span>
-                            </button>
-                        </div>
-                    </div>
+                    <h2 className="text-3xl font-extrabold text-white tracking-wider">
+                        MUSIC<span className="text-blue-500">4</span>
+                    </h2>
+                    <p className="text-xs text-[#a7a7a7] mt-1 uppercase tracking-widest">Đặt lại mật khẩu</p>
                 </div>
-            </main>
+
+                {/* Thông báo lỗi */}
+                {error && (
+                    <div className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm text-center">
+                        {error}
+                    </div>
+                )}
+
+                {/* Form Đặt lại mật khẩu */}
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    {/* Mật khẩu mới */}
+                    <div>
+                        <label className="block text-xs font-semibold text-[#a7a7a7] uppercase tracking-wider mb-2">Mật khẩu mới</label>
+                        <div className="relative flex items-center bg-[#1e1e1e] border border-[#282828] rounded-full px-5 py-3.5 focus-within:border-blue-500 transition-all">
+                            <Lock className="text-[#a7a7a7] mr-3" size={18} />
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Nhập mật khẩu mới"
+                                className="bg-transparent border-none outline-none text-sm text-white w-full placeholder-[#535353] autofill:bg-transparent autofill:text-white"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="text-[#a7a7a7] hover:text-white transition-colors bg-transparent border-none cursor-pointer"
+                            >
+                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Xác nhận mật khẩu mới */}
+                    <div>
+                        <label className="block text-xs font-semibold text-[#a7a7a7] uppercase tracking-wider mb-2">Xác nhận mật khẩu mới</label>
+                        <div className="relative flex items-center bg-[#1e1e1e] border border-[#282828] rounded-full px-5 py-3.5 focus-within:border-blue-500 transition-all">
+                            <Lock className="text-[#a7a7a7] mr-3" size={18} />
+                            <input
+                                type={showConfirmPassword ? "text" : "password"}
+                                required
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                placeholder="Nhập lại mật khẩu mới"
+                                className="bg-transparent border-none outline-none text-sm text-white w-full placeholder-[#535353] autofill:bg-transparent autofill:text-white"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                className="text-[#a7a7a7] hover:text-white transition-colors bg-transparent border-none cursor-pointer"
+                            >
+                                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Nút hành động */}
+                    <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-full transition-all duration-300 transform active:scale-98 flex items-center justify-center text-sm tracking-wider cursor-pointer border-none"
+                    >
+                        {isLoading ? (
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : "ĐẶT LẠI MẬT KHẨU"}
+                    </button>
+                </form>
+
+                {/* Quay lại đăng nhập */}
+                <div className="mt-8 text-center text-xs text-[#a7a7a7] border-t border-[#282828] pt-6">
+                    <button
+                        onClick={() => navigate('/login')}
+                        className="text-white hover:text-blue-400 hover:underline bg-transparent border-none p-0 cursor-pointer transition-colors inline-flex items-center gap-1.5 font-medium"
+                    >
+                        <ArrowLeft size={14} /> Quay lại đăng nhập
+                    </button>
+                </div>
+
+            </div>
         </div>
     );
 };

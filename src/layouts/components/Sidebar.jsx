@@ -126,14 +126,7 @@ const Sidebar = () => {
         >
           <Home size={22} /> Trang chủ
         </Link>
-        {role !== "admin" && (
-          <Link
-            to="/library"
-            className={`flex items-center gap-4 hover:text-sky-400 transition-all ${location.pathname === "/library" ? "text-sky-400 font-semibold" : ""}`}
-          >
-            <Library size={22} /> Thư viện
-          </Link>
-        )}
+
       </nav>
 
       {/* DANH SÁCH MENU DÀNH RIÊNG CHO ADMIN */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {Users, Mic2, LayoutGrid, Trash2, Edit, Eye, Plus, Play, RefreshCw, AlertTriangle, CheckCircle, History} from 'lucide-react';
 import axiosClient from '../app/axios/axiosClient';
@@ -102,7 +102,7 @@ const AdminDashboardPage = () => {
             setIsCleaning(false);
         }
     };
-    
+
     // 🟢 Thêm state lưu tổng số lượng để hiển thị Overview
     const [artistCount, setArtistCount] = useState(0);
     const [userCount, setUserCount] = useState(0);
@@ -168,9 +168,9 @@ const AdminDashboardPage = () => {
         if (!categoryName.trim()) return;
         try {
             if (editingCategory) {
-               await axiosClient.put(`/categories/${editingCategory.id}`, { name: categoryName });
+                await axiosClient.put(`/categories/${editingCategory.id}`, { name: categoryName });
 
-               setCategories(prev => prev.map(c =>
+                setCategories(prev => prev.map(c =>
                     c.id === editingCategory.id ? { ...c, name: categoryName } : c
                 ));
             } else {

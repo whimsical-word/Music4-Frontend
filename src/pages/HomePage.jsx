@@ -20,9 +20,8 @@ import MusicImage from "../layouts/components/MusicImage";
 import TrackEngagementModal from "../layouts/components/TrackEngagementModal";
 
 const randomSeed = Math.floor(Math.random() * 10000) + 1;
-// =====================================================================
-// COMPONENT PHỤ: BĂNG CHUYỀN ĐIỀU HƯỚNG TAY (ĐÃ BỎ HOÀN TOÀN AUTO-SCROLL)
-// =====================================================================
+
+// === COMPONENT PHỤ: BĂNG CHUYỀN ĐIỀU HƯỚNG TAY ===
 const AutoScrollCarousel = ({ title, items, renderItem, onViewAll }) => {
   const scrollRef = useRef(null);
 
@@ -91,17 +90,15 @@ const AutoScrollCarousel = ({ title, items, renderItem, onViewAll }) => {
   );
 };
 
-// =====================================================================
-// COMPONENT CHÍNH: TRANG CHỦ
-// =====================================================================
+// === COMPONENT CHÍNH: TRANG CHỦ ===
 const HomePage = () => {
   const navigate = useNavigate();
-  const { username, role, id: userId } = useAuthStore();
+  const { username, name, role, id: userId } = useAuthStore();
   const actualUserId = useAuthStore((state) => state.userId) || userId;
 
   const playTrack = usePlayerStore((state) => state.playTrack);
 
-  // --- QUẢN LÝ TRẠNG THÁI DỮ LIỆU TỪ DATABASE ---
+  // STATES QUẢN LÝ TRẠNG THÁI DỮ LIỆU TỪ DATABASE
   const [tracks, setTracks] = useState([]);
   const [artists, setArtists] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -112,7 +109,7 @@ const HomePage = () => {
   const [aiRecommendations, setAiRecommendations] = useState([]);
   const [selectedTrack, setSelectedTrack] = useState(null);
 
-  // --- FETCH DATA TỪ SPRING BOOT (GIỮ NGUYÊN HOÀN TOÀN LOGIC CŨ) ---
+  // FETCH DATA TỪ SPRING BOOT
   useEffect(() => {
     const fetchHomeData = async () => {
       setIsLoading(true);
@@ -159,7 +156,7 @@ const HomePage = () => {
           });
           setAiRecommendations(aiRes.data || []);
         } catch (aiError) {
-          console.warn("AI Service kh ng kh ng: ", aiError.message);
+          console.warn("AI Service không khả dụng: ", aiError.message);
           setAiRecommendations([]);
         }
       } else {
@@ -184,7 +181,7 @@ const HomePage = () => {
       <div className="mb-10 p-8 rounded-xl bg-gradient-to-r from-[#0f1722] to-[#131e2e] border border-white/[0.05] shadow-md relative overflow-hidden">
         <h2 className="text-4xl font-extrabold mb-2 text-white relative z-10 tracking-tight">
           Chào buổi chiều,{" "}
-          <span className="text-sky-400">{username || "Listener"}</span>
+          <span className="text-sky-400">{name || "Listener"}</span>
         </h2>
         <p className="text-slate-400 relative z-10 text-sm">
           Hệ thống gợi ý đã sẵn sàng. Khám phá những giai điệu dành riêng cho

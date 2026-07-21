@@ -1,27 +1,43 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 import { Edit2, Clock, Music, X, Camera, Users, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuthStore } from '../features/auth/useAuthStore';
 import { useFollowStore } from '../features/follow/useFollowStore';
 import axiosClient from '../app/axios/axiosClient';
 import MusicImage from '../layouts/components/MusicImage';
+import {NotificationModal} from "../layouts/components/Modal";
+
 
 const ProfilePage = () => {
-    const IMAGE_URL = "https://music4-v3-storage-kenz.s3.ap-southeast-1.amazonaws.com/";
     const navigate = useNavigate();
-    const { updateProfile, userId, username, img } = useAuthStore();
-
+    const {updateProfile, userId, username, img, role } = useAuthStore();
+    const { id } = useParams();
     const { followedArtistIds, fetchFollowedArtists } = useFollowStore();
     const [followedArtistsDetails, setFollowedArtistsDetails] = useState([]);
     const [isLoadingFollowings, setIsLoadingFollowings] = useState(false);
 
-    //Quản lý trạng thái xem tất cả của danh sách Follow
     const [isExpanded, setIsExpanded] = useState(false);
 
     const [profile, setProfile] = useState({
         name: username || '',
         avatar: img || null
     });
+
+    const isOwner = role === "listener" && Number(userId) === Number(id);
+
+
+    const targetUserId = id || userId;
+
+
+    const [modalConfig, setModalConfig] = useState({
+        isOpen: false,
+        type: "info",
+        title: "",
+        message: ""
+    });
+    const handleCloseModal = () => {
+        setModalConfig(prev => ({ ...prev, isOpen: false }));
+    };
 
     const [playlists, setPlaylists] = useState([]);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -32,11 +48,6 @@ const ProfilePage = () => {
     const [isUpdating, setIsUpdating] = useState(false);
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
-    const favoriteArtists = [
-        { id: 1, name: 'Tiên Tiên', img: 'https://images.unsplash.com/photo-1516280440502-a2f1b402e8d3?q=80&w=200&auto=format&fit=crop' },
-        { id: 2, name: 'Phùng Khánh Linh', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop' },
-        { id: 3, name: 'Thịnh Suy', img: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop' },
-    ];
 
     useEffect(() => {
         if (userId) {
@@ -66,15 +77,18 @@ const ProfilePage = () => {
     }, [followedArtistIds]);
 
     useEffect(() => {
-        if (!userId) return;
+        if (!targetUserId) return; // Đổi userId thành targetUserId
 
         const fetchProfileAndPlaylist = async () => {
             setIsLoadingProfile(true);
 
             try {
-                const [profileRes] = await Promise.all([
-                    axiosClient.get(`/users/${userId}`),
+                const [profileRes, playlistRes] = await Promise.all([
+                    axiosClient.get(`/users/${targetUserId}`),
+                    axiosClient.get(`/playlists/my-playlists`),
                 ]);
+
+                console.log("Current userId:", userId);
 
                 const apiName = profileRes.data.name || username;
                 const apiAvatar = profileRes.data.img || img;
@@ -84,14 +98,14 @@ const ProfilePage = () => {
                     avatar: apiAvatar,
                 })
 
+                setPlaylists(playlistRes.data || []);
+
 
 
                 console.log("Name " + profileRes.data.name);
                 console.log("Avatar " + profileRes.data.avatar);
 
                 setEditName(apiName);
-                setPreviewImg(apiAvatar);
-                // setPlaylists(playlistRes.data || []);
             } catch (error) {
                 console.error("Lỗi tải thông tin cá nhân:", error);
                 setProfile({ name: username, avatar: img });
@@ -101,7 +115,7 @@ const ProfilePage = () => {
             }
         };
         fetchProfileAndPlaylist();
-    }, [userId, img, username]);
+    }, [userId, img, username, targetUserId]);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -113,6 +127,7 @@ const ProfilePage = () => {
 
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
+        console.log("Current userId:", userId);
         setIsUpdating(true);
         try {
             const formData = new FormData();
@@ -135,18 +150,31 @@ const ProfilePage = () => {
                 name: updatedName,
                 avatar: updatedAvatarUrl
             });
-            alert("Cập nhật hồ sơ thành công!");
+
+            setModalConfig({
+                isOpen: true,
+                type: "success",
+                title: "Thành công!",
+                message: "Chỉnh sửa hồ sơ thành công."
+            });
+
             setIsEditModalOpen(false);
 
             updateProfile(updatedName, updatedAvatarUrl);
-            // if (previewImg) {
-            //     URL.revokeObjectURL(previewImg);
-            //     setPreviewImg(null);
-            //     setSelectedFile(null);
-            // }
+
+            if (previewImg) {
+                URL.revokeObjectURL(previewImg);
+                setPreviewImg(null);
+                setSelectedFile(null);
+            }
         } catch (error) {
             console.error("Lỗi cập nhật:", error);
-            alert(error);
+            setModalConfig({
+                isOpen: true,
+                type: "error",
+                title: "Đã xảy ra lỗi",
+                message: "Chỉnh sửa hồ sơ thất bại. Detais:" + error?.response?.data?.message || "Vui lòng thử lại sau."
+            });
         } finally {
             setIsUpdating(false);
         }
@@ -165,17 +193,23 @@ const ProfilePage = () => {
             {/* HEADER GRADIENT */}
             <div className="bg-gradient-to-b from-[#535353] to-[#121212] h-[340px] px-8 flex items-end pb-8">
                 <div className="flex items-center gap-6">
-                    <div onClick={() => setIsEditModalOpen(true)} className="relative w-48 h-48 rounded-full shadow-2xl group cursor-pointer bg-[#282828]">
+                    <div
+                        onClick={() => isOwner && setIsEditModalOpen(true)}
+                        className={`relative w-48 h-48 rounded-full shadow-2xl group bg-[#282828] ${isOwner ? 'cursor-pointer' : ''}`}
+                    >
                         <MusicImage
                             src={profile.avatar && profile.avatar !== 'null' ? profile.avatar : fallbackAvatar}
                             type="user"
                             alt="Profile"
-                            className="w-full h-full rounded-full group-hover:brightness-50 transition-all duration-300"
+                            className={`w-full h-full rounded-full transition-all duration-300 ${isOwner ? 'group-hover:brightness-50' : ''}`}
                         />
-                        <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full">
-                            <Edit2 size={32} className="mb-2"/>
-                            <span className="text-sm font-bold">Chọn ảnh</span>
-                        </div>
+                        {/* Chỉ hiển thị lớp phủ "Chọn ảnh" nếu là chủ sở hữu */}
+                        {isOwner && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full">
+                                <Edit2 size={32} className="mb-2"/>
+                                <span className="text-sm font-bold">Chọn ảnh</span>
+                            </div>
+                        )}
                     </div>
                     <div className="flex flex-col">
                         <p className="text-sm font-bold uppercase tracking-widest">Hồ sơ</p>
@@ -194,12 +228,15 @@ const ProfilePage = () => {
             <div className="px-8 py-4 space-y-12 animate-fadeIn">
 
                 {/* NÚT LỊCH SỬ NGHE NHẠC */}
-                <section>
-                    <button onClick={() => navigate('/history')} className="flex items-center gap-3 bg-[#181818] hover:bg-[#282828] border border-[#282828] hover:border-[#535353] px-6 py-4 rounded-full transition-all cursor-pointer shadow-md">
-                        <Clock size={20} className="text-blue-500"/>
-                        <span className="font-bold">Xem Lịch sử Nghe Nhạc Gần Đây</span>
-                    </button>
-                </section>
+                {/* Chỉ render Nút Lịch sử nếu là Chủ sở hữu */}
+                {isOwner && (
+                    <section>
+                        <button onClick={() => navigate('/history')} className="flex items-center gap-3 bg-[#181818] hover:bg-[#282828] border border-[#282828] hover:border-[#535353] px-6 py-4 rounded-full transition-all cursor-pointer shadow-md">
+                            <Clock size={20} className="text-blue-500"/>
+                            <span className="font-bold">Xem Lịch sử Nghe Nhạc Gần Đây</span>
+                        </button>
+                    </section>
+                )}
 
                 {/*DANH SÁCH NGHỆ SĨ ĐANG THEO DÕI ĐỘNG (ĐÃ THÊM LOGIC ẨN/HIỆN) */}
                 <section>
@@ -250,22 +287,6 @@ const ProfilePage = () => {
                     )}
                 </section>
 
-                {/* TOP NGHỆ SĨ THÁNG NÀY */}
-                <section>
-                    <h2 className="text-2xl font-bold mb-6 hover:underline cursor-pointer">Top nghệ sĩ tháng này</h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                        {favoriteArtists.map(artist => (
-                            <div key={artist.id} onClick={() => navigate(`/artist/${artist.id}`)} className="bg-[#181818] p-5 rounded-xl hover:bg-[#282828] transition-all duration-300 cursor-pointer group text-center">
-                                <div className="w-full mb-4 shadow-lg bg-[#282828] rounded-full overflow-hidden">
-                                    <MusicImage src={artist.img} type="artist" alt={artist.name} className="w-full rounded-full group-hover:scale-105 transition-transform duration-500"/>
-                                </div>
-                                <h4 className="font-bold text-base truncate">{artist.name}</h4>
-                                <p className="text-sm text-[#a7a7a7] mt-1">Artist</p>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
                 {/* PLAYLIST ĐÃ TẠO */}
                 <section>
                     <h2 className="text-2xl font-bold mb-6 hover:underline cursor-pointer">Playlist của bạn</h2>
@@ -284,7 +305,6 @@ const ProfilePage = () => {
 
             </div>
 
-            {/* MODAL POPUP CHỈNH SỬA THÔNG TIN */}
             {isEditModalOpen && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] animate-fadeIn">
                     <div className="bg-[#282828] p-6 rounded-xl w-[450px] shadow-2xl relative">
@@ -317,6 +337,15 @@ const ProfilePage = () => {
                     </div>
                 </div>
             )}
+
+            <NotificationModal
+                isOpen={modalConfig.isOpen}
+                onClose={handleCloseModal}
+                type={modalConfig.type}
+                title={modalConfig.title}
+                message={modalConfig.message}
+                confirmText="Đồng ý"
+            />
         </div>
     );
 };
