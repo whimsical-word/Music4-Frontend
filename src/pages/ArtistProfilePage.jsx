@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import {NotificationModal} from "../layouts/components/Modal";
+
 import {
   Pencil,
   Play,
@@ -43,7 +45,7 @@ const ArtistProfilePage = () => {
   const navigate = useNavigate();
   const playTrack = usePlayerStore((state) => state.playTrack);
 
-  const { userId, role } = useAuthStore();
+  const { updateProfile, userId, role } = useAuthStore();
   const isOwner = role === "artist" && Number(userId) === Number(id);
   const { followedArtistIds, toggleFollowArtist, fetchFollowedArtists } =
     useFollowStore();
@@ -121,6 +123,17 @@ const ArtistProfilePage = () => {
     fetchArtistData();
   }, [id, isOwner]);
 
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: ""
+  });
+  const handleCloseModal = () => {
+    setModalConfig(prev => ({ ...prev, isOpen: false }));
+
+  };
+
   const handleFollowToggle = async () => {
     if (!userId) {
       alert("Vui lòng đăng nhập để thực hiện tính năng này!");
@@ -158,7 +171,6 @@ const ArtistProfilePage = () => {
       await axiosClient.delete(`/albums/${albumId}`); // Đảm bảo URL khớp với API của bạn
       alert("🎉 Đã xóa album thành công!");
 
-      // Cập nhật State để xóa album khỏi giao diện ngay lập tức
       setAlbums((prevAlbums) =>
         prevAlbums.filter((album) => album.id !== albumId),
       );
@@ -220,16 +232,41 @@ const ArtistProfilePage = () => {
       if (selectedAvatar) formData.append("img", selectedAvatar);
       if (selectedCover) formData.append("cover", selectedCover);
 
-      await axiosClient.patch(`/artists/${id}`, formData, {
+      const res = await axiosClient.patch(`/artists/${id}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      alert("Cập nhật hồ sơ Nghệ sĩ thành công!");
+      const updatedArtist = res.data;
+      const updatedName = updatedArtist.name || editName;
+      const updatedAvatar = updatedArtist.img || selectedAvatar;
+
+      setArtistInfo((prev) => ({
+        ...prev,
+        name: updatedName,
+        img: updatedAvatar,
+      }))
+
       setIsEditModalOpen(false);
-      window.location.reload();
+
+      setModalConfig({
+        isOpen: true,
+        type: "success",
+        title: "Thành công!",
+        message: "Cập nhật hồ sơ Nghệ sĩ thành công!"
+      });
+
+
+
+      updateProfile(updatedName, updatedAvatar);
+      // window.location.reload();
     } catch (error) {
       console.error("Lỗi cập nhật hồ sơ:", error);
-      alert("Cập nhật thất bại.");
+      setModalConfig({
+        isOpen: true,
+        type: "error",
+        title: "Đã xảy ra lỗi",
+        message: error?.response?.data?.message || "Cập nhật thất bại."
+      });
     } finally {
       setIsUpdating(false);
     }
@@ -368,6 +405,15 @@ const ArtistProfilePage = () => {
           </div>
         </div>
       </div>
+
+      <NotificationModal
+          isOpen={modalConfig.isOpen}
+          onClose={handleCloseModal}
+          type={modalConfig.type}
+          title={modalConfig.title}
+          message={modalConfig.message}
+          confirmText="Đồng ý"
+      />
 
       <div className="p-8 relative z-10 space-y-12">
         {/* 2. BẢNG THỐNG KÊ TỔNG QUAN (CHỈ HIỂN THỊ DÀNH RIÊNG CHO CHÍNH CHỦ) */}
@@ -1017,6 +1063,8 @@ const ArtistProfilePage = () => {
           onClose={() => setSelectedTrack(null)}
         />
       )}
+
+
     </div>
   );
 };
