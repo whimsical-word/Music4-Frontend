@@ -13,7 +13,7 @@ import {
   Shuffle,
   ChevronDown,
   ChevronUp,
-  Lock, // THÊM ICON ĐỂ HIỂN THỊ MODAL GUEST
+  Lock,
 } from "lucide-react";
 import { usePlayerStore } from "../../features/player/usePlayerStore";
 import { useAuthStore } from "../../features/auth/useAuthStore";
@@ -32,13 +32,12 @@ const MusicPlayer = () => {
   const [hoverPosition, setHoverPosition] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  // THÊM STATE ĐỂ QUẢN LÝ TRẠNG THÁI ẨN/HIỆN CỦA THANH BAR
+  // STATE ĐỂ QUẢN LÝ TRẠNG THÁI ẨN/HIỆN CỦA THANH BAR
   const [isMinimized, setIsMinimized] = useState(false);
 
-  // THÊM STATE ĐỂ QUẢN LÝ MODAL YÊU CẦU ĐĂNG NHẬP
+  // STATE ĐỂ QUẢN LÝ MODAL YÊU CẦU ĐĂNG NHẬP
   const [showGuestModal, setShowGuestModal] = useState(false);
 
-  // 1. Rút thêm playNext, playPrev từ Store
   const {
     currentTrack,
     isPlaying,
@@ -68,6 +67,7 @@ const MusicPlayer = () => {
   const accumulatedTimeRef = useRef(0);
   const hasRecordedViewRef = useRef(false);
   const hasSavedHistoryRef = useRef(false);
+  const lastSyncPositionRef = useRef(0);
 
   // RESET LẠI BỘ ĐẾM KHI CHUYỂN BÀI HÁT MỚI
   useEffect(() => {
@@ -75,6 +75,7 @@ const MusicPlayer = () => {
     accumulatedTimeRef.current = 0;
     hasRecordedViewRef.current = false;
     hasSavedHistoryRef.current = false;
+    lastSyncPositionRef.current = 0;
   }, [currentTrack?.id]);
 
   const getStreamUrl = (trackId) => {
@@ -85,7 +86,7 @@ const MusicPlayer = () => {
       : `${baseUrl}/stream/preview/${trackId}`;
   };
 
-  // 2a. Xử lý đồng bộ Volume (Chạy riêng khi volume đổi)
+  // Xử lý đồng bộ Volume (Chạy riêng khi volume đổi)
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
@@ -150,7 +151,7 @@ const MusicPlayer = () => {
     setHoverTime(null);
   };
 
-  // 2b. Xử lý Play/Pause và Chuyển bài (Chuyển đổi mượt mà)
+  // Xử lý Play/Pause và Chuyển bài
   useEffect(() => {
     if (audioRef.current && currentTrack) {
       if (isPlaying) {
@@ -161,7 +162,7 @@ const MusicPlayer = () => {
         audioRef.current.pause();
       }
     }
-  }, [isPlaying, currentTrack]); // Theo dõi sát sao 2 biến này
+  }, [isPlaying, currentTrack]);
 
   // Sync Playback Position (Đồng bộ thời gian nghe mỗi 10 giây)
   useEffect(() => {
@@ -192,7 +193,7 @@ const MusicPlayer = () => {
             }
           }
         }
-      }, 10000); // 10 giây gửi 1 lần
+      }, 10000);
     }
 
     // Cleanup function: Tự động dọn dẹp interval khi đổi bài hoặc pause
@@ -204,19 +205,19 @@ const MusicPlayer = () => {
     };
   }, [isAuthenticated, userId, currentTrack, isPlaying]);
 
-  // THUẬT TOÁN ANTI-CHEAT
+  // THUẬT TOÁN ANTI-CHEAT & SYNC TIME
   const handleTimeUpdate = async () => {
     if (audioRef.current) {
       const currentVal = audioRef.current.currentTime;
       const durationReal = audioRef.current.duration;
 
-      // 🛑 LOGIC MỚI: CHẶN GUEST KHI NGHE TỚI GIÂY THỨ 30
+      // CHẶN GUEST KHI NGHE TỚI GIÂY THỨ 30
       if (!isAuthenticated && currentVal >= PREVIEW_LIMIT) {
-        audioRef.current.pause(); // Ép dừng nhạc
-        usePlayerStore.setState({ isPlaying: false }); // Đổi nút Play trên UI
-        audioRef.current.currentTime = 0; // Kéo thanh nhạc về 0
-        setShowGuestModal(true); // Bật Modal bắt đăng nhập
-        return; // Ngưng toàn bộ thuật toán bên dưới
+        audioRef.current.pause();
+        usePlayerStore.setState({ isPlaying: false });
+        audioRef.current.currentTime = 0;
+        setShowGuestModal(true);
+        return;
       }
 
       setCurrentTime(currentVal);
@@ -224,11 +225,40 @@ const MusicPlayer = () => {
         setProgress((currentVal / durationReal) * 100);
       }
 
+      const currentSecond = Math.floor(currentVal);
+      // Nếu chạm mốc chia hết cho 10 (10, 20, 30, 40, 50...) và chưa đồng bộ mốc này
+      if (
+        currentSecond > 0 &&
+        currentSecond % 10 === 0 &&
+        currentSecond !== lastSyncPositionRef.current
+      ) {
+        lastSyncPositionRef.current = currentSecond; // Khóa lại để không gọi API trùng lặp
+
+        if (isAuthenticated && userId && currentTrack) {
+          console.log(
+            `[DEBUG - SYNC] Chuẩn bị đồng bộ thời gian. Position hiện tại: ${currentSecond}s`,
+          );
+          // Dùng then/catch thay cho await để không block luồng đếm thời gian thực của Audio
+          axiosClient
+            .put("/tracking/sync-time", {
+              userId: userId,
+              trackId: currentTrack.id,
+              position: currentSecond,
+            })
+            .then(() =>
+              console.log("[DEBUG - SYNC] Đồng bộ thời gian thành công!"),
+            )
+            .catch((error) =>
+              console.error("[DEBUG - ERROR] Lỗi đồng bộ thời gian:", error),
+            );
+        }
+      }
+
       // Bắt đầu tính toán thời gian nghe thực
       const timeDifference = currentVal - lastTimeRef.current;
 
       // Nếu nhảy < 1.5 giây tức là nhạc đang chạy bình thường (không tua)
-      if (timeDifference > 0 && timeDifference < 1.5) {
+      if (timeDifference > 0 && timeDifference <= 0.5) {
         accumulatedTimeRef.current += timeDifference;
       }
       lastTimeRef.current = currentVal;
@@ -243,7 +273,6 @@ const MusicPlayer = () => {
         if (isAuthenticated && userId && currentTrack) {
           console.log("[DEBUG - TRACKING] Nghe đủ 10s. Gọi API lưu lịch sử...");
           try {
-            // THAY ĐỔI ENDPOINT DƯỚI ĐÂY THEO API BACKEND CỦA BẠN
             await axiosClient.post("/tracking/history", {
               trackId: currentTrack.id,
               userId: userId,
@@ -307,10 +336,10 @@ const MusicPlayer = () => {
   };
 
   // Khi kết thúc bài -> Lưu lịch sử -> TỰ ĐỘNG NEXT BÀI TIẾP THEO
-  const handleTrackEnded = () => {
+  const handleTrackEnded = async () => {
     const audio = audioRef.current;
 
-    // 🛑 Nếu là Guest mà chạy hết bài (dưới 30s) thì cũng chặn và bung Modal
+    // Nếu là Guest mà chạy hết bài (dưới 30s) thì cũng chặn và bung Modal
     if (!isAuthenticated) {
       usePlayerStore.setState({ isPlaying: false });
       audio.currentTime = 0;
@@ -318,8 +347,49 @@ const MusicPlayer = () => {
       return;
     }
 
-    // Lấy toàn bộ state mới nhất trực tiếp từ Store để tránh lỗi Stale State
-    const { repeatMode, currentIndex, queue } = usePlayerStore.getState();
+    // RESET VỊ TRÍ VỀ 0 SAU KHI NGHE HẾT BÀI
+    if (isAuthenticated && userId && currentTrack) {
+      try {
+        await axiosClient.put("/tracking/sync-time", {
+          trackId: currentTrack.id,
+          userId: userId,
+          position: 0,
+        });
+        console.log(
+          "[DEBUG] Bài hát kết thúc. Đã reset playback_position về 0.",
+        );
+      } catch (error) {
+        console.error("Lỗi reset vị trí:", error);
+      }
+    }
+
+    accumulatedTimeRef.current = 0;
+    hasSavedHistoryRef.current = false;
+    hasRecordedViewRef.current = false;
+
+    const { repeatMode, currentIndex, queue, isFromHistory } =
+      usePlayerStore.getState();
+
+    // NẾU PHÁT TỪ TRANG LỊCH SỬ -> HẾT BÀI LÀ DỪNG
+    if (isFromHistory) {
+      if (isAuthenticated && userId && currentTrack) {
+        try {
+          await axiosClient.put("/tracking/sync-time", {
+            trackId: currentTrack.id,
+            userId: userId,
+            position: 0,
+          });
+        } catch (error) {
+          console.error("Lỗi reset vị trí:", error);
+        }
+      }
+
+      usePlayerStore.setState({ isPlaying: false });
+      accumulatedTimeRef.current = 0;
+      hasSavedHistoryRef.current = false;
+      hasRecordedViewRef.current = false;
+      return;
+    }
 
     if (repeatMode === "one") {
       audio.currentTime = 0;
@@ -342,10 +412,10 @@ const MusicPlayer = () => {
   // Kiểm tra xem bài hát này có lưu vị trí nghe cũ không (playbackPosition)
   const handleLoadedMetadata = () => {
     if (audioRef.current) {
-      // 1. Lấy thời lượng thực tế của file audio
+      // Lấy thời lượng thực tế của file audio
       setDuration(audioRef.current.duration);
 
-      // 2. Chạy tiếp logic cũ
+      // Chạy tiếp logic cũ
       if (currentTrack.playbackPosition) {
         audioRef.current.currentTime = currentTrack.playbackPosition;
       }
@@ -358,7 +428,7 @@ const MusicPlayer = () => {
       const clickX = e.clientX - rect.left;
       const newTime = (clickX / rect.width) * audioRef.current.duration;
 
-      // 🛑 GUEST KHÔNG ĐƯỢC TUA QUÁ GIỚI HẠN 30S
+      // GUEST KHÔNG ĐƯỢC TUA QUÁ GIỚI HẠN 30S
       if (!isAuthenticated && newTime >= PREVIEW_LIMIT) {
         audioRef.current.pause();
         usePlayerStore.setState({ isPlaying: false });

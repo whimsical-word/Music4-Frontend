@@ -43,7 +43,8 @@ import TrackEngagementModal from "../layouts/components/TrackEngagementModal";
 const ArtistProfilePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const playTrack = usePlayerStore((state) => state.playTrack);
+  // const playTrack = usePlayerStore((state) => state.playTrack);
+    const { playTrack, currentTrack } = usePlayerStore();
 
   const { updateProfile, userId, role } = useAuthStore();
   const isOwner = role === "artist" && Number(userId) === Number(id);
@@ -680,33 +681,33 @@ const ArtistProfilePage = () => {
 
                 <div className="space-y-4">
                   {stats.topTracks?.map((track, index) => (
-                    <div key={track.id} className="flex gap-4 items-center">
-                      <div
-                        className={`w-8 h-8 rounded flex items-center justify-center font-bold text-white
-          ${
-            index === 0
-              ? "bg-yellow-500"
-              : index === 1
-                ? "bg-gray-400"
-                : index === 2
-                  ? "bg-amber-700"
-                  : "bg-sky-500/20 text-sky-500"
-          }`}
-                      >
-                        #{index + 1}
-                      </div>
+                      <div key={track.id} className="flex gap-4 items-center">
+                          {/* Số thứ tự */}
+                          <div
+                              className={`w-8 h-8 rounded flex items-center justify-center font-bold text-white shrink-0
+      ${
+                                  index === 0
+                                      ? "bg-yellow-500"
+                                      : index === 1
+                                          ? "bg-gray-400"
+                                          : index === 2
+                                              ? "bg-amber-700"
+                                              : "bg-sky-500/20 text-sky-500"
+                              }`}
+                          >
+                              #{index + 1}
+                          </div>
 
-                      <div className="flex-1">
-                        <p className="font-medium truncate">{track.name}</p>
+                          {/* Phần text: Thêm min-w-0 vào đây là xong */}
+                          <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{track.name}</p>
 
-                        <div className="text-xs text-slate-400 mt-1 flex gap-3">
-                          <span>
-                            {track.viewCount.toLocaleString()} lượt nghe
-                          </span>
-                          <span>{track.favoriteCount} lượt thích</span>
-                        </div>
+                              <div className="text-xs text-slate-400 mt-1 flex gap-3">
+                                  <span>{track.viewCount.toLocaleString()} lượt nghe</span>
+                                  <span>{track.favoriteCount} lượt thích</span>
+                              </div>
+                          </div>
                       </div>
-                    </div>
                   ))}
                 </div>
               </div>
@@ -757,20 +758,21 @@ const ArtistProfilePage = () => {
                 <div
                   key={track.id}
                   className="flex items-center justify-between p-3 rounded-lg hover:bg-white/[0.05] transition-colors group cursor-pointer"
-                  onClick={() => handlePlayTrack(track)}
+                  onClick={() => playTrack(track, tracks)}
                 >
                   {/* Khối bên trái: Số thứ tự, Ảnh nhỏ, Tên bài hát */}
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     <span className="text-slate-500 font-medium w-6 text-center group-hover:hidden">
                       {index + 1}
                     </span>
-                    <div className="hidden group-hover:flex text-sky-400 w-6 justify-center">
-                      {playingTrackId === track.id ? (
-                        <Pause size={16} fill="currentColor" />
-                      ) : (
-                        <Play size={16} fill="currentColor" />
-                      )}
-                    </div>
+                      {/* Icon Play/Pause */}
+                      <div className="hidden group-hover:flex text-sky-400 w-6 justify-center">
+                          {currentTrack?.id === track.id ? (
+                              <Pause size={16} fill="currentColor" />
+                          ) : (
+                              <Play size={16} fill="currentColor" />
+                          )}
+                      </div>
 
                     <div className="w-10 h-10 rounded overflow-hidden bg-[#16222f] flex-shrink-0 shadow-sm">
                       <MusicImage
@@ -780,12 +782,14 @@ const ArtistProfilePage = () => {
                       />
                     </div>
 
-                    <div className="truncate">
-                      <p
-                        className={`font-semibold truncate transition-colors ${playingTrackId === track.id ? "text-sky-400" : "text-white group-hover:text-sky-400"}`}
-                      >
-                        {track.name}
-                      </p>
+                      <div className="truncate">
+                          <p
+                              className={`font-semibold truncate transition-colors ${
+                                  currentTrack?.id === track.id ? "text-sky-400" : "text-white group-hover:text-sky-400"
+                              }`}
+                          >
+                              {track.name}
+                          </p>
                       <p className="text-xs text-slate-400 truncate">
                         {track.artists?.map((a) => a.name).join(", ") ||
                           "Nghệ sĩ"}

@@ -38,8 +38,19 @@ export function CreateTrackPage() {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
 
+    const prefilledAlbumId = location.state?.prefilledAlbumId;
+    const prefilledAlbumName = location.state?.albumName;
+
     // Lấy thông tin nghệ sĩ đang đăng nhập từ AuthStore
     const { userId, username } = useAuthStore();
+
+    useEffect(() => {
+        // Nếu có prefilledAlbumId, gán luôn vào state
+        if (prefilledAlbumId) {
+            setSelectedAlbum({ id: prefilledAlbumId, name: prefilledAlbumName });
+            setAlbumId(prefilledAlbumId);
+        }
+    }, [prefilledAlbumId, prefilledAlbumName]);
 
     // --- 3. USEEFFECT: LOAD DANH SÁCH THỂ LOẠI & NGHỆ SĨ KHI MỞ TRANG ---
     useEffect(() => {
@@ -321,14 +332,15 @@ export function CreateTrackPage() {
                     <div className="relative" ref={albumDropdownRef}>
                         <label className="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Chọn Album</label>
                         <div
-                            className="w-full bg-white/[0.04] border border-white/[0.05] rounded-lg px-4 py-2.5 text-white cursor-pointer flex justify-between items-center hover:border-sky-500 transition-colors"
-                            onClick={() => setIsAlbumDropdownOpen(!isAlbumDropdownOpen)}
+                            className={`w-full bg-white/[0.04] border border-white/[0.05] rounded-lg px-4 py-2.5 text-white flex justify-between items-center transition-colors 
+            ${prefilledAlbumId ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-sky-500"}`}
+                            onClick={() => !prefilledAlbumId && setIsAlbumDropdownOpen(!isAlbumDropdownOpen)}
                         >
                             <span>{selectedAlbum ? selectedAlbum.name : "Chọn album cho bài hát..."}</span>
                             {selectedAlbum && <X size={16} className="text-slate-400" onClick={(e) => { e.stopPropagation(); setSelectedAlbum(null); }} />}
                         </div>
 
-                        {isAlbumDropdownOpen && (
+                        {!prefilledAlbumId && isAlbumDropdownOpen && (
                             <div className="absolute z-50 w-full mt-1.5 bg-[#131c26] border border-white/[0.08] rounded-lg shadow-2xl max-h-56 overflow-y-auto">
                                 {dbAlbums.length === 0 ? (
                                     <div className="p-3 text-sm text-slate-500 text-center">Không có album nào</div>
@@ -352,16 +364,19 @@ export function CreateTrackPage() {
                             <div className="flex flex-wrap gap-2 mt-2.5">
                             <span className="inline-flex items-center gap-1.5 bg-sky-500/10 text-sky-400 text-xs font-semibold px-3 py-1.5 rounded-full border border-sky-500/20">
                                 Album: {selectedAlbum.name}
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setSelectedAlbum(null);
-                                        setAlbumId(-1); // Reset lại ID khi gỡ
-                                    }}
-                                    className="text-sky-400/60 hover:text-red-400 font-bold ml-1 text-sm bg-transparent border-none cursor-pointer p-0 flex items-center"
-                                >
-                                    <X size={12} />
-                                </button>
+                                {/* CHỈ HIỆN NÚT X NẾU KHÔNG CÓ PREFILLED ALBUM ID */}
+                                {!prefilledAlbumId && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setSelectedAlbum(null);
+                                            setAlbumId(""); // Nên để là chuỗi rỗng thay vì -1
+                                        }}
+                                        className="text-sky-400/60 hover:text-red-400 font-bold ml-1 text-sm bg-transparent border-none cursor-pointer p-0 flex items-center"
+                                    >
+                                        <X size={12} />
+                                    </button>
+                                )}
                             </span>
                             </div>
                         )}

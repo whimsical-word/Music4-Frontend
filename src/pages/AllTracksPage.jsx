@@ -4,6 +4,7 @@ import TrackEngagementModal from "../layouts/components/TrackEngagementModal";
 import axiosClient from "../app/axios/axiosClient.js";
 import { ArrowLeft, User as UserIcon, ChevronLeft, ChevronRight, Play, MessageSquare } from 'lucide-react';
 import {usePlayerStore} from "../features/player/usePlayerStore.js";
+import { Link } from 'react-router-dom';
 
 const AllTracksPage = () => {
     const [tracks, setTracks] = useState([]);
@@ -193,14 +194,19 @@ const AllTracksPage = () => {
                             <td className="p-4">
                                 {track.album ? (
                                     <div className="flex flex-col">
-                                                <span className="text-slate-300 font-medium truncate max-w-[150px]" title={track.album.title}>
-                                                    💿 {track.album.title}
-                                                </span>
+                                        <Link
+                                            to={`/albums/${track.album.id}`}
+                                            onClick={(e) => e.stopPropagation()} // Chặn sự kiện click dòng (ngăn phát nhạc)
+                                            className="text-slate-300 font-medium truncate max-w-[150px] hover:text-sky-400 hover:underline transition-colors inline-block"
+                                            title={track.album.title || track.album.name}
+                                        >
+                                            💿 {track.album.title || track.album.name}
+                                        </Link>
                                     </div>
                                 ) : (
                                     <span className="inline-block px-2 py-0.5 bg-white/[0.04] text-slate-400 text-xs rounded border border-white/[0.05] italic">
-                                                Single
-                                            </span>
+            Single
+        </span>
                                 )}
                             </td>
 

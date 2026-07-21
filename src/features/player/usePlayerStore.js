@@ -7,17 +7,18 @@ export const usePlayerStore = create((set, get) => ({
   currentIndex: -1, // Vị trí của bài hát hiện tại trong mảng
   isShuffle: false,
   repeatMode: "off", // off | all | one
+  isFromHistory: false,
 
-  // Cập nhật playTrack: Nhận thêm 'newQueue' là danh sách bài hát ngữ cảnh
-  playTrack: (track, newQueue = []) => {
-    // Tìm xem bài hát này nằm ở đâu trong mảng được truyền vào
-    const index = newQueue.findIndex((t) => t.id === track.id);
+  playTrack: (track, queueParam = [], fromHistory = false) => {
+    const finalQueue = queueParam.length > 0 ? queueParam : [track];
+    const targetIndex = finalQueue.findIndex((t) => t.id === track.id);
 
     set({
       currentTrack: track,
+      queue: finalQueue,
+      currentIndex: targetIndex !== -1 ? targetIndex : 0,
       isPlaying: true,
-      queue: newQueue.length > 0 ? newQueue : [track], // Nếu không có mảng, coi như chỉ phát 1 bài
-      currentIndex: index !== -1 ? index : 0,
+      isFromHistory: fromHistory,
     });
   },
 
