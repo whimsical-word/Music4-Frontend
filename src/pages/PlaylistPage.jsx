@@ -220,80 +220,78 @@ const PlaylistPage = () => {
             <div className="col-span-1 text-center">Hành động</div>
           </div>
 
-          {tracks.length > 0 ? (
-            tracks.map((track, index) => {
-              const isCurrentPlaying =
-                currentTrack?.id === track.id && isPlaying;
-              return (
-                // 2. Từng dòng bài hát trong danh sách
-                <div
-                  key={track.id}
-                  onClick={() => playTrack(track, tracks)}
-                  className="grid grid-cols-12 gap-4 p-4 hover:bg-white/[0.05] rounded-xl transition-colors cursor-pointer group items-center"
-                >
-                  <div className="col-span-1 flex items-center">
+            {tracks.length > 0 ? (
+                tracks.map((track, index) => {
+                    const isCurrentPlaying =
+                        currentTrack?.id === track.id && isPlaying;
+                    return (
+                        <div
+                            key={track.id}
+                            onClick={() => playTrack(track, tracks)}
+                            className="grid grid-cols-12 gap-4 p-4 hover:bg-white/[0.05] rounded-xl transition-colors cursor-pointer group items-center"
+                        >
+                            <div className="col-span-1 flex items-center">
                     <span className="w-6 text-center font-medium text-slate-400 inline-flex justify-center">
                       {isCurrentPlaying ? (
-                        <span className="text-sky-400 animate-pulse">▶</span>
+                          <span className="text-sky-400 animate-pulse">▶</span>
                       ) : (
-                        index + 1
+                          index + 1
                       )}
                     </span>
-                  </div>
+                            </div>
 
-                  <div className="col-span-7 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded overflow-hidden bg-[#282828] flex-shrink-0">
-                      <MusicImage
-                        src={track.img}
-                        type="track"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="truncate">
-                      <p
-                        className={`font-semibold truncate ${isCurrentPlaying ? "text-sky-400" : "text-white"}`}
-                      >
-                        {track.name}
-                      </p>
-                      <p className="text-xs text-slate-400 truncate">
-                        {track.artists && track.artists.length > 0
-                          ? track.artists[0].name
-                          : "Nghệ sĩ"}
-                      </p>
-                    </div>
-                  </div>
+                            {/* KHU VỰC THÔNG TIN TIÊU ĐỀ VÀ NGHỆ SĨ ĐÃ ĐƯỢC FIX CHUẨN */}
+                            <div className="col-span-7 flex items-center gap-3 min-w-0">
+                                <div className="w-10 h-10 rounded overflow-hidden bg-[#282828] flex-shrink-0">
+                                    <MusicImage
+                                        src={track.img}
+                                        type="track"
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <p className={`font-semibold text-sm truncate ${isCurrentPlaying ? "text-sky-400" : "text-white"}`}>
+                                        {track.name}
+                                    </p>
+                                    <p className="text-xs text-slate-400 mt-1 truncate">
+                                        {track.artists && track.artists.length > 0
+                                            ? track.artists.map(a => a.artistName || a.name).filter(Boolean).join(", ")
+                                            : (track.trackArtists && track.trackArtists.length > 0
+                                                ? track.trackArtists.map(ta => ta.artist?.name || ta.name).filter(Boolean).join(", ")
+                                                : "Nghệ sĩ")}
+                                    </p>
+                                </div>
+                            </div>
 
-                  <div className="col-span-3 text-right font-mono text-slate-400">
-                    {track.duration
-                      ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, "0")}`
-                      : "0:00"}
-                  </div>
+                            <div className="col-span-3 text-right font-mono text-slate-400 text-xs">
+                                {track.duration
+                                    ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, "0")}`
+                                    : "0:00"}
+                            </div>
 
-                  <div className="col-span-1 text-center">
-                      <button
-                          onClick={(e) => { e.stopPropagation(); setSelectedTrack(track); }}
-                          className="text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
-                      >
-                          <MoreHorizontal size={16} /> {/* Đảm bảo đã import MoreHorizontal từ lucide-react */}
-                      </button>
-                    <button
-                      onClick={(e) =>
-                        handleRemoveTrack(e, track.id, track.name)
-                      }
-                      className="text-slate-500 hover:text-red-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
-                      title="Xóa khỏi danh sách phát"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+                            <div className="col-span-1 flex items-center justify-center gap-1">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setSelectedTrack(track); }}
+                                    className="text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
+                                >
+                                    <MoreHorizontal size={16} />
+                                </button>
+                                <button
+                                    onClick={(e) => handleRemoveTrack(e, track.id, track.name)}
+                                    className="text-slate-500 hover:text-red-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
+                                    title="Xóa khỏi danh sách phát"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
+                            </div>
+                        </div>
+                    );
+                })
+            ) : (
+                <div className="text-center py-16 text-slate-500 font-medium">
+                    Danh sách phát này hiện chưa có bài hát nào.
                 </div>
-              );
-            })
-          ) : (
-            <div className="text-center py-16 text-slate-500 font-medium">
-              Danh sách phát này hiện chưa có bài hát nào.
-            </div>
-          )}
+            )}
         </div>
       </div>
 
