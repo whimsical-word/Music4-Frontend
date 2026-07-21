@@ -41,7 +41,8 @@ import TrackEngagementModal from "../layouts/components/TrackEngagementModal";
 const ArtistProfilePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const playTrack = usePlayerStore((state) => state.playTrack);
+  // const playTrack = usePlayerStore((state) => state.playTrack);
+    const { playTrack, currentTrack } = usePlayerStore();
 
   const { userId, role } = useAuthStore();
   const isOwner = role === "artist" && Number(userId) === Number(id);
@@ -711,20 +712,21 @@ const ArtistProfilePage = () => {
                 <div
                   key={track.id}
                   className="flex items-center justify-between p-3 rounded-lg hover:bg-white/[0.05] transition-colors group cursor-pointer"
-                  onClick={() => handlePlayTrack(track)}
+                  onClick={() => playTrack(track, tracks)}
                 >
                   {/* Khối bên trái: Số thứ tự, Ảnh nhỏ, Tên bài hát */}
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     <span className="text-slate-500 font-medium w-6 text-center group-hover:hidden">
                       {index + 1}
                     </span>
-                    <div className="hidden group-hover:flex text-sky-400 w-6 justify-center">
-                      {playingTrackId === track.id ? (
-                        <Pause size={16} fill="currentColor" />
-                      ) : (
-                        <Play size={16} fill="currentColor" />
-                      )}
-                    </div>
+                      {/* Icon Play/Pause */}
+                      <div className="hidden group-hover:flex text-sky-400 w-6 justify-center">
+                          {currentTrack?.id === track.id ? (
+                              <Pause size={16} fill="currentColor" />
+                          ) : (
+                              <Play size={16} fill="currentColor" />
+                          )}
+                      </div>
 
                     <div className="w-10 h-10 rounded overflow-hidden bg-[#16222f] flex-shrink-0 shadow-sm">
                       <MusicImage
@@ -734,12 +736,14 @@ const ArtistProfilePage = () => {
                       />
                     </div>
 
-                    <div className="truncate">
-                      <p
-                        className={`font-semibold truncate transition-colors ${playingTrackId === track.id ? "text-sky-400" : "text-white group-hover:text-sky-400"}`}
-                      >
-                        {track.name}
-                      </p>
+                      <div className="truncate">
+                          <p
+                              className={`font-semibold truncate transition-colors ${
+                                  currentTrack?.id === track.id ? "text-sky-400" : "text-white group-hover:text-sky-400"
+                              }`}
+                          >
+                              {track.name}
+                          </p>
                       <p className="text-xs text-slate-400 truncate">
                         {track.artists?.map((a) => a.name).join(", ") ||
                           "Nghệ sĩ"}

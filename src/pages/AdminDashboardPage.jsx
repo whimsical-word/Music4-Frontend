@@ -611,27 +611,65 @@ const AdminDashboardPage = () => {
                                         <tr className="border-b border-[#282828] bg-[#222222] text-[#a7a7a7] text-xs uppercase tracking-wider font-semibold">
                                             <th className="p-4">Tên Thể Loại</th>
                                             <th className="p-4">Mã ID</th>
+                                            <th className="p-4 text-center">Số bài hát</th>
                                             <th className="p-4 text-right">Hành động</th>
                                         </tr>
                                         </thead>
                                         <tbody className="divide-y divide-[#282828] text-sm">
-                                        {categories.map(c => (
-                                            <tr key={c.id} className="hover:bg-[#222222]/50 transition-colors">
+                                        {categories.map(c => {
+                                            // 🟢 Tìm số lượng bài hát thuộc category này từ categoryStats hoặc thuộc tính trực tiếp
+                                            const stat = categoryStats.find(s => s.name === c.name || s.id === c.id);
+                                            const trackCount = stat ? stat.value : (c.trackTotal || c.tracksCount || c.tracks?.length || 0);
+                                            const hasTracks = trackCount > 0;
 
-                                                <td
-                                                    onClick={() => navigate(`/categories/${c.id}`, { state: { categoryName: c.name } })}
-                                                    className="p-4 font-medium text-white">{c.name}</td>
-                                                <td className="p-4 text-gray-400 font-mono">CAT-{c.id}</td>
-                                                <td className="p-4 text-right flex justify-end gap-2">
-                                                    <button
-                                                        onClick={() => { setEditingCategory(c); setCategoryName(c.name); setShowCategoryModal(true); }}
-                                                        className="p-2 text-gray-400 hover:text-blue-500 rounded-lg transition-colors bg-transparent border-none cursor-pointer"
+                                            return (
+                                                <tr key={c.id} className="hover:bg-[#222222]/50 transition-colors">
+                                                    <td
+                                                        onClick={() => navigate(`/categories/${c.id}`, { state: { categoryName: c.name } })}
+                                                        className="p-4 font-medium text-white cursor-pointer hover:text-blue-400"
                                                     >
-                                                        <Edit size={18}/>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                        {c.name}
+                                                    </td>
+                                                    <td className="p-4 text-gray-400 font-mono">CAT-{c.id}</td>
+
+                                                    {/* 🟢 Hiển thị số lượng bài hát */}
+                                                    <td className="p-4 text-center text-gray-300 font-medium">
+                                                        {trackCount} bài
+                                                    </td>
+
+                                                    {/* 🟢 Cột Hành động */}
+                                                    <td className="p-4 text-right flex justify-end gap-2 items-center">
+                                                        {/* Nút Chỉnh sửa (Luôn hiển thị) */}
+                                                        <button
+                                                            onClick={() => { setEditingCategory(c); setCategoryName(c.name); setShowCategoryModal(true); }}
+                                                            className="p-2 text-gray-400 hover:text-blue-500 rounded-lg transition-colors bg-transparent border-none cursor-pointer"
+                                                            title="Sửa thể loại"
+                                                        >
+                                                            <Edit size={18}/>
+                                                        </button>
+
+                                                        {/* 🟢 Logic điều kiện: KHÔNG CÓ BÀI HÁT mới hiện nút Trash2 */}
+                                                        {!hasTracks ? (
+                                                            <button
+                                                                onClick={() => handleDeleteCategory(c.id)}
+                                                                className="p-2 text-gray-400 hover:text-red-500 rounded-lg transition-colors bg-transparent border-none cursor-pointer"
+                                                                title="Xóa thể loại"
+                                                            >
+                                                                <Trash2 size={18}/>
+                                                            </button>
+                                                        ) : (
+                                                            /* Nếu có nhạc thì ẩn nút xóa, hiển thị nhãn trạng thái (hoặc để trống) */
+                                                            <span
+                                                                className="text-xs text-gray-500 italic px-2 py-1 bg-[#222222] rounded border border-[#333]"
+                                                                title="Không thể xóa vì thể loại này đã có bài hát"
+                                                            >
+                                        Không thể xóa
+                                    </span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                         </tbody>
                                     </table>
                                 </div>

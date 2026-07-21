@@ -12,7 +12,8 @@ const AlbumDetailPage = () => {
     // 1. Lấy albumId từ URL Route (Ví dụ: /albums/32)
     const { albumId } = useParams();
     const navigate = useNavigate();
-    const playTrack = usePlayerStore(state => state.playTrack);
+    // const playTrack = usePlayerStore(state => state.playTrack);
+    const { playTrack, currentTrack } = usePlayerStore();
     const S3_BASE_URL = "https://music4-v3-storage-kenz.s3.ap-southeast-1.amazonaws.com/";
     const { userId, role } = useAuthStore();
      // Giả lập role phục vụ test UI
@@ -206,7 +207,7 @@ const AlbumDetailPage = () => {
                             <div
                                 key={track.id || index}
                                 className="flex items-center justify-between p-3 rounded-lg hover:bg-white/[0.05] transition-colors group cursor-pointer"
-                                onClick={() => handlePlayTrack(track)}
+                                onClick={() => playTrack(track, tracks)}
                             >
                                 {/* Khối bên trái: Số thứ tự, Ảnh nhỏ, Tên bài hát */}
                                 <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -225,10 +226,14 @@ const AlbumDetailPage = () => {
                                         />
                                     </div>
 
-                                    <div className="min-w-0">
-                                        <p className={`font-semibold truncate transition-colors ${playingTrackId === track.id ? 'text-sky-400' : 'text-white group-hover:text-sky-400'}`}>
-                                            {track.name || track.title}
-                                        </p>
+                                    <div className="truncate min-w-0">
+                                            <p
+                                                className={`font-semibold truncate transition-colors ${
+                                                    currentTrack?.id === track.id ? "text-sky-400" : "text-white group-hover:text-sky-400"
+                                                }`}
+                                            >
+                                                {track.name}
+                                            </p>
                                         <p className="text-xs text-slate-400 truncate">
                                             {track.artists?.map(a => a.name).join(', ') || "Nghệ sĩ"}
                                         </p>
