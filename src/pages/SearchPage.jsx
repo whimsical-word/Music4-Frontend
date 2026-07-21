@@ -259,7 +259,7 @@ const SearchPage = () => {
                 ))}
             </div>
 
-            {searchResults && (tracks.length > 0 || artists.length > 0 || albums.length > 0 || playlists.length > 0 || categories.length > 0) ? (
+            {searchResults && (tracks.length > 0 || artists.length > 0 || albums.length > 0 ||categories.length > 0) ? (
                 <div className="space-y-6 animate-fadeIn">
 
                     {/* KHỐI 1: BÀI HÁT */}

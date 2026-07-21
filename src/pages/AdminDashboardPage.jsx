@@ -146,7 +146,7 @@ const AdminDashboardPage = () => {
                     setArtists(Array.isArray(artistList) ? artistList : []);
 
                     // Lấy totalPages một cách an toàn
-                    setArtistTotalPages(artistData?.totalPages || 0);
+                    setArtistTotalPages(artistData?.page?.totalPages || artistData?.totalPages || 0);
                 }
 
                 if (artistCountRes.status === 'fulfilled') setArtistCount(artistCountRes.value.data || 0);
@@ -617,7 +617,10 @@ const AdminDashboardPage = () => {
                                         <tbody className="divide-y divide-[#282828] text-sm">
                                         {categories.map(c => (
                                             <tr key={c.id} className="hover:bg-[#222222]/50 transition-colors">
-                                                <td className="p-4 font-medium text-white">{c.name}</td>
+
+                                                <td
+                                                    onClick={() => navigate(`/categories/${c.id}`, { state: { categoryName: c.name } })}
+                                                    className="p-4 font-medium text-white">{c.name}</td>
                                                 <td className="p-4 text-gray-400 font-mono">CAT-{c.id}</td>
                                                 <td className="p-4 text-right flex justify-end gap-2">
                                                     <button
@@ -625,12 +628,6 @@ const AdminDashboardPage = () => {
                                                         className="p-2 text-gray-400 hover:text-blue-500 rounded-lg transition-colors bg-transparent border-none cursor-pointer"
                                                     >
                                                         <Edit size={18}/>
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteCategory(c.id)}
-                                                        className="p-2 text-gray-400 hover:text-red-500 rounded-lg transition-colors bg-transparent border-none cursor-pointer"
-                                                    >
-                                                        <Trash2 size={18}/>
                                                     </button>
                                                 </td>
                                             </tr>
