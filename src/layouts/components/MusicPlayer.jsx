@@ -67,6 +67,7 @@ const MusicPlayer = () => {
   const accumulatedTimeRef = useRef(0);
   const hasRecordedViewRef = useRef(false);
   const hasSavedHistoryRef = useRef(false);
+  const lastSyncPositionRef = useRef(0);
 
   // RESET LẠI BỘ ĐẾM KHI CHUYỂN BÀI HÁT MỚI
   useEffect(() => {
@@ -74,6 +75,7 @@ const MusicPlayer = () => {
     accumulatedTimeRef.current = 0;
     hasRecordedViewRef.current = false;
     hasSavedHistoryRef.current = false;
+    lastSyncPositionRef.current = 0;
   }, [currentTrack?.id]);
 
   const getStreamUrl = (trackId) => {
@@ -203,7 +205,7 @@ const MusicPlayer = () => {
     };
   }, [isAuthenticated, userId, currentTrack, isPlaying]);
 
-  // THUẬT TOÁN ANTI-CHEAT
+  // THUẬT TOÁN ANTI-CHEAT & SYNC TIME
   const handleTimeUpdate = async () => {
     if (audioRef.current) {
       const currentVal = audioRef.current.currentTime;
@@ -221,6 +223,35 @@ const MusicPlayer = () => {
       setCurrentTime(currentVal);
       if (durationReal) {
         setProgress((currentVal / durationReal) * 100);
+      }
+
+      const currentSecond = Math.floor(currentVal);
+      // Nếu chạm mốc chia hết cho 10 (10, 20, 30, 40, 50...) và chưa đồng bộ mốc này
+      if (
+        currentSecond > 0 &&
+        currentSecond % 10 === 0 &&
+        currentSecond !== lastSyncPositionRef.current
+      ) {
+        lastSyncPositionRef.current = currentSecond; // Khóa lại để không gọi API trùng lặp
+
+        if (isAuthenticated && userId && currentTrack) {
+          console.log(
+            `[DEBUG - SYNC] Chuẩn bị đồng bộ thời gian. Position hiện tại: ${currentSecond}s`,
+          );
+          // Dùng then/catch thay cho await để không block luồng đếm thời gian thực của Audio
+          axiosClient
+            .put("/tracking/sync-time", {
+              userId: userId,
+              trackId: currentTrack.id,
+              position: currentSecond,
+            })
+            .then(() =>
+              console.log("[DEBUG - SYNC] Đồng bộ thời gian thành công!"),
+            )
+            .catch((error) =>
+              console.error("[DEBUG - ERROR] Lỗi đồng bộ thời gian:", error),
+            );
+        }
       }
 
       // Bắt đầu tính toán thời gian nghe thực
@@ -305,7 +336,7 @@ const MusicPlayer = () => {
   };
 
   // Khi kết thúc bài -> Lưu lịch sử -> TỰ ĐỘNG NEXT BÀI TIẾP THEO
-  const handleTrackEnded = () => {
+  const handleTrackEnded = async () => {
     const audio = audioRef.current;
 
     // Nếu là Guest mà chạy hết bài (dưới 30s) thì cũng chặn và bung Modal
@@ -316,8 +347,49 @@ const MusicPlayer = () => {
       return;
     }
 
-    // Lấy toàn bộ state mới nhất trực tiếp từ Store để tránh lỗi Stale State
-    const { repeatMode, currentIndex, queue } = usePlayerStore.getState();
+    // RESET VỊ TRÍ VỀ 0 SAU KHI NGHE HẾT BÀI
+    if (isAuthenticated && userId && currentTrack) {
+      try {
+        await axiosClient.put("/tracking/sync-time", {
+          trackId: currentTrack.id,
+          userId: userId,
+          position: 0,
+        });
+        console.log(
+          "[DEBUG] Bài hát kết thúc. Đã reset playback_position về 0.",
+        );
+      } catch (error) {
+        console.error("Lỗi reset vị trí:", error);
+      }
+    }
+
+    accumulatedTimeRef.current = 0;
+    hasSavedHistoryRef.current = false;
+    hasRecordedViewRef.current = false;
+
+    const { repeatMode, currentIndex, queue, isFromHistory } =
+      usePlayerStore.getState();
+
+    // NẾU PHÁT TỪ TRANG LỊCH SỬ -> HẾT BÀI LÀ DỪNG
+    if (isFromHistory) {
+      if (isAuthenticated && userId && currentTrack) {
+        try {
+          await axiosClient.put("/tracking/sync-time", {
+            trackId: currentTrack.id,
+            userId: userId,
+            position: 0,
+          });
+        } catch (error) {
+          console.error("Lỗi reset vị trí:", error);
+        }
+      }
+
+      usePlayerStore.setState({ isPlaying: false });
+      accumulatedTimeRef.current = 0;
+      hasSavedHistoryRef.current = false;
+      hasRecordedViewRef.current = false;
+      return;
+    }
 
     if (repeatMode === "one") {
       audio.currentTime = 0;
