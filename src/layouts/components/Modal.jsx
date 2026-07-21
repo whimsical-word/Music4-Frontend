@@ -1,4 +1,5 @@
 import  { useEffect } from "react";
+import { CircleCheck, CircleX, Info } from "lucide-react";
 
 export const NotificationModal = ({
                                       isOpen,
@@ -23,19 +24,19 @@ export const NotificationModal = ({
     // Định nghĩa màu sắc và icon dựa trên `type` để dùng chung cho mọi trường hợp
     const typeConfig = {
         success: {
-            icon: "check_circle",
+            icon: <CircleCheck />,
             iconColor: "text-emerald-400",
             bgColor: "bg-emerald-950/20",
             borderColor: "border-emerald-500/30"
         },
         error: {
-            icon: "error",
+            icon: <CircleX />,
             iconColor: "text-red-400",
             bgColor: "bg-red-950/20",
             borderColor: "border-red-500/30"
         },
         info: {
-            icon: "info",
+            icon: <Info/>,
             iconColor: "text-blue-400",
             bgColor: "bg-blue-950/20",
             borderColor: "border-blue-500/30"

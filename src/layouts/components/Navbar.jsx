@@ -8,7 +8,7 @@ import axiosClient from "../../app/axios/axiosClient";
 const Navbar = () => {
     const navigate = useNavigate();
 
-    const { userId, username, role, img, logout, isAuthenticated } = useAuthStore();
+    const { userId, username,name, role, img, logout, isAuthenticated } = useAuthStore();
     const id = userId;
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -254,7 +254,7 @@ const Navbar = () => {
                             {isAuthenticated ? (
                                 <>
                                     <div className="px-4 py-3 border-b border-[#3e3e3e] mb-1 bg-[#1e1e1e]/50 rounded-t-lg">
-                                        <p className="text-sm font-bold text-white truncate">{username}</p>
+                                        <p className="text-sm font-bold text-white truncate">{name}</p>
                                         <p className="text-[10px] text-[#a7a7a7] uppercase tracking-widest mt-0.5">
                                             {role === 'admin' ? 'Quản trị viên' : (role === 'artist' ? 'Nghệ sĩ' : 'Người nghe')}
                                         </p>

@@ -5,11 +5,13 @@ import { useAuthStore } from '../features/auth/useAuthStore';
 import { useFollowStore } from '../features/follow/useFollowStore';
 import axiosClient from '../app/axios/axiosClient';
 import MusicImage from '../layouts/components/MusicImage';
+import {NotificationModal} from "../layouts/components/Modal";
+
 
 const ProfilePage = () => {
     const IMAGE_URL = "https://music4-v3-storage-kenz.s3.ap-southeast-1.amazonaws.com/";
     const navigate = useNavigate();
-    const { userId, username, img, role } = useAuthStore();
+    const {updateProfile, userId, username, img, role } = useAuthStore();
     const { id } = useParams();
     const { followedArtistIds, fetchFollowedArtists } = useFollowStore();
     const [followedArtistsDetails, setFollowedArtistsDetails] = useState([]);
@@ -28,6 +30,16 @@ const ProfilePage = () => {
 
     const targetUserId = id || userId;
 
+
+    const [modalConfig, setModalConfig] = useState({
+        isOpen: false,
+        type: "info",
+        title: "",
+        message: ""
+    });
+    const handleCloseModal = () => {
+        setModalConfig(prev => ({ ...prev, isOpen: false }));
+    };
 
     const [playlists, setPlaylists] = useState([]);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -76,6 +88,7 @@ const ProfilePage = () => {
 
         const fetchProfileAndPlaylist = async () => {
             setIsLoadingProfile(true);
+
             try {
                 const [profileRes] = await Promise.all([
                     axiosClient.get(`/users/${targetUserId}`), // Đổi userId thành targetUserId
@@ -95,8 +108,6 @@ const ProfilePage = () => {
                 console.log("Avatar " + profileRes.data.avatar);
 
                 setEditName(apiName);
-                setPreviewImg(apiAvatar);
-                // setPlaylists(playlistRes.data || []);
             } catch (error) {
                 console.error("Lỗi tải thông tin cá nhân:", error);
                 setProfile({ name: username, avatar: img });
@@ -140,16 +151,31 @@ const ProfilePage = () => {
                 name: updatedName,
                 avatar: updatedAvatarUrl
             });
-            alert("Cập nhật hồ sơ thành công!");
+
+            setModalConfig({
+                isOpen: true,
+                type: "success",
+                title: "Thành công!",
+                message: "Chỉnh sửa hồ sơ thành công."
+            });
+
             setIsEditModalOpen(false);
-            // if (previewImg) {
-            //     URL.revokeObjectURL(previewImg);
-            //     setPreviewImg(null);
-            //     setSelectedFile(null);
-            // }
+
+            updateProfile(updatedName, updatedAvatarUrl);
+
+            if (previewImg) {
+                URL.revokeObjectURL(previewImg);
+                setPreviewImg(null);
+                setSelectedFile(null);
+            }
         } catch (error) {
             console.error("Lỗi cập nhật:", error);
-            alert(error);
+            setModalConfig({
+                isOpen: true,
+                type: "error",
+                title: "Đã xảy ra lỗi",
+                message: "Chỉnh sửa hồ sơ thất bại. Detais:" + error?.response?.data?.message || "Vui lòng thử lại sau."
+            });
         } finally {
             setIsUpdating(false);
         }
@@ -329,6 +355,15 @@ const ProfilePage = () => {
                     </div>
                 </div>
             )}
+
+            <NotificationModal
+                isOpen={modalConfig.isOpen}
+                onClose={handleCloseModal}
+                type={modalConfig.type}
+                title={modalConfig.title}
+                message={modalConfig.message}
+                confirmText="Đồng ý"
+            />
         </div>
     );
 };
