@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {NotificationModal} from "../layouts/components/Modal";
+
 import {
   Music,
   Lock,
@@ -29,7 +31,20 @@ const RegisterPage = () => {
     role: "listener",
   });
 
-  // State quản lý ẩn/hiện mật khẩu
+  const [modalConfig, setModalConfig] = useState({
+    isOpen: false,
+    type: "info",
+    title: "",
+    message: ""
+  });
+  const handleCloseModal = () => {
+    setModalConfig(prev => ({ ...prev, isOpen: false }));
+    if (modalConfig.type === "success") {
+      navigate("/login");
+    }
+  };
+
+
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -62,7 +77,7 @@ const RegisterPage = () => {
       return;
     }
 
-    // Bọc dữ liệu thành dạng Multipart Form-Data để gửi xuống BE
+
     const dataToSend = new FormData();
     dataToSend.append("name", formData.name);
     dataToSend.append("email", formData.email);
@@ -85,6 +100,14 @@ const RegisterPage = () => {
         error: null,
         loading: false,
       });
+
+      setModalConfig({
+        isOpen: true,
+        type: "success",
+        title: "Thành công!",
+        message: "Nếu email tồn tại, bạn sẽ nhận được hướng dẫn xác thực email trong hộp thư đến."
+      });
+
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
       if (!err.response) {
@@ -92,6 +115,13 @@ const RegisterPage = () => {
           success: null,
           error: "Không thể kết nối đến máy chủ!",
           loading: false,
+        });
+
+        setModalConfig({
+          isOpen: true,
+          type: "error",
+          title: "Đã xảy ra lỗi",
+          message: err?.response?.data?.message || "Không thể kết nối đến máy chủ!"
         });
         return;
       }
@@ -300,6 +330,16 @@ const RegisterPage = () => {
           </button>
         </div>
       </div>
+
+      <NotificationModal
+          isOpen={modalConfig.isOpen}
+          onClose={handleCloseModal}
+          type={modalConfig.type}
+          title={modalConfig.title}
+          message={modalConfig.message}
+          confirmText="Đồng ý"
+      />
+
     </div>
   );
 };

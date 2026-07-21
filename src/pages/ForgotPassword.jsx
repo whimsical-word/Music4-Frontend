@@ -18,7 +18,6 @@ const ForgotPassword = () => {
 
     const handleCloseModal = () => {
         setModalConfig(prev => ({ ...prev, isOpen: false }));
-        // Nếu là thành công, có thể chuyển hướng user đi nơi khác sau khi họ bấm đóng modal
         if (modalConfig.type === "success") {
             navigate("/login");
         }
@@ -43,6 +42,7 @@ const ForgotPassword = () => {
                 title: "Thành công!",
                 message: response?.data?.response || response?.data || "Nếu email tồn tại, bạn sẽ nhận được hướng dẫn khôi phục mật khẩu trong hộp thư đến."
             });
+
         } catch (err) {
             console.log(err);
 
@@ -58,7 +58,7 @@ const ForgotPassword = () => {
     };
 
     return (
-        <div className="bg-black text-[#e2e2e2] min-h-screen flex flex-col relative font-sans antialiased overflow-hidden selection:bg-neutral-700 selection:text-white">
+        <div className="bg-black text-[#e2e2e2] h-full w-full items-center justify-center flex flex-col relative font-sans antialiased overflow-hidden selection:bg-neutral-700 selection:text-white">
 
             {/* Hiệu ứng mờ nền (Ambient Gradient Blur) */}
             <div
@@ -91,7 +91,7 @@ const ForgotPassword = () => {
                                 Email
                             </label>
                             <div
-                                className={`bg-[#1A1A1A] border rounded-lg overflow-hidden transition-all duration-200 ${
+                                className={`my-3 bg-[#1A1A1A] border rounded-lg overflow-hidden transition-all duration-200 ${
                                     isFocused
                                         ? 'border-[#e2e2e2] shadow-[0_0_15px_rgba(255,255,255,0.05)]'
                                         : 'border-[#333333]'
@@ -114,7 +114,7 @@ const ForgotPassword = () => {
 
                         {/* Nút hành động */}
                         <button
-                            className={`w-full py-4 bg-[#e2e2e2] text-black font-bold rounded-lg transition-all duration-200 text-base shadow-lg ${
+                            className={`w-full py-4 bg-[#e2e2e2] text-black font-bold rounded-lg transition-all duration-200 text-base shadow-lg cursor-pointer ${
                                 isLoading
                                     ? 'opacity-70 cursor-not-allowed'
                                     : 'hover:opacity-90 active:scale-[0.98]'
@@ -132,22 +132,13 @@ const ForgotPassword = () => {
                             className="flex items-center gap-2 text-neutral-400 hover:text-white text-sm font-medium transition-colors duration-200 group"
                             onClick={() => navigate('/login')}
                         >
-                            <span className="material-symbols-outlined text-[18px] group-hover:-translate-x-1 transition-transform">
+                            <span className="cursor-pointer material-symbols-outlined text-[18px] group-hover:-translate-x-1 transition-transform">
                                Quay lại đăng nhập
                             </span>
 
                         </button>
 
                         <div className="w-full h-[1px] bg-neutral-800 opacity-50"></div>
-
-                        <div className="flex gap-4">
-                            <button className="p-3 bg-neutral-900 rounded-full hover:bg-neutral-800 transition-colors border border-neutral-800">
-                                <span className="material-symbols-outlined text-neutral-400">help</span>
-                            </button>
-                            <button className="p-3 bg-neutral-900 rounded-full hover:bg-neutral-800 transition-colors border border-neutral-800">
-                                <span className="material-symbols-outlined text-neutral-400">language</span>
-                            </button>
-                        </div>
                     </div>
                 </div>
             </main>
