@@ -20,9 +20,8 @@ import MusicImage from "../layouts/components/MusicImage";
 import TrackEngagementModal from "../layouts/components/TrackEngagementModal";
 
 const randomSeed = Math.floor(Math.random() * 10000) + 1;
-// =====================================================================
-// COMPONENT PHỤ: BĂNG CHUYỀN ĐIỀU HƯỚNG TAY (ĐÃ BỎ HOÀN TOÀN AUTO-SCROLL)
-// =====================================================================
+
+// === COMPONENT PHỤ: BĂNG CHUYỀN ĐIỀU HƯỚNG TAY ===
 const AutoScrollCarousel = ({ title, items, renderItem, onViewAll }) => {
   const scrollRef = useRef(null);
 
@@ -91,9 +90,7 @@ const AutoScrollCarousel = ({ title, items, renderItem, onViewAll }) => {
   );
 };
 
-// =====================================================================
-// COMPONENT CHÍNH: TRANG CHỦ
-// =====================================================================
+// === COMPONENT CHÍNH: TRANG CHỦ ===
 const HomePage = () => {
   const navigate = useNavigate();
   const { username, name, role, id: userId } = useAuthStore();
@@ -101,7 +98,7 @@ const HomePage = () => {
 
   const playTrack = usePlayerStore((state) => state.playTrack);
 
-  // --- QUẢN LÝ TRẠNG THÁI DỮ LIỆU TỪ DATABASE ---
+  // STATES QUẢN LÝ TRẠNG THÁI DỮ LIỆU TỪ DATABASE
   const [tracks, setTracks] = useState([]);
   const [artists, setArtists] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -112,7 +109,7 @@ const HomePage = () => {
   const [aiRecommendations, setAiRecommendations] = useState([]);
   const [selectedTrack, setSelectedTrack] = useState(null);
 
-  // --- FETCH DATA TỪ SPRING BOOT (GIỮ NGUYÊN HOÀN TOÀN LOGIC CŨ) ---
+  // FETCH DATA TỪ SPRING BOOT
   useEffect(() => {
     const fetchHomeData = async () => {
       setIsLoading(true);
@@ -159,7 +156,7 @@ const HomePage = () => {
           });
           setAiRecommendations(aiRes.data || []);
         } catch (aiError) {
-          console.warn("AI Service kh ng kh ng: ", aiError.message);
+          console.warn("AI Service không khả dụng: ", aiError.message);
           setAiRecommendations([]);
         }
       } else {
