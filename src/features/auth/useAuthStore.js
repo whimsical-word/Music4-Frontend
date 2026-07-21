@@ -1,29 +1,28 @@
 import { create } from 'zustand';
+import { jwtDecode } from 'jwt-decode'; // Import thư viện chuẩn
 
-const decodeJwt = (token) => {
-    try {
-        return JSON.parse(atob(token.split(".")[1]));
-    } catch {
-        return null;
-    }
-};
 
 export const useAuthStore = create((set) => ({
     userId: localStorage.getItem('userId') || null,
     username: localStorage.getItem('username') || null,
     img: localStorage.getItem('userImg') || null,
+    name: JSON.parse(localStorage.getItem('name')) || null,
     role: localStorage.getItem('role') || 'listener',
     isAuthenticated: !!localStorage.getItem('accessToken'),
     isLoading: false,
     error: null,
 
     loginSuccess: (accessToken, refreshToken, id, username, img, role) => {
+        const payload = jwtDecode(accessToken);
+        const name = payload.name;
+
         let finalRole = role.replace('ROLE_', '').toLowerCase();
         if (finalRole === 'user') finalRole = 'listener';
 
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('userId', id);
+        localStorage.setItem('name', JSON.stringify(name));
         localStorage.setItem('username', username);
         localStorage.setItem('role', finalRole);
         if (img && img !== 'null') localStorage.setItem('userImg', img);
@@ -32,6 +31,7 @@ export const useAuthStore = create((set) => ({
             userId: id,
             username: username,
             img: img && img !== 'null' ? img : null,
+            name: name,
             role: finalRole,
             isAuthenticated: true,
             error: null
@@ -50,11 +50,11 @@ export const useAuthStore = create((set) => ({
         });
     },
 
-    setAuthError: (errorMsg) => set({ error: errorMsg }),
-    setLoading: (isLoading) => set({ isLoading }),
+  setAuthError: (errorMsg) => set({ error: errorMsg }),
+  setLoading: (isLoading) => set({ isLoading }),
 
     loginWithGoogle: (token) => {
-        const payload = decodeJwt(token);
+        const payload = jwtDecode(token);
         if (!payload) {
             set({ error: "Token Google không hợp lệ." });
             return false;
@@ -67,22 +67,37 @@ export const useAuthStore = create((set) => ({
 
         const finalUserId = payload.id ? String(payload.id) : null;
         const finalUsername = payload.sub || null;
+        const name = payload.name ? String(payload.name) : null;
 
         if (finalUserId) localStorage.setItem("userId", finalUserId);
         if (finalUsername) localStorage.setItem("username", finalUsername);
         localStorage.setItem("accessToken", token);
-        localStorage.setItem("role", finalRole);
+        localStorage.setItem("name", JSON.stringify(name));
         if (payload.img && payload.img !== 'null') localStorage.setItem("userImg", payload.img);
 
         set({
             userId: finalUserId,
             username: finalUsername,
             img: payload.img && payload.img !== 'null' ? payload.img : null,
+            name: name,
             role: finalRole,
             isAuthenticated: true,
             error: null,
         });
 
-        return true;
+    return true;
+  },
+    updateProfile: (newName, newImg) => {
+        set((state) => {
+            if (newName) localStorage.setItem('username', newName);
+            if (newImg && newImg !== 'null') {
+                localStorage.setItem('userImg', newImg);
+            }
+
+            return {
+                username: newName || state.username,
+                img: newImg && newImg !== 'null' ? newImg : state.img
+            };
+        });
     },
 }));
