@@ -9,7 +9,6 @@ import {NotificationModal} from "../layouts/components/Modal";
 
 
 const ProfilePage = () => {
-    const IMAGE_URL = "https://music4-v3-storage-kenz.s3.ap-southeast-1.amazonaws.com/";
     const navigate = useNavigate();
     const {updateProfile, userId, username, img, role } = useAuthStore();
     const { id } = useParams();
@@ -17,7 +16,6 @@ const ProfilePage = () => {
     const [followedArtistsDetails, setFollowedArtistsDetails] = useState([]);
     const [isLoadingFollowings, setIsLoadingFollowings] = useState(false);
 
-    //Quản lý trạng thái xem tất cả của danh sách Follow
     const [isExpanded, setIsExpanded] = useState(false);
 
     const [profile, setProfile] = useState({
@@ -50,11 +48,6 @@ const ProfilePage = () => {
     const [isUpdating, setIsUpdating] = useState(false);
     const [isLoadingProfile, setIsLoadingProfile] = useState(true);
 
-    const favoriteArtists = [
-        { id: 1, name: 'Tiên Tiên', img: 'https://images.unsplash.com/photo-1516280440502-a2f1b402e8d3?q=80&w=200&auto=format&fit=crop' },
-        { id: 2, name: 'Phùng Khánh Linh', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop' },
-        { id: 3, name: 'Thịnh Suy', img: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop' },
-    ];
 
     useEffect(() => {
         if (userId) {
@@ -90,8 +83,9 @@ const ProfilePage = () => {
             setIsLoadingProfile(true);
 
             try {
-                const [profileRes] = await Promise.all([
-                    axiosClient.get(`/users/${targetUserId}`), // Đổi userId thành targetUserId
+                const [profileRes, playlistRes] = await Promise.all([
+                    axiosClient.get(`/users/${targetUserId}`),
+                    axiosClient.get(`/playlists/my-playlists`),
                 ]);
 
                 console.log("Current userId:", userId);
@@ -103,6 +97,8 @@ const ProfilePage = () => {
                     name: apiName,
                     avatar: apiAvatar,
                 })
+
+                setPlaylists(playlistRes.data || []);
 
 
 
@@ -119,7 +115,7 @@ const ProfilePage = () => {
             }
         };
         fetchProfileAndPlaylist();
-    }, [userId, img, username]);
+    }, [userId, img, username, targetUserId]);
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
@@ -291,22 +287,6 @@ const ProfilePage = () => {
                     )}
                 </section>
 
-                {/* TOP NGHỆ SĨ THÁNG NÀY */}
-                <section>
-                    <h2 className="text-2xl font-bold mb-6 hover:underline cursor-pointer">Top nghệ sĩ tháng này</h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                        {favoriteArtists.map(artist => (
-                            <div key={artist.id} onClick={() => navigate(`/artist/${artist.id}`)} className="bg-[#181818] p-5 rounded-xl hover:bg-[#282828] transition-all duration-300 cursor-pointer group text-center">
-                                <div className="w-full mb-4 shadow-lg bg-[#282828] rounded-full overflow-hidden">
-                                    <MusicImage src={artist.img} type="artist" alt={artist.name} className="w-full rounded-full group-hover:scale-105 transition-transform duration-500"/>
-                                </div>
-                                <h4 className="font-bold text-base truncate">{artist.name}</h4>
-                                <p className="text-sm text-[#a7a7a7] mt-1">Artist</p>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
                 {/* PLAYLIST ĐÃ TẠO */}
                 <section>
                     <h2 className="text-2xl font-bold mb-6 hover:underline cursor-pointer">Playlist của bạn</h2>
@@ -325,7 +305,6 @@ const ProfilePage = () => {
 
             </div>
 
-            {/* MODAL POPUP CHỈNH SỬA THÔNG TIN */}
             {isEditModalOpen && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] animate-fadeIn">
                     <div className="bg-[#282828] p-6 rounded-xl w-[450px] shadow-2xl relative">
