@@ -94,6 +94,8 @@ const ProfilePage = () => {
                     axiosClient.get(`/users/${targetUserId}`), // Đổi userId thành targetUserId
                 ]);
 
+                console.log("Current userId:", userId);
+
                 const apiName = profileRes.data.name || username;
                 const apiAvatar = profileRes.data.img || img;
 
@@ -129,6 +131,7 @@ const ProfilePage = () => {
 
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
+        console.log("Current userId:", userId);
         setIsUpdating(true);
         try {
             const formData = new FormData();

@@ -27,158 +27,185 @@ import {
 } from "recharts";
 import { usePlayerStore } from "../features/player/usePlayerStore";
 const AdminDashboardPage = () => {
-  const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get("tab") || "overview";
-  const playTrack = usePlayerStore((state) => state.playTrack);
+    const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activeTab = searchParams.get('tab') || 'overview';
+    const playTrack = usePlayerStore((state) => state.playTrack);
 
-  const COLORS = [
-    "#1db954", // 01. Spotify Green (Màu gốc của bồ)
-    "#3b82f6", // 02. Electric Blue
-    "#8b5cf6", // 03. Deep Purple Neon
-    "#f59e0b", // 04. Amber Gold
-    "#ec4899", // 05. Hot Pink
-    "#14b8a6", // 06. Teal Ocean
-    "#ef4444", // 07. Crimson Red
-    "#06b6d4", // 08. Cyber Cyan
-    "#f97316", // 09. Bright Orange
-    "#a855f7", // 10. Vivid Amethyst
-    "#6366f1", // 11. Indigo Glow
-    "#10b981", // 12. Mint Emerald
-    "#eab308", // 13. Acid Yellow
-    "#64748b", // 14. Cool Slate Grey
-    "#d946ef", // 15. Fuchsia Bright
-    "#84cc16", // 16. Lime Green
-    "#22d3ee", // 17. Ice Ice Blue
-    "#f43f5e", // 18. Rose Petal
-    "#fbbf24", // 19. Warm Sun Yellow
-    "#c084fc", // 20. Soft Lavender
-    "#2dd4bf", // 21. Aquamarine
-    "#fb923c", // 22. Pastel Tangerine
-    "#38bdf8", // 23. Sky Blue Neon
-    "#f472b6", // 24. Cotton Candy Pink
-    "#4ade80", // 25. Light Neon Green
-    "#9333ea", // 26. Dark Violet
-    "#0284c7", // 27. Deep Sea Blue
-    "#ea580c", // 28. Burnt Orange
-    "#e11d48", // 29. Ruby Red
-    "#0d9488", // 30. Dark Turquoise
-    "#4f46e5", // 31. Royal Indigo
-    "#16a34a", // 32. Forest Green
-  ];
-  const [categoryStats, setCategoryStats] = useState([]);
-  const [topArtists, setTopArtists] = useState([]);
-  const [topTracks, setTopTracks] = useState([]);
+    const COLORS = [
+        '#1db954', // 01. Spotify Green (Màu gốc của bồ)
+        '#3b82f6', // 02. Electric Blue
+        '#8b5cf6', // 03. Deep Purple Neon
+        '#f59e0b', // 04. Amber Gold
+        '#ec4899', // 05. Hot Pink
+        '#14b8a6', // 06. Teal Ocean
+        '#ef4444', // 07. Crimson Red
+        '#06b6d4', // 08. Cyber Cyan
+        '#f97316', // 09. Bright Orange
+        '#a855f7', // 10. Vivid Amethyst
+        '#6366f1', // 11. Indigo Glow
+        '#10b981', // 12. Mint Emerald
+        '#eab308', // 13. Acid Yellow
+        '#64748b', // 14. Cool Slate Grey
+        '#d946ef', // 15. Fuchsia Bright
+        '#84cc16', // 16. Lime Green
+        '#22d3ee', // 17. Ice Ice Blue
+        '#f43f5e', // 18. Rose Petal
+        '#fbbf24', // 19. Warm Sun Yellow
+        '#c084fc', // 20. Soft Lavender
+        '#2dd4bf', // 21. Aquamarine
+        '#fb923c', // 22. Pastel Tangerine
+        '#38bdf8', // 23. Sky Blue Neon
+        '#f472b6', // 24. Cotton Candy Pink
+        '#4ade80', // 25. Light Neon Green
+        '#9333ea', // 26. Dark Violet
+        '#0284c7', // 27. Deep Sea Blue
+        '#ea580c', // 28. Burnt Orange
+        '#e11d48', // 29. Ruby Red
+        '#0d9488', // 30. Dark Turquoise
+        '#4f46e5', // 31. Royal Indigo
+        '#16a34a'  // 32. Forest Green
+    ];
+    const [categoryStats, setCategoryStats] = useState([]);
+    const [topArtists, setTopArtists] = useState([]);
+    const [topTracks, setTopTracks] = useState([]);
 
-  // 🟢 Thêm state quản lý trang cho cả User và Artist
-  const currentArtistPage = parseInt(searchParams.get("artistPage")) || 0;
-  const currentUserPage = parseInt(searchParams.get("userPage")) || 0;
 
-  const [users, setUsers] = useState([]);
-  const [artists, setArtists] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+    // 🟢 Thêm state quản lý trang cho cả User và Artist
+    const currentArtistPage = parseInt(searchParams.get('artistPage')) || 0;
+    const currentUserPage = parseInt(searchParams.get('userPage')) || 0;
 
-  // State quản lý trạng thái đồng bộ
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [showSyncModal, setShowSyncModal] = useState(false);
+    const [users, setUsers] = useState([]);
+    const [artists, setArtists] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
 
-  // State quản lý trạng thái dọn dẹp lịch sử
-  const [isCleaning, setIsCleaning] = useState(false);
-  const [showCleanupModal, setShowCleanupModal] = useState(false);
+    // State quản lý trạng thái đồng bộ
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [showSyncModal, setShowSyncModal] = useState(false);
 
-  const [toast, setToast] = useState({
-    show: false,
-    message: "",
-    type: "success",
-  });
+    // State quản lý trạng thái dọn dẹp lịch sử
+    const [isCleaning, setIsCleaning] = useState(false);
+    const [showCleanupModal, setShowCleanupModal] = useState(false);
 
-  const displayToast = (message, type = "success") => {
-    setToast({ show: true, message, type });
-    setTimeout(
-      () => setToast({ show: false, message: "", type: "success" }),
-      3000,
-    );
-  };
+    const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
-  const handleConfirmSync = async () => {
-    setShowSyncModal(false);
-    setIsSyncing(true);
-    try {
-      await axiosClient.post("/recommendations/sync");
-      displayToast("Đồng bộ dữ liệu AI (Elasticsearch) thành công!", "success");
-    } catch (error) {
-      console.error("Lỗi đồng bộ:", error);
-      displayToast(
-        `Đồng bộ thất bại: ${error.response?.data?.message || error.message}`,
-        "error",
-      );
-    } finally {
-      setIsSyncing(false);
-    }
-  };
+    const displayToast = (message, type = 'success') => {
+        setToast({ show: true, message, type });
+        setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+    };
 
-  const handleConfirmCleanup = async () => {
-    setShowCleanupModal(false);
-    setIsCleaning(true);
-    try {
-      await axiosClient.post("/tracking/cleanup-history");
-      displayToast("Dọn dẹp lịch sử thành công!", "success");
-    } catch (error) {
-      console.error("Lỗi dọn dẹp lịch sử:", error);
-      displayToast(
-        `Dọn dẹp thất bại: ${error.response?.data?.message || error.message}`,
-        "error",
-      );
-    } finally {
-      setIsCleaning(false);
-    }
-  };
+    const handleConfirmSync = async () => {
+        setShowSyncModal(false);
+        setIsSyncing(true);
+        try {
+            await axiosClient.post('/recommendations/sync');
+            displayToast("Đồng bộ dữ liệu AI (Elasticsearch) thành công!", "success");
+        } catch (error) {
+            console.error("Lỗi đồng bộ:", error);
+            displayToast(`Đồng bộ thất bại: ${error.response?.data?.message || error.message}`, "error");
+        } finally {
+            setIsSyncing(false);
+        }
+    };
 
-  // 🟢 Thêm state lưu tổng số lượng để hiển thị Overview
-  const [artistCount, setArtistCount] = useState(0);
-  const [userCount, setUserCount] = useState(0);
+    const handleConfirmCleanup = async () => {
+        setShowCleanupModal(false);
+        setIsCleaning(true);
+        try {
+            await axiosClient.post('/admin/system/cleanup-history');
+            displayToast("Dọn dẹp lịch sử thành công!", "success");
+        } catch (error) {
+            console.error("Lỗi dọn dẹp lịch sử:", error);
+            displayToast(`Dọn dẹp thất bại: ${error.response?.data?.message || error.message}`, "error");
+        } finally {
+            setIsCleaning(false);
+        }
+    };
 
-  const [artistTotalPages, setArtistTotalPages] = useState(0);
-  const [userTotalPages, setUserTotalPages] = useState(0);
+    // 🟢 Thêm state lưu tổng số lượng để hiển thị Overview
+    const [artistCount, setArtistCount] = useState(0);
+    const [userCount, setUserCount] = useState(0);
 
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [editingCategory, setEditingCategory] = useState(null);
-  const [categoryName, setCategoryName] = useState("");
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const [
-          usersRes,
-          artistsRes,
-          categoriesRes,
-          artistCountRes,
-          statsRes,
-          topArtistsRes,
-          topTracksRes,
-          userCountRes,
-        ] = await Promise.allSettled([
-          axiosClient.get("/users", {
-            params: { page: currentUserPage, size: 5 },
-          }),
-          axiosClient.get("/artists", {
-            params: { page: currentArtistPage, size: 5 },
-          }),
-          axiosClient.get("/categories"),
-          axiosClient.get("/artists/count"),
-          axiosClient.get("/categories/stats"),
-          axiosClient.get("/artists/top3"),
-          axiosClient.get("/tracks/top5-views"),
-          axiosClient.get("/users/count"),
-        ]);
+    const [artistTotalPages, setArtistTotalPages] = useState(0);
+    const [userTotalPages, setUserTotalPages] = useState(0);
 
-        if (usersRes.status === "fulfilled") {
-          const userData = usersRes.value.data;
-          const userList =
-            userData?.content || userData?.data || userData || [];
-          setUsers(Array.isArray(userList) ? userList : []);
-          setUserTotalPages(userData?.totalPages || 0);
+    const [showCategoryModal, setShowCategoryModal] = useState(false);
+    const [editingCategory, setEditingCategory] = useState(null);
+    const [categoryName, setCategoryName] = useState('');
+    useEffect(() => {
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const [
+                    usersRes, artistsRes, categoriesRes, artistCountRes,
+                    statsRes, topArtistsRes, topTracksRes, userCountRes
+                ] = await Promise.allSettled([
+                    axiosClient.get('/users', { params: { page: currentUserPage, size: 5 } }),
+                    axiosClient.get('/artists', { params: { page: currentArtistPage, size: 5 } }),
+                    axiosClient.get('/categories'),
+                    axiosClient.get('/artists/count'),
+                    axiosClient.get('/categories/stats'),
+                    axiosClient.get('/artists/top3'),
+                    axiosClient.get('/tracks/top5-views'),
+                    axiosClient.get('/users/count'),
+                ]);
+
+                if (usersRes.status === 'fulfilled') {
+                    const userData = usersRes.value.data;
+                    const userList = userData?.content || userData?.data || userData || [];
+                    setUsers(Array.isArray(userList) ? userList : []);
+                    setUserTotalPages(userData?.totalPages || 0);
+                }
+
+                if (artistsRes.status === 'fulfilled') {
+                    const artistData = artistsRes.value.data;
+
+                    // Bóc tách mảng linh hoạt giống như User
+                    const artistList = artistData?.content || artistData?.data || artistData || [];
+                    setArtists(Array.isArray(artistList) ? artistList : []);
+
+                    // Lấy totalPages một cách an toàn
+                    setArtistTotalPages(artistData?.page?.totalPages || artistData?.totalPages || 0);
+                }
+
+                if (artistCountRes.status === 'fulfilled') setArtistCount(artistCountRes.value.data || 0);
+                if (categoriesRes.status === 'fulfilled') setCategories(categoriesRes.value.data || []);
+                if (statsRes.status === 'fulfilled') setCategoryStats(statsRes.value.data);
+                if (topArtistsRes.status === 'fulfilled') setTopArtists(topArtistsRes.value.data);
+                if (topTracksRes.status === 'fulfilled') setTopTracks(topTracksRes.value.data);
+                if(userCountRes.status === 'fulfilled')  setUserCount (userCountRes.value.data || 0);
+            } catch (error) {
+                console.error("Lỗi lấy dữ liệu tổng hợp admin:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [activeTab, currentArtistPage, currentUserPage]); // 🟢 Thêm refreshTrigger vào mảng phụ thuộc // Đầy đủ dependency, ESLint sẽ im lặng ngay!
+    const handleSaveCategory = async () => {
+        if (!categoryName.trim()) return;
+        try {
+            if (editingCategory) {
+                await axiosClient.put(`/categories/${editingCategory.id}`, { name: categoryName });
+
+                setCategories(prev => prev.map(c =>
+                    c.id === editingCategory.id ? { ...c, name: categoryName } : c
+                ));
+            } else {
+
+                const res = await axiosClient.post('/categories', { name: categoryName });
+                const newCategory = res.data;
+                setCategories(prev => [...prev, newCategory]);
+            }
+
+            setCategoryName('');
+            setEditingCategory(null);
+            setShowCategoryModal(false);
+
+        } catch (error) {
+            console.error("Lỗi lưu thể loại:", error);
         }
 
         if (artistsRes.status === "fulfilled") {
@@ -582,19 +609,110 @@ const AdminDashboardPage = () => {
                           </div>
                         )}
 
-                        {/* Ảnh Avatar */}
-                        <div className="w-24 h-24 rounded-full p-1 mb-4 relative">
-                          {/* Viền gradient xoay vòng cho đẹp mắt */}
-                          <div
-                            className={`absolute inset-0 rounded-full ${idx === 0 ? "bg-gradient-to-tr from-yellow-400 to-amber-600" : idx === 1 ? "bg-gradient-to-tr from-gray-300 to-gray-500" : "bg-gradient-to-tr from-amber-700 to-amber-900"} opacity-70 group-hover:opacity-100 transition-opacity`}
-                          ></div>
-                          <div className="w-full h-full rounded-full overflow-hidden bg-[#121212] relative z-10 border-2 border-[#181818]">
-                            <MusicImage
-                              src={artist.img}
-                              type="artist"
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                            />
-                          </div>
+                        {/* TAB 4: QUẢN LÝ THỂ LOẠI (giữ nguyên như cũ) */}
+                        {activeTab === 'categories' && (
+                            <div>
+                                {/* ... [Code giữ nguyên như bản cũ] ... */}
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-2xl font-bold text-white">Quản Lý Thể Loại Nhạc ({categories.length})</h2>
+                                    <button
+                                        onClick={() => { setEditingCategory(null); setCategoryName(''); setShowCategoryModal(true); }}
+                                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-semibold transition-colors cursor-pointer border-none shadow-md"
+                                    >
+                                        <Plus size={18}/> <span>Thêm Thể Loại</span>
+                                    </button>
+                                </div>
+                                <div className="bg-[#181818] rounded-xl border border-[#282828] overflow-hidden">
+                                    <table className="w-full text-left border-collapse">
+                                        <thead>
+                                        <tr className="border-b border-[#282828] bg-[#222222] text-[#a7a7a7] text-xs uppercase tracking-wider font-semibold">
+                                            <th className="p-4">Tên Thể Loại</th>
+                                            <th className="p-4">Mã ID</th>
+                                            <th className="p-4 text-center">Số bài hát</th>
+                                            <th className="p-4 text-right">Hành động</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-[#282828] text-sm">
+                                        {categories.map(c => {
+                                            // 🟢 Tìm số lượng bài hát thuộc category này từ categoryStats hoặc thuộc tính trực tiếp
+                                            const stat = categoryStats.find(s => s.name === c.name || s.id === c.id);
+                                            const trackCount = stat ? stat.value : (c.trackTotal || c.tracksCount || c.tracks?.length || 0);
+                                            const hasTracks = trackCount > 0;
+
+                                            return (
+                                                <tr key={c.id} className="hover:bg-[#222222]/50 transition-colors">
+                                                    <td
+                                                        onClick={() => navigate(`/categories/${c.id}`, { state: { categoryName: c.name } })}
+                                                        className="p-4 font-medium text-white cursor-pointer hover:text-blue-400"
+                                                    >
+                                                        {c.name}
+                                                    </td>
+                                                    <td className="p-4 text-gray-400 font-mono">CAT-{c.id}</td>
+
+                                                    {/* 🟢 Hiển thị số lượng bài hát */}
+                                                    <td className="p-4 text-center text-gray-300 font-medium">
+                                                        {trackCount} bài
+                                                    </td>
+
+                                                    {/* 🟢 Cột Hành động */}
+                                                    <td className="p-4 text-right flex justify-end gap-2 items-center">
+                                                        {/* Nút Chỉnh sửa (Luôn hiển thị) */}
+                                                        <button
+                                                            onClick={() => { setEditingCategory(c); setCategoryName(c.name); setShowCategoryModal(true); }}
+                                                            className="p-2 text-gray-400 hover:text-blue-500 rounded-lg transition-colors bg-transparent border-none cursor-pointer"
+                                                            title="Sửa thể loại"
+                                                        >
+                                                            <Edit size={18}/>
+                                                        </button>
+
+                                                        {/* 🟢 Logic điều kiện: KHÔNG CÓ BÀI HÁT mới hiện nút Trash2 */}
+                                                        {!hasTracks ? (
+                                                            <button
+                                                                onClick={() => handleDeleteCategory(c.id)}
+                                                                className="p-2 text-gray-400 hover:text-red-500 rounded-lg transition-colors bg-transparent border-none cursor-pointer"
+                                                                title="Xóa thể loại"
+                                                            >
+                                                                <Trash2 size={18}/>
+                                                            </button>
+                                                        ) : (
+                                                            /* Nếu có nhạc thì ẩn nút xóa, hiển thị nhãn trạng thái (hoặc để trống) */
+                                                            <span
+                                                                className="text-xs text-gray-500 italic px-2 py-1 bg-[#222222] rounded border border-[#333]"
+                                                                title="Không thể xóa vì thể loại này đã có bài hát"
+                                                            >
+                                        Không thể xóa
+                                    </span>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )}
+            </main>
+
+            {/* MODAL THÊM/SỬA CATEGORY */}
+            {showCategoryModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+                    <div className="bg-[#181818] p-6 rounded-xl border border-[#282828] w-full max-w-md shadow-2xl">
+                        <h3 className="text-xl font-bold text-white mb-4">
+                            {editingCategory ? 'Sửa Thể Loại' : 'Thêm Thể Loại Mới'}
+                        </h3>
+                        <input
+                            type="text"
+                            value={categoryName}
+                            onChange={(e) => setCategoryName(e.target.value)}
+                            placeholder="Nhập tên thể loại..."
+                            className="w-full p-3 rounded-lg bg-[#282828] text-white border border-[#2d2d30] focus:border-blue-500 outline-none mb-6"
+                        />
+                        <div className="flex justify-end gap-3">
+                            <button onClick={() => setShowCategoryModal(false)} className="px-4 py-2 rounded-lg text-[#a7a7a7] hover:text-white font-medium">Hủy</button>
+                            <button onClick={handleSaveCategory} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium">Lưu lại</button>
                         </div>
 
                         <h4 className="text-lg font-black text-white mb-1">

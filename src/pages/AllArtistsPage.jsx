@@ -147,33 +147,33 @@ const AllArtistsPage = () => {
                     </p>
                   </div>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation(); // Ngăn chặn sự kiện click thẻ bọc làm nhảy trang /artist/:id
-                      toggleFollowArtist(Number(artist.id));
-                    }}
-                    className={`w-full py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer flex items-center justify-center gap-1 ${
-                      isFollowing
-                        ? "bg-transparent border-zinc-600 text-zinc-400 hover:border-red-500 hover:text-red-500"
-                        : "bg-white border-transparent text-black hover:scale-105"
-                    }`}
-                  >
-                    {isFollowing ? (
-                      <>
-                        <UserCheck size={12} /> Đang Fl
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus size={12} /> Fl
-                      </>
-                    )}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Ngăn chặn sự kiện click thẻ bọc làm nhảy trang /artist/:id
+                                            toggleFollowArtist(Number(artist.id));
+                                        }}
+                                        className={`w-full py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer flex items-center justify-center gap-1 ${
+                                            isFollowing
+                                                ? 'bg-transparent border-zinc-600 text-zinc-400 hover:border-red-500 hover:text-red-500'
+                                                : 'bg-white border-transparent text-black hover:scale-105'
+                                        }`}
+                                    >
+                                        {isFollowing ? (
+                                            <>
+                                                <UserCheck size={12} /> Following
+                                            </>
+                                        ) : (
+                                            <>
+                                                <UserPlus size={12} /> Follow
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
 
       {/* --- 3. GIAO DIỆN THANH PHÂN TRANG (PAGINATION BAR) --- */}
       {totalPages > 1 && (
