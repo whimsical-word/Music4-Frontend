@@ -15,6 +15,7 @@ const TrackEngagementModal = ({ track, onClose }) => {
     const [savedRating, setSavedRating] = useState(0);
     const [hoverRating, setHoverRating] = useState(0);
     const [isRatingLoading, setIsRatingLoading] = useState(false);
+    const [averageRating, setAverageRating] = useState(0); // State lưu điểm trung bình
 
     // State cho bình luận
     const [comments, setComments] = useState([]);
@@ -33,16 +34,24 @@ const TrackEngagementModal = ({ track, onClose }) => {
 
         const loadModalData = async () => {
             try {
-                const [likeRes, commentRes, ratingRes, playlistRes] = await Promise.all([
+                const [likeRes, commentRes, ratingRes, playlistRes, avgRatingRes] = await Promise.all([
                     engagementService.checkIsLiked(track.id),
                     engagementService.getCommentsByTrack(track.id),
                     engagementService.getTrackRating ? engagementService.getTrackRating(track.id, userId) : { rating: 0 },
                     !isArtist ? axiosClient.get("/playlists/my-playlists") : { data: [] },
+                    engagementService.getAverageRating ? engagementService.getAverageRating(track.id) : axiosClient.get(`/ratings/average/${track.id}`).catch(() => ({ average: 0 }))
                 ]);
+
+                console.log("Dữ liệu trung bình nhận được:", avgRatingRes);
 
                 setIsLiked(likeRes.liked);
                 setComments(commentRes);
                 setMyPlaylists(playlistRes.data || playlistRes || []);
+
+                // Đã fix: Bóc tách đúng cấu trúc Axios trả về (avgRatingRes.data chứa object từ server)
+                const responseData = avgRatingRes.data ?? avgRatingRes;
+                const avgScore = responseData.average ?? responseData.data ?? 0;
+                setAverageRating(Number(avgScore));
 
                 if (ratingRes) {
                     const savedScore = ratingRes.rating ?? ratingRes.score ?? 0;
@@ -85,8 +94,22 @@ const TrackEngagementModal = ({ track, onClose }) => {
         try {
             await engagementService.rateTrack(track.id, rating, userId);
             setSavedRating(rating);
+
+            // Cập nhật lại điểm trung bình ngay sau khi đánh giá thành công
+            const avgRatingRes = engagementService.getAverageRating
+                ? await engagementService.getAverageRating(track.id)
+                : await axiosClient.get(`/ratings/average/${track.id}`).catch(() => ({ average: 0 }));
+
+            const responseData = avgRatingRes.data ?? avgRatingRes;
+            const avgScore = responseData.average ?? responseData.data ?? 0;
+            setAverageRating(Number(avgScore));
+
             alert("Đánh giá thành công!");
-        } finally { setIsRatingLoading(false); }
+        } catch (err) {
+            alert("Lỗi khi gửi đánh giá.");
+        } finally {
+            setIsRatingLoading(false);
+        }
     };
 
     const handleAddToPlaylist = async (e) => {
@@ -129,6 +152,11 @@ const TrackEngagementModal = ({ track, onClose }) => {
                 </div>
 
                 <div className="mb-6 bg-[#202020] p-4 rounded-xl border border-[#2c2c2c] text-center">
+                    <div className="flex items-center justify-center gap-2 mb-4 bg-black/20 py-2 rounded-lg">
+                        <Star size={16} className="text-amber-400 fill-amber-400" />
+                        <span className="text-sm font-bold">{averageRating > 0 ? averageRating.toFixed(1) : "Chưa có"}</span>
+                        <span className="text-xs text-gray-500">/ 5.0</span>
+                    </div>
                     <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">Đánh giá</h4>
                     <div className="flex items-center justify-center gap-2 mb-4">
                         {[1, 2, 3, 4, 5].map((star) => (
@@ -179,7 +207,7 @@ const TrackEngagementModal = ({ track, onClose }) => {
                                     <input autoFocus placeholder="Tên playlist..." className="flex-1 bg-[#121212] text-xs px-3 py-2 rounded border border-[#3e3e3e] outline-none focus:border-sky-500" value={newPlaylistName} onChange={(e) => setNewPlaylistName(e.target.value)}/>
                                     <button onClick={handleCreatePlaylist} disabled={!newPlaylistName.trim()} className={`px-3 rounded-lg text-[11px] font-bold transition-all ${
                                         newPlaylistName.trim() ? "bg-sky-600 hover:bg-sky-500 text-white cursor-pointer" : "bg-[#2b2b2b] text-gray-500 cursor-not-allowed"
-                                        }`}
+                                    }`}
                                     >Lưu</button>
 
                                     <button

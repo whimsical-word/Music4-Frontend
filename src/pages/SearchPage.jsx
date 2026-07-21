@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Play, User as UserIcon, Music, Layers } from 'lucide-react';
+import { Play, User as UserIcon, Music, Layers, MoreHorizontal } from 'lucide-react';
 import axiosClient from '../app/axios/axiosClient';
 import { usePlayerStore } from '../features/player/usePlayerStore';
 import MusicImage from '../layouts/components/MusicImage';
 import { AppPagination } from "../layouts/components/AppPagination.jsx";
+import TrackEngagementModal from '../layouts/components/TrackEngagementModal.jsx';
 
 // =====================================================================
 // COMPONENT PHỤ: BĂNG CHUYỀN ĐIỀU HƯỚNG TAY (ĐÃ BỎ HOÀN TOÀN AUTO-SCROLL)
@@ -84,6 +85,9 @@ const SearchPage = () => {
     const [searchResults, setSearchResults] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
 
+    // State quản lý việc hiển thị TrackEngagementModal cho bài hát được chọn
+    const [selectedTrack, setSelectedTrack] = useState(null);
+
     useEffect(() => {
         if (!query.trim()) {
             setSearchResults(null);
@@ -93,7 +97,6 @@ const SearchPage = () => {
         const fetchResults = async () => {
             setIsLoading(true);
             try {
-                // Lấy 20 items nếu ở tab "all" để cuộn ngang. Tab lẻ lấy 12 items để hiện lưới phân trang.
                 const pageSize = currentType === 'all' ? 20 : 12;
 
                 const response = await axiosClient.get('/search', {
@@ -140,22 +143,47 @@ const SearchPage = () => {
         navigate(`/search?q=${encodeURIComponent(query)}&type=${newType}&page=0`);
     };
 
-    // Helper: Render Bài hát
+    // Helper: Render Bài hát (Có nút 3 chấm mở TrackEngagementModal giống trang HomePage)
     const renderTrackCard = (track, isScrollMode) => (
-        <div key={track.id} className={`${isScrollMode ? 'w-[160px] md:w-[200px] flex-shrink-0 snap-start' : 'w-full'} bg-[#181818] p-4 rounded-xl hover:bg-[#282828] transition-all duration-300 group cursor-pointer border border-transparent hover:border-[#3e3e3e]`}>
+        <div
+            key={track.id}
+            className={`${isScrollMode ? 'w-[160px] md:w-[200px] flex-shrink-0 snap-start' : 'w-full'} bg-[#181818] p-4 rounded-xl hover:bg-[#282828] transition-all duration-300 group cursor-pointer border border-transparent hover:border-[#3e3e3e] relative`}
+        >
             <div className="relative aspect-square w-full mb-4 rounded-md overflow-hidden bg-[#282828] shadow-md">
                 <MusicImage src={track.img} type='track' alt={track.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-300">
-                    <button onClick={(e) => { e.stopPropagation(); playTrack(track, tracks); }} className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white border-none cursor-pointer shadow-md">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            playTrack(track, tracks);
+                        }}
+                        className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white border-none cursor-pointer shadow-md"
+                    >
                         <Play size={18} fill="currentColor" className="text-black ml-0.5" />
                     </button>
                 </div>
             </div>
-            <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-blue-400">{track.name}</h4>
-            <p className="text-xs text-[#a7a7a7] truncate flex gap-1 items-center">
+
+            {/* Khối Tên bài hát & Nút 3 chấm mở modal giống HomePage */}
+            <div className="relative pr-6 group/title w-full">
+                <h4 className="font-bold text-white truncate text-sm mb-1 max-w-[85%] group-hover:text-blue-400">{track.name}</h4>
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedTrack(track); // Mở TrackEngagementModal
+                    }}
+                    className="absolute right-0 top-0.5 opacity-0 group-hover:opacity-100 text-[#b3b3b3] hover:text-white bg-transparent border-none cursor-pointer transition-opacity duration-200"
+                    title="Tương tác bài hát"
+                >
+                    <MoreHorizontal size={16} />
+                </button>
+            </div>
+
+            <p className="text-xs text-[#a7a7a7] truncate flex gap-1 items-center mt-1">
                 {track.artists && track.artists.length > 0 ? (
                     track.artists.map((artist, idx) => (
-                        <span key={artist.id}>
+                        <span key={artist.id} className="inline-block max-w-full truncate">
                             <span onClick={(e) => { e.stopPropagation(); navigate(`/artist/${artist.id}`); }} className="hover:text-white hover:underline cursor-pointer transition-colors text-gray-400 font-medium">
                                 {artist.name}
                             </span>
@@ -199,7 +227,7 @@ const SearchPage = () => {
         </div>
     );
 
-    // Helper: Render Playlist (Đã khôi phục)
+    // Helper: Render Playlist
     const renderPlaylistCard = (playlist, isScrollMode) => (
         <div key={playlist.id} className={`${isScrollMode ? 'w-[160px] md:w-[200px] flex-shrink-0 snap-start' : 'w-full'} bg-[#181818] p-4 rounded-xl hover:bg-[#282828] transition-all duration-300 group cursor-pointer border border-transparent hover:border-[#3e3e3e]`}>
             <div className="relative aspect-square w-full mb-4 rounded-md overflow-hidden bg-gradient-to-br from-blue-900 to-[#181818] shadow-md flex items-center justify-center">
@@ -215,7 +243,7 @@ const SearchPage = () => {
         </div>
     );
 
-    // Helper: Render Thể Loại (Đã khôi phục)
+    // Helper: Render Thể Loại
     const renderCategoryCard = (category, isScrollMode) => (
         <div key={category.id} className={`${isScrollMode ? 'w-[160px] md:w-[200px] flex-shrink-0 snap-start' : 'w-full'} bg-gradient-to-br from-[#282828] to-[#181818] p-4 rounded-xl hover:from-[#3e3e3e] hover:to-[#282828] transition-all duration-300 group cursor-pointer border border-[#3e3e3e] flex flex-col justify-center items-center aspect-[4/3] shadow-md`}>
             <Layers size={28} className="text-blue-500 mb-3 opacity-80" />
@@ -312,7 +340,7 @@ const SearchPage = () => {
                         )
                     )}
 
-                    {/* KHỐI 4: PLAYLIST (Đã được khôi phục) */}
+                    {/* KHỐI 4: PLAYLIST */}
                     {(currentType === 'all' || currentType === 'playlist') && playlists.length > 0 && (
                         currentType === 'all' ? (
                             <AutoScrollCarousel title="Playlist" items={playlists} onViewAll={() => handleTypeChange('playlist')} renderItem={(pl) => renderPlaylistCard(pl, true)} />
@@ -326,7 +354,7 @@ const SearchPage = () => {
                         )
                     )}
 
-                    {/* KHỐI 5: THỂ LOẠI (Đã được khôi phục) */}
+                    {/* KHỐI 5: THỂ LOẠI */}
                     {(currentType === 'all' || currentType === 'category') && categories.length > 0 && (
                         currentType === 'all' ? (
                             <AutoScrollCarousel title="Thể loại" items={categories} onViewAll={() => handleTypeChange('category')} renderItem={(cat) => renderCategoryCard(cat, true)} />
@@ -340,7 +368,7 @@ const SearchPage = () => {
                         )
                     )}
 
-                    {/* PHÂN TRANG (CHỈ HIỆN Ở TAB LẺ VÀ CÓ NHIỀU HƠN 1 TRANG) */}
+                    {/* PHÂN TRANG */}
                     {currentType !== 'all' && totalPages > 1 && (
                         <div className="pt-10 flex justify-center w-full">
                             <AppPagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
@@ -354,6 +382,14 @@ const SearchPage = () => {
                         <p className="text-xs text-gray-500">Hãy thử kiểm tra lại chính tả hoặc tìm kiếm bằng từ khóa khác nhé.</p>
                     </div>
                 )
+            )}
+
+            {/* MODAL TƯƠNG TÁC BÀI HÁT */}
+            {selectedTrack && (
+                <TrackEngagementModal
+                    track={selectedTrack}
+                    onClose={() => setSelectedTrack(null)}
+                />
             )}
         </div>
     );
