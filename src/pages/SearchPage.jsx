@@ -120,7 +120,6 @@ const SearchPage = () => {
     const tracks = searchResults?.tracks?.content || [];
     const artists = searchResults?.artists?.content || [];
     const albums = searchResults?.albums?.content || [];
-    const playlists = searchResults?.playlists?.content || [];
     const categories = searchResults?.categories?.content || [];
 
     // BÓC TÁCH DỮ LIỆU TOTAL PAGES (Đã sửa lại đường dẫn có thêm .page)
@@ -129,7 +128,6 @@ const SearchPage = () => {
         if (currentType === 'track') totalPages = searchResults.tracks?.page?.totalPages;
         else if (currentType === 'artist') totalPages = searchResults.artists?.page?.totalPages;
         else if (currentType === 'album') totalPages = searchResults.albums?.page?.totalPages;
-        else if (currentType === 'playlist') totalPages = searchResults.playlists?.page?.totalPages;
         else if (currentType === 'category') totalPages = searchResults.categories?.page?.totalPages;
     }
 
@@ -204,22 +202,6 @@ const SearchPage = () => {
         </div>
     );
 
-    // Helper: Render Playlist (Đã khôi phục)
-    const renderPlaylistCard = (playlist, isScrollMode) => (
-        <div key={playlist.id} className={`${isScrollMode ? 'w-[160px] md:w-[200px] flex-shrink-0 snap-start' : 'w-full'} bg-[#181818] p-4 rounded-xl hover:bg-[#282828] transition-all duration-300 group cursor-pointer border border-transparent hover:border-[#3e3e3e]`}>
-            <div className="relative aspect-square w-full mb-4 rounded-md overflow-hidden bg-gradient-to-br from-blue-900 to-[#181818] shadow-md flex items-center justify-center">
-                <Music size={40} className="text-white/20" />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center shadow-md border-none cursor-pointer">
-                        <Play size={18} fill="currentColor" className="text-black ml-0.5" />
-                    </button>
-                </div>
-            </div>
-            <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-blue-400 transition-colors">{playlist.name}</h4>
-            <p className="text-[11px] text-[#a7a7a7] font-medium uppercase tracking-wider">Playlist</p>
-        </div>
-    );
-
     // Helper: Render Thể Loại (Đã khôi phục)
     // Cập nhật hàm Helper: Render Thể Loại
     const renderCategoryCard = (category, isScrollMode) => (
@@ -261,7 +243,6 @@ const SearchPage = () => {
                     { id: 'track', label: 'Bài hát' },
                     { id: 'artist', label: 'Nghệ sĩ' },
                     { id: 'album', label: 'Album' },
-                    { id: 'playlist', label: 'Playlist' },
                     { id: 'category', label: 'Thể loại' }
                 ].map((tab) => (
                     <button
@@ -323,21 +304,8 @@ const SearchPage = () => {
                         )
                     )}
 
-                    {/* KHỐI 4: PLAYLIST (Đã được khôi phục) */}
-                    {(currentType === 'all' || currentType === 'playlist') && playlists.length > 0 && (
-                        currentType === 'all' ? (
-                            <AutoScrollCarousel title="Playlist" items={playlists} onViewAll={() => handleTypeChange('playlist')} renderItem={(pl) => renderPlaylistCard(pl, true)} />
-                        ) : (
-                            <section>
-                                <h3 className="text-xl font-bold text-white mb-5 flex items-center gap-2"><span className="w-1 h-5 bg-blue-500 rounded-full"></span> Playlist</h3>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-                                    {playlists.map(pl => renderPlaylistCard(pl, false))}
-                                </div>
-                            </section>
-                        )
-                    )}
 
-                    {/* KHỐI 5: THỂ LOẠI (Đã được khôi phục) */}
+                    {/* KHỐI 4: THỂ LOẠI (Đã được khôi phục) */}
                     {(currentType === 'all' || currentType === 'category') && categories.length > 0 && (
                         currentType === 'all' ? (
                             <AutoScrollCarousel title="Thể loại" items={categories} onViewAll={() => handleTypeChange('category')} renderItem={(cat) => renderCategoryCard(cat, true)} />
