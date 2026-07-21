@@ -123,6 +123,7 @@ const SearchPage = () => {
     const tracks = searchResults?.tracks?.content || [];
     const artists = searchResults?.artists?.content || [];
     const albums = searchResults?.albums?.content || [];
+    const playlists = searchResults?.playlists?.content || [];
     const categories = searchResults?.categories?.content || [];
 
     // BÓC TÁCH DỮ LIỆU TOTAL PAGES (Đã sửa lại đường dẫn có thêm .page)
@@ -131,6 +132,7 @@ const SearchPage = () => {
         if (currentType === 'track') totalPages = searchResults.tracks?.page?.totalPages;
         else if (currentType === 'artist') totalPages = searchResults.artists?.page?.totalPages;
         else if (currentType === 'album') totalPages = searchResults.albums?.page?.totalPages;
+        else if (currentType === 'playlist') totalPages = searchResults.playlists?.page?.totalPages;
         else if (currentType === 'category') totalPages = searchResults.categories?.page?.totalPages;
     }
 

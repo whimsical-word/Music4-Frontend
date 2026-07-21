@@ -20,7 +20,7 @@ import ForgotPassword from "./pages/ForgotPassword.jsx";
 import {ResetPassword} from "./pages/ResetPassword.jsx";
 import AllAlbumPage from "./pages/AllAlbumPage.jsx";
 import RandomExplorePage from "./pages/RandomExplorePage.jsx";
-import TrackDetail from "./pages/TrackDetail";
+// import TrackDetail from "./pages/TrackDetail";
 import CategoryDetailPage from "./pages/CategoryDetailPage.jsx";
 import VerifyEmailPage from "./pages/VerifyEmailPage.jsx";
 
@@ -49,7 +49,7 @@ function App() {
                     <Route path="/albums/:albumId" element={<AlbumDetailPage />} />
                     <Route path="/admin" element={<AdminDashboardPage/>}/>
                     <Route path="/explore" element={<RandomExplorePage />} />
-                    <Route path="/tracks/:id" element={<TrackDetail />} />
+                    {/*<Route path="/tracks/:id" element={<TrackDetail />} />*/}
                     <Route path="/categories/:id" element={<CategoryDetailPage />} />
                     <Route path="/verify-email" element={<VerifyEmailPage />} />
                     {/* Thêm các Route khác vào đây, ví dụ: */}
