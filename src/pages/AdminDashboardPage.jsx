@@ -102,7 +102,7 @@ const AdminDashboardPage = () => {
             setIsCleaning(false);
         }
     };
-    
+
     // 🟢 Thêm state lưu tổng số lượng để hiển thị Overview
     const [artistCount, setArtistCount] = useState(0);
     const [userCount, setUserCount] = useState(0);
@@ -168,9 +168,9 @@ const AdminDashboardPage = () => {
         if (!categoryName.trim()) return;
         try {
             if (editingCategory) {
-               await axiosClient.put(`/categories/${editingCategory.id}`, { name: categoryName });
+                await axiosClient.put(`/categories/${editingCategory.id}`, { name: categoryName });
 
-               setCategories(prev => prev.map(c =>
+                setCategories(prev => prev.map(c =>
                     c.id === editingCategory.id ? { ...c, name: categoryName } : c
                 ));
             } else {
@@ -245,28 +245,28 @@ const AdminDashboardPage = () => {
                         {activeTab === 'overview' && (
                             <div>
                                 <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-2xl font-bold text-white">Hệ Thống Tổng Quan</h2>
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        onClick={() => setShowCleanupModal(true)}
-                                        disabled={isCleaning}
-                                        className="flex items-center gap-2 bg-[#282828] hover:bg-[#3e3e3e] text-white px-4 py-2.5 rounded-lg font-semibold transition-all cursor-pointer border border-[#3e3e3e] shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                                        title="Dọn dẹp lịch sử nghe nhạc rác trong hệ thống"
-                                    >
-                                        <History size={18} className={isCleaning ? "animate-pulse" : ""} />
-                                        <span>{isCleaning ? "Đang dọn dẹp..." : "Dọn Dẹp Lịch Sử"}</span>
-                                    </button>
-                                    <button
-                                        onClick={() => setShowSyncModal(true)}
-                                        disabled={isSyncing}
-                                        className="flex items-center gap-2 bg-linear-to-r from-indigo-500 to-blue-600 hover:from-indigo-400 hover:to-blue-500 text-white px-4 py-2.5 rounded-lg font-semibold transition-all cursor-pointer border-none shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                                        title="Đồng bộ kho nhạc lên Elasticsearch để AI Gợi ý hoạt động"
-                                    >
-                                        <RefreshCw size={18} className={isSyncing ? "animate-spin" : ""} />
-                                        <span>{isSyncing ? "Đang đồng bộ..." : "Đồng Bộ Dữ Liệu AI"}</span>
-                                    </button>
+                                    <h2 className="text-2xl font-bold text-white">Hệ Thống Tổng Quan</h2>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={() => setShowCleanupModal(true)}
+                                            disabled={isCleaning}
+                                            className="flex items-center gap-2 bg-[#282828] hover:bg-[#3e3e3e] text-white px-4 py-2.5 rounded-lg font-semibold transition-all cursor-pointer border border-[#3e3e3e] shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Dọn dẹp lịch sử nghe nhạc rác trong hệ thống"
+                                        >
+                                            <History size={18} className={isCleaning ? "animate-pulse" : ""} />
+                                            <span>{isCleaning ? "Đang dọn dẹp..." : "Dọn Dẹp Lịch Sử"}</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setShowSyncModal(true)}
+                                            disabled={isSyncing}
+                                            className="flex items-center gap-2 bg-linear-to-r from-indigo-500 to-blue-600 hover:from-indigo-400 hover:to-blue-500 text-white px-4 py-2.5 rounded-lg font-semibold transition-all cursor-pointer border-none shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                            title="Đồng bộ kho nhạc lên Elasticsearch để AI Gợi ý hoạt động"
+                                        >
+                                            <RefreshCw size={18} className={isSyncing ? "animate-spin" : ""} />
+                                            <span>{isSyncing ? "Đang đồng bộ..." : "Đồng Bộ Dữ Liệu AI"}</span>
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                                     <div className="bg-[#181818] p-6 rounded-xl border border-[#282828] flex items-center gap-4">
                                         <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500"><Users size={24}/></div>
@@ -640,7 +640,7 @@ const AdminDashboardPage = () => {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-[#181818] p-6 rounded-2xl border border-[#282828] w-full max-w-md shadow-2xl">
                         <h3 className="text-xl font-bold text-white mb-3 flex items-center gap-2">
-                            <AlertTriangle className="text-amber-500" size={24} /> 
+                            <AlertTriangle className="text-amber-500" size={24} />
                             Xác nhận đồng bộ dữ liệu
                         </h3>
                         <div className="text-slate-300 text-sm mb-6 leading-relaxed">
@@ -651,14 +651,14 @@ const AdminDashboardPage = () => {
                             </div>
                         </div>
                         <div className="flex justify-end gap-3">
-                            <button 
-                                onClick={() => setShowSyncModal(false)} 
+                            <button
+                                onClick={() => setShowSyncModal(false)}
                                 className="px-5 py-2.5 rounded-lg text-[#a7a7a7] hover:text-white font-medium bg-[#282828] hover:bg-[#3e3e3e] transition-colors border-none cursor-pointer"
                             >
                                 Hủy bỏ
                             </button>
-                            <button 
-                                onClick={handleConfirmSync} 
+                            <button
+                                onClick={handleConfirmSync}
                                 className="px-5 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium cursor-pointer border-none shadow-lg shadow-blue-600/20 transition-all active:scale-95"
                             >
                                 Bắt đầu đồng bộ
@@ -704,8 +704,8 @@ const AdminDashboardPage = () => {
             {/* TOAST THÔNG BÁO (Góc trên bên phải) */}
             {toast.show && (
                 <div className={`fixed top-24 right-10 z-100 flex items-center gap-3 px-5 py-4 rounded-xl shadow-2xl animate-in slide-in-from-top-5 fade-in duration-300 border ${
-                    toast.type === 'success' 
-                        ? 'bg-emerald-950 border-emerald-500/50 text-emerald-400' 
+                    toast.type === 'success'
+                        ? 'bg-emerald-950 border-emerald-500/50 text-emerald-400'
                         : 'bg-red-950 border-red-500/50 text-red-400'
                 }`}>
                     {toast.type === 'success' ? <CheckCircle size={20} /> : <AlertTriangle size={20} />}

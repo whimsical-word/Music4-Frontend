@@ -1,13 +1,12 @@
 import { create } from 'zustand';
 
 const decodeJwt = (token) => {
-  try {
-    return JSON.parse(atob(token.split(".")[1]));
-  } catch {
-    return null;
-  }
+    try {
+        return JSON.parse(atob(token.split(".")[1]));
+    } catch {
+        return null;
+    }
 };
-
 
 export const useAuthStore = create((set) => ({
     userId: localStorage.getItem('userId') || null,
@@ -51,8 +50,8 @@ export const useAuthStore = create((set) => ({
         });
     },
 
-  setAuthError: (errorMsg) => set({ error: errorMsg }),
-  setLoading: (isLoading) => set({ isLoading }),
+    setAuthError: (errorMsg) => set({ error: errorMsg }),
+    setLoading: (isLoading) => set({ isLoading }),
 
     loginWithGoogle: (token) => {
         const payload = decodeJwt(token);
@@ -84,6 +83,6 @@ export const useAuthStore = create((set) => ({
             error: null,
         });
 
-    return true;
-  },
+        return true;
+    },
 }));

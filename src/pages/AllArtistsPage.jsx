@@ -139,11 +139,11 @@ const AllArtistsPage = () => {
                                     >
                                         {isFollowing ? (
                                             <>
-                                                <UserCheck size={12} /> Đang Fl
+                                                <UserCheck size={12} /> Following
                                             </>
                                         ) : (
                                             <>
-                                                <UserPlus size={12} /> Fl
+                                                <UserPlus size={12} /> Follow
                                             </>
                                         )}
                                     </button>

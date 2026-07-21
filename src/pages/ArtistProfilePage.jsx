@@ -634,33 +634,33 @@ const ArtistProfilePage = () => {
 
                 <div className="space-y-4">
                   {stats.topTracks?.map((track, index) => (
-                    <div key={track.id} className="flex gap-4 items-center">
-                      <div
-                        className={`w-8 h-8 rounded flex items-center justify-center font-bold text-white
-          ${
-            index === 0
-              ? "bg-yellow-500"
-              : index === 1
-                ? "bg-gray-400"
-                : index === 2
-                  ? "bg-amber-700"
-                  : "bg-sky-500/20 text-sky-500"
-          }`}
-                      >
-                        #{index + 1}
-                      </div>
+                      <div key={track.id} className="flex gap-4 items-center">
+                          {/* Số thứ tự */}
+                          <div
+                              className={`w-8 h-8 rounded flex items-center justify-center font-bold text-white shrink-0
+      ${
+                                  index === 0
+                                      ? "bg-yellow-500"
+                                      : index === 1
+                                          ? "bg-gray-400"
+                                          : index === 2
+                                              ? "bg-amber-700"
+                                              : "bg-sky-500/20 text-sky-500"
+                              }`}
+                          >
+                              #{index + 1}
+                          </div>
 
-                      <div className="flex-1">
-                        <p className="font-medium truncate">{track.name}</p>
+                          {/* Phần text: Thêm min-w-0 vào đây là xong */}
+                          <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{track.name}</p>
 
-                        <div className="text-xs text-slate-400 mt-1 flex gap-3">
-                          <span>
-                            {track.viewCount.toLocaleString()} lượt nghe
-                          </span>
-                          <span>{track.favoriteCount} lượt thích</span>
-                        </div>
+                              <div className="text-xs text-slate-400 mt-1 flex gap-3">
+                                  <span>{track.viewCount.toLocaleString()} lượt nghe</span>
+                                  <span>{track.favoriteCount} lượt thích</span>
+                              </div>
+                          </div>
                       </div>
-                    </div>
                   ))}
                 </div>
               </div>
