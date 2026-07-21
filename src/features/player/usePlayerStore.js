@@ -7,6 +7,7 @@ export const usePlayerStore = create((set, get) => ({
   currentIndex: -1, // Vị trí của bài hát hiện tại trong mảng
   isShuffle: false,
   repeatMode: "off", // off | all | one
+  isFromHistory: false,
 
   // Cập nhật playTrack: Nhận thêm 'newQueue' là danh sách bài hát ngữ cảnh
   playTrack: (track, newQueue = []) => {
@@ -17,7 +18,12 @@ export const usePlayerStore = create((set, get) => ({
       currentTrack: track,
       isPlaying: true,
       queue: newQueue.length > 0 ? newQueue : [track], // Nếu không có mảng, coi như chỉ phát 1 bài
-      currentIndex: index !== -1 ? index : 0,
+      currentIndex:
+        queue.findIndex((t) => t.id === track.id) !== -1
+          ? queue.findIndex((t) => t.id === track.id)
+          : 0,
+      isPlaying: true,
+      isFromHistory: fromHistory,
     });
   },
 

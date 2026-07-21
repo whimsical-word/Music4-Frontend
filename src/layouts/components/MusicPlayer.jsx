@@ -367,8 +367,29 @@ const MusicPlayer = () => {
     hasSavedHistoryRef.current = false;
     hasRecordedViewRef.current = false;
 
-    // Lấy toàn bộ state mới nhất trực tiếp từ Store để tránh lỗi Stale State
-    const { repeatMode, currentIndex, queue } = usePlayerStore.getState();
+    const { repeatMode, currentIndex, queue, isFromHistory } =
+      usePlayerStore.getState();
+
+    // NẾU PHÁT TỪ TRANG LỊCH SỬ -> HẾT BÀI LÀ DỪNG
+    if (isFromHistory) {
+      if (isAuthenticated && userId && currentTrack) {
+        try {
+          await axiosClient.put("/tracking/sync-time", {
+            trackId: currentTrack.id,
+            userId: userId,
+            position: 0,
+          });
+        } catch (error) {
+          console.error("Lỗi reset vị trí:", error);
+        }
+      }
+
+      usePlayerStore.setState({ isPlaying: false });
+      accumulatedTimeRef.current = 0;
+      hasSavedHistoryRef.current = false;
+      hasRecordedViewRef.current = false;
+      return;
+    }
 
     if (repeatMode === "one") {
       audio.currentTime = 0;
