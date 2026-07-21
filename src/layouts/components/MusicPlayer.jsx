@@ -305,7 +305,7 @@ const MusicPlayer = () => {
   };
 
   // Khi kết thúc bài -> Lưu lịch sử -> TỰ ĐỘNG NEXT BÀI TIẾP THEO
-  const handleTrackEnded = () => {
+  const handleTrackEnded = async () => {
     const audio = audioRef.current;
 
     // Nếu là Guest mà chạy hết bài (dưới 30s) thì cũng chặn và bung Modal
@@ -315,6 +315,26 @@ const MusicPlayer = () => {
       setShowGuestModal(true);
       return;
     }
+
+    // RESET VỊ TRÍ VỀ 0 SAU KHI NGHE HẾT BÀI
+    if (isAuthenticated && userId && currentTrack) {
+      try {
+        await axiosClient.put("/tracking/sync-time", {
+          trackId: currentTrack.id,
+          userId: userId,
+          position: 0,
+        });
+        console.log(
+          "[DEBUG] Bài hát kết thúc. Đã reset playback_position về 0.",
+        );
+      } catch (error) {
+        console.error("Lỗi reset vị trí:", error);
+      }
+    }
+
+    accumulatedTimeRef.current = 0;
+    hasSavedHistoryRef.current = false;
+    hasRecordedViewRef.current = false;
 
     // Lấy toàn bộ state mới nhất trực tiếp từ Store để tránh lỗi Stale State
     const { repeatMode, currentIndex, queue } = usePlayerStore.getState();
