@@ -104,6 +104,7 @@ const SearchPage = () => {
                         size: pageSize
                     }
                 });
+                console.log("Dữ liệu API Search trả về:", response.data);
                 setSearchResults(response.data);
             } catch (error) {
                 console.error("Lỗi khi gọi API tìm kiếm: ", error);
@@ -122,14 +123,18 @@ const SearchPage = () => {
     const playlists = searchResults?.playlists?.content || [];
     const categories = searchResults?.categories?.content || [];
 
+    // BÓC TÁCH DỮ LIỆU TOTAL PAGES (Đã sửa lại đường dẫn có thêm .page)
     let totalPages = 0;
     if (searchResults) {
-        if (currentType === 'track') totalPages = searchResults.tracks?.totalPages || 0;
-        else if (currentType === 'artist') totalPages = searchResults.artists?.totalPages || 0;
-        else if (currentType === 'album') totalPages = searchResults.albums?.totalPages || 0;
-        else if (currentType === 'playlist') totalPages = searchResults.playlists?.totalPages || 0;
-        else if (currentType === 'category') totalPages = searchResults.categories?.totalPages || 0;
+        if (currentType === 'track') totalPages = searchResults.tracks?.page?.totalPages;
+        else if (currentType === 'artist') totalPages = searchResults.artists?.page?.totalPages;
+        else if (currentType === 'album') totalPages = searchResults.albums?.page?.totalPages;
+        else if (currentType === 'playlist') totalPages = searchResults.playlists?.page?.totalPages;
+        else if (currentType === 'category') totalPages = searchResults.categories?.page?.totalPages;
     }
+
+    // Đảm bảo kiểu dữ liệu là số, nếu undefined thì cho về 0
+    totalPages = totalPages ? Number(totalPages) : 0;
 
     const handlePageChange = (newPage) => {
         navigate(`/search?q=${encodeURIComponent(query)}&type=${currentType}&page=${newPage}`);
@@ -216,8 +221,14 @@ const SearchPage = () => {
     );
 
     // Helper: Render Thể Loại (Đã khôi phục)
+    // Cập nhật hàm Helper: Render Thể Loại
     const renderCategoryCard = (category, isScrollMode) => (
-        <div key={category.id} className={`${isScrollMode ? 'w-[160px] md:w-[200px] flex-shrink-0 snap-start' : 'w-full'} bg-gradient-to-br from-[#282828] to-[#181818] p-4 rounded-xl hover:from-[#3e3e3e] hover:to-[#282828] transition-all duration-300 group cursor-pointer border border-[#3e3e3e] flex flex-col justify-center items-center aspect-[4/3] shadow-md`}>
+        <div
+            key={category.id}
+            // THÊM SỰ KIỆN CHUYỂN HƯỚNG TẠI ĐÂY
+            onClick={() => navigate(`/categories/${category.id}`, { state: { categoryName: category.name } })}
+            className={`${isScrollMode ? 'w-[160px] md:w-[200px] flex-shrink-0 snap-start' : 'w-full'} bg-gradient-to-br from-[#282828] to-[#181818] p-4 rounded-xl hover:from-[#3e3e3e] hover:to-[#282828] transition-all duration-300 group cursor-pointer border border-[#3e3e3e] flex flex-col justify-center items-center aspect-[4/3] shadow-md`}
+        >
             <Layers size={28} className="text-blue-500 mb-3 opacity-80" />
             <h4 className="font-bold text-white text-base text-center group-hover:scale-105 transition-transform">{category.name}</h4>
         </div>
