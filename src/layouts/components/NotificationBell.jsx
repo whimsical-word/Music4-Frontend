@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { usePlayerStore } from "../features/player/usePlayerStore";
 
 const NotificationBell = ({ userId }) => {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
-    const navigate = useNavigate();
+
+    // KHÔNG DÙNG navigate NỮA ĐỂ TRÁNH NHẢY TRANG
+    const playTrack = usePlayerStore((state) => state.playTrack);
 
     useEffect(() => {
         if (!userId) return;
@@ -40,6 +42,7 @@ const NotificationBell = ({ userId }) => {
 
     const handleNotiClick = async (noti) => {
         try {
+            // 1. Đánh dấu thông báo đã đọc
             if (!noti.isRead) {
                 await axios.put(`http://localhost:8080/api/notifications/${noti.id}/read`);
                 setNotifications((prev) =>
@@ -48,9 +51,18 @@ const NotificationBell = ({ userId }) => {
                 setUnreadCount((prev) => Math.max(0, prev - 1));
             }
 
-            if (noti.trackId) {
-                navigate(`/track/${noti.trackId}`);
-                setIsOpen(false);
+            // Đóng dropdown thông báo lại
+            setIsOpen(false);
+
+            // 2. Lấy thông tin bài hát từ thông báo và phát nhạc ngay lập tức
+            // Nếu backend trả về đối tượng track trực tiếp (noti.track) hoặc chỉ có thông tin ID/Tên
+            const trackData = noti.track || (noti.trackId ? { id: noti.trackId, name: noti.content, ...noti } : null);
+
+            if (trackData) {
+                // Chỉ gọi playTrack để phát nhạc ở thanh dưới cùng, tuyệt đối không gọi navigate hay đổi URL
+                playTrack(trackData, [trackData]);
+            } else {
+                console.warn("Thông báo này không chứa dữ liệu bài hát:", noti);
             }
         } catch (err) {
             console.error("Lỗi khi xử lý click thông báo:", err);
@@ -87,7 +99,6 @@ const NotificationBell = ({ userId }) => {
                 onClick={() => setIsOpen(!isOpen)}
                 style={{ background: "none", border: "none", cursor: "pointer", position: "relative", padding: "8px", color: "#fff" }}
             >
-                {/* Dùng chuông nét mảnh hợp gu app nhạc hoặc bồ thích giữ icon 🔔 thì tùy ý nhé */}
                 <span style={{ fontSize: "22px" }}>🔔</span>
 
                 {/* 🔴 Số đỏ thông báo */}
@@ -98,11 +109,11 @@ const NotificationBell = ({ userId }) => {
                 )}
             </button>
 
-            {/* 📂 Menu danh sách thông báo Dropdown (Đã chuyển sang DARK MODE giống ảnh bồ gửi) */}
+            {/* 📂 Menu danh sách thông báo Dropdown */}
             {isOpen && (
-                <div style={{ position: "absolute", right: 0, top: "100%", mt: "8px", width: "340px", backgroundColor: "#222222", border: "1px solid #333333", borderRadius: "8px", boxShadow: "0 6px 16px rgba(0,0,0,0.4)", zIndex: 100, color: "#fff" }}>
+                <div style={{ position: "absolute", right: 0, top: "100%", marginTop: "8px", width: "340px", backgroundColor: "#222222", border: "1px solid #333333", borderRadius: "8px", boxShadow: "0 6px 16px rgba(0,0,0,0.4)", zIndex: 100, color: "#fff" }}>
 
-                    {/* Header: Đúng chữ "Thông báo mới nhận" + nút Xóa tất cả */}
+                    {/* Header: "Thông báo mới nhận" + nút Xóa tất cả */}
                     <div style={{ padding: "14px 16px", borderBottom: "1px solid #333333", fontWeight: "bold", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: "15px" }}>Thông báo mới nhận</span>
                         {notifications.length > 0 && (
@@ -131,7 +142,6 @@ const NotificationBell = ({ userId }) => {
                                     style={{
                                         padding: "14px 16px",
                                         borderBottom: "1px solid #2a2a2a",
-                                        // Chưa đọc thì nền xám sáng hơn một chút để phân biệt
                                         backgroundColor: !noti.isRead ? "#2d2d2d" : "transparent",
                                         cursor: "pointer",
                                         position: "relative",
