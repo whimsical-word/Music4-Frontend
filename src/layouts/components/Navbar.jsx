@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../features/auth/useAuthStore';
 import MusicImage from './MusicImage.jsx';
 import axiosClient from "../../app/axios/axiosClient";
+import { useFavoriteStore } from '../../features/favorite/useFavoriteStore';
+import { usePlaylistStore } from '../../features/playlist/usePlaylistStore';
 
 const Navbar = () => {
     const navigate = useNavigate();
@@ -111,6 +113,8 @@ const Navbar = () => {
     };
 
     const handleLogout = () => {
+        useFavoriteStore.getState().clearLikedStore?.();
+        usePlaylistStore.getState().clearPlaylistStore?.();
         logout();
         navigate('/login');
     };

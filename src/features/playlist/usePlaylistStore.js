@@ -109,4 +109,5 @@ export const usePlaylistStore = create((set, get) => ({
             return { success: false };
         }
     },
+    clearPlaylistStore: () => set({ playlists: [], isLoading: false, error: null }),
 }));
