@@ -40,42 +40,45 @@ import TrackEngagementModal from "../layouts/components/TrackEngagementModal";
 
 
 const ArtistProfilePage = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const playTrack = usePlayerStore((state) => state.playTrack);
+    const { id } = useParams();
+    const navigate = useNavigate();
+    const playTrack = usePlayerStore((state) => state.playTrack);
 
     const { userId, role } = useAuthStore();
-    const isOwner = role === "artist" && Number(userId) === Number(id);
+    const isOwner = role?.toLowerCase() === "artist" && Number(userId) === Number(id);
+    const isArtistRole = role?.toUpperCase().includes('ARTIST');
+
     const { followedArtistIds, toggleFollowArtist, fetchFollowedArtists } = useFollowStore();
 
-  const [artistInfo, setArtistInfo] = useState(null);
-  const [albums, setAlbums] = useState([]);
-  const [tracks, setTracks] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [playingTrackId, setPlayingTrackId] = useState(null);
-  const [chartPeriod, setChartPeriod] = useState(7);
+    const [artistInfo, setArtistInfo] = useState(null);
+    const [albums, setAlbums] = useState([]);
+    const [tracks, setTracks] = useState([]);
+    const [stats, setStats] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [playingTrackId, setPlayingTrackId] = useState(null);
+    const [chartPeriod, setChartPeriod] = useState(7);
 
-  // Các State phục vụ cho Modal Chỉnh sửa hồ sơ
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [selectedAvatar, setSelectedAvatar] = useState(null);
-  const [previewAvatar, setPreviewAvatar] = useState(null);
-  const [selectedCover, setSelectedCover] = useState(null);
-  const [previewCover, setPreviewCover] = useState(null);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isBtnHovered, setIsBtnHovered] = useState(false);
-  const isFollowing = followedArtistIds.includes(Number(id));
+    // Các State phục vụ cho Modal Chỉnh sửa hồ sơ
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editName, setEditName] = useState("");
+    const [selectedAvatar, setSelectedAvatar] = useState(null);
+    const [previewAvatar, setPreviewAvatar] = useState(null);
+    const [selectedCover, setSelectedCover] = useState(null);
+    const [previewCover, setPreviewCover] = useState(null);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [isBtnHovered, setIsBtnHovered] = useState(false);
+    const isFollowing = followedArtistIds.includes(Number(id));
 
-  const [selectedTrack, setSelectedTrack] = useState(null);
+    const [selectedTrack, setSelectedTrack] = useState(null);
 
-  useEffect(() => {
-    if (userId) {
-      fetchFollowedArtists();
-    }
-  }, [userId]);
     const [followers, setFollowers] = useState([]);
     const [isFollowerModalOpen, setIsFollowerModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (userId) {
+            fetchFollowedArtists();
+        }
+    }, [userId, fetchFollowedArtists]);
 
     const fetchFollowers = async () => {
         try {
@@ -317,73 +320,73 @@ const ArtistProfilePage = () => {
     </div>
   );
 
-  return (
-    <div className="bg-gradient-to-b from-[#07192c] via-[#0d131a] to-[#0a0f14] min-h-screen text-white font-sans pb-32 relative">
-      {/* 1. KHU VỰC ẢNH BÌA VÀ AVATAR CỦA NGHỆ SĨ */}
-      <div className="relative h-[40vh] min-h-[350px] flex items-end p-8">
-        <div className="absolute inset-0 z-0">
-          <MusicImage
-            src={artistInfo.cover || artistInfo.img}
-            type="artist"
-            className="w-full h-full object-cover blur-md opacity-30"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0d131a] via-[#0d131a]/80 to-transparent"></div>
-        </div>
+    return (
+        <div className="bg-gradient-to-b from-[#07192c] via-[#0d131a] to-[#0a0f14] min-h-screen text-white font-sans pb-32 relative">
+            {/* 1. KHU VỰC ẢNH BÌA VÀ AVATAR CỦA NGHỆ SĨ */}
+            <div className="relative h-[40vh] min-h-[350px] flex items-end p-8">
+                <div className="absolute inset-0 z-0">
+                    <MusicImage
+                        src={artistInfo.cover || artistInfo.img}
+                        type="artist"
+                        className="w-full h-full object-cover blur-md opacity-30"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0d131a] via-[#0d131a]/80 to-transparent"></div>
+                </div>
 
-        <div className="relative z-10 flex items-center gap-6">
-          <div className="w-48 h-48 rounded-full shadow-[0_12px_32px_rgba(0,0,0,0.6)] overflow-hidden border-4 border-white/[0.06] relative group bg-[#16222f]">
-            <MusicImage
-              src={artistInfo.img}
-              type="artist"
-              className="w-full h-full object-cover"
-            />
+                <div className="relative z-10 flex items-center gap-6">
+                    <div className="w-48 h-48 rounded-full shadow-[0_12px_32px_rgba(0,0,0,0.6)] overflow-hidden border-4 border-white/[0.06] relative group bg-[#16222f]">
+                        <MusicImage
+                            src={artistInfo.img}
+                            type="artist"
+                            className="w-full h-full object-cover"
+                        />
 
-            {/* NÚT MỞ MODAL SỬA HỒ SƠ DÀNH CHO CHÍNH CHỦ */}
-            {isOwner && (
-              <div
-                onClick={() => setIsEditModalOpen(true)}
-                className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer backdrop-blur-xs"
-              >
-                <Edit2 size={28} className="text-sky-400 mb-1" />
-                <span className="text-white text-xs font-bold tracking-wide">
-                  Sửa hồ sơ
-                </span>
-              </div>
-            )}
-          </div>
+                        {/* NÚT MỞ MODAL SỬA HỒ SƠ DÀNH CHO CHÍNH CHỦ */}
+                        {isOwner && (
+                            <div
+                                onClick={() => setIsEditModalOpen(true)}
+                                className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer backdrop-blur-xs"
+                            >
+                                <Edit2 size={28} className="text-sky-400 mb-1" />
+                                <span className="text-white text-xs font-bold tracking-wide">
+                Sửa hồ sơ
+              </span>
+                            </div>
+                        )}
+                    </div>
 
-          <div className="flex flex-col">
-            <h1 className="text-5xl md:text-7xl font-black mb-3 tracking-tighter bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-              {artistInfo.name}
-            </h1>
-            <div className="flex items-center gap-6">
-              {!isOwner && (
-                <button
-                  onClick={handleFollowToggle}
-                  onMouseEnter={() => setIsBtnHovered(true)}
-                  onMouseLeave={() => setIsBtnHovered(false)}
-                  className={`px-6 py-2 font-bold uppercase text-xs hover:scale-105 transition-all cursor-pointer rounded-full min-w-[140px] text-center border bg-transparent ${
-                    isFollowing
-                      ? "border-sky-500 bg-sky-500/10 text-sky-400 hover:border-red-500 hover:text-red-500 hover:bg-red-500/10"
-                      : "border-white/20 text-white hover:text-sky-400 hover:border-sky-400"
-                  }`}
-                >
-                  {isFollowing
-                    ? isBtnHovered
-                      ? "Hủy theo dõi"
-                      : "Đang theo dõi"
-                    : "Theo dõi"}
-                </button>
-              )}
+                    <div className="flex flex-col">
+                        <h1 className="text-5xl md:text-7xl font-black mb-3 tracking-tighter bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                            {artistInfo.name}
+                        </h1>
+                        <div className="flex items-center gap-6">
+                            {/* CHỈ HIỂN THỊ NÚT KHI KHÔNG PHẢI CHÍNH CHỦ VÀ USER KHÔNG PHẢI LÀ ARTIST */}
+                            {!isOwner && !isArtistRole && (
+                                <button
+                                    onClick={handleFollowToggle}
+                                    onMouseEnter={() => setIsBtnHovered(true)}
+                                    onMouseLeave={() => setIsBtnHovered(false)}
+                                    className={`px-6 py-2 font-bold uppercase text-xs hover:scale-105 transition-all cursor-pointer rounded-full min-w-[140px] text-center border bg-transparent ${
+                                        isFollowing
+                                            ? "border-sky-500 bg-sky-500/10 text-sky-400 hover:border-red-500 hover:text-red-500 hover:bg-red-500/10"
+                                            : "border-white/20 text-white hover:text-sky-400 hover:border-sky-400"
+                                    }`}
+                                >
+                                    {isFollowing
+                                        ? isBtnHovered
+                                            ? "Hủy theo dõi"
+                                            : "Đang theo dõi"
+                                        : "Theo dõi"}
+                                </button>
+                            )}
+                        </div>
+                        <p className="text-sm text-slate-400 font-medium mt-2">
+                            {artistInfo.trackTotal || 0} Bài hát •{" "}
+                            {artistInfo.albumTotal || 0} Album
+                        </p>
+                    </div>
+                </div>
             </div>
-            <p className="text-sm text-slate-400 font-medium mt-2">
-              {artistInfo.trackTotal || 0} Bài hát •{" "}
-              {artistInfo.albumTotal || 0} Album
-            </p>
-          </div>
-        </div>
-      </div>
-
       <div className="p-8 relative z-10 space-y-12">
         {/* 2. BẢNG THỐNG KÊ TỔNG QUAN (CHỈ HIỂN THỊ DÀNH RIÊNG CHO CHÍNH CHỦ) */}
         {isOwner && stats && (
