@@ -79,8 +79,14 @@ const SearchPage = () => {
     const playTrack = usePlayerStore((state) => state.playTrack);
 
     const query = searchParams.get('q') || '';
-    const currentType = searchParams.get('type') || 'all';
-    const currentPage = parseInt(searchParams.get('page')) || 0;
+
+    // RÀO TYPE: Nếu không nằm trong danh sách hợp lệ, ép về 'all'
+    const validTypes = ['all', 'track', 'artist', 'album', 'category'];
+    const rawType = searchParams.get('type') || 'all';
+    const currentType = validTypes.includes(rawType) ? rawType : 'all';
+
+    // RÀO PAGE: Không bao giờ cho phép page rớt xuống số âm
+    const currentPage = Math.max(0, parseInt(searchParams.get('page')) || 0);
 
     const [searchResults, setSearchResults] = useState(null);
     const [isLoading, setIsLoading] = useState(false);

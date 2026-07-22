@@ -30,7 +30,9 @@ import { usePlayerStore } from "../features/player/usePlayerStore";
 const AdminDashboardPage = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-    const activeTab = searchParams.get("tab") || "overview";
+    const validTabs = ["overview", "users", "artists", "categories"];
+    const rawTab = searchParams.get("tab");
+    const activeTab = validTabs.includes(rawTab) ? rawTab : "overview";
     const playTrack = usePlayerStore((state) => state.playTrack);
 
     const COLORS = [
@@ -47,9 +49,9 @@ const AdminDashboardPage = () => {
     const [topArtists, setTopArtists] = useState([]);
     const [topTracks, setTopTracks] = useState([]);
 
-    // 🟢 Thêm state quản lý trang cho cả User và Artist
-    const currentArtistPage = parseInt(searchParams.get("artistPage")) || 0;
-    const currentUserPage = parseInt(searchParams.get("userPage")) || 0;
+    // Thay thế đoạn lấy page cũ trong AdminDashboardPage.jsx bằng:
+    const currentArtistPage = Math.max(0, parseInt(searchParams.get('artistPage')) || 0);
+    const currentUserPage = Math.max(0, parseInt(searchParams.get('userPage')) || 0);
 
     const [users, setUsers] = useState([]);
     const [artists, setArtists] = useState([]);
