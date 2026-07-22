@@ -25,10 +25,15 @@ const AllArtistsPage = () => {
   const { followedArtistIds, fetchFollowedArtists, toggleFollowArtist } =
     useFollowStore();
 
-  // Tải danh sách nghệ sĩ đã follow của user một lần khi vào trang
-  useEffect(() => {
-    fetchFollowedArtists();
-  }, [fetchFollowedArtists]);
+
+
+    const userRole = localStorage.getItem('role') || '';
+    const isArtistRole = userRole.toUpperCase().includes('ARTIST');
+
+    // Tải danh sách nghệ sĩ đã follow của user một lần khi vào trang
+    useEffect(() => {
+        fetchFollowedArtists();
+    }, [fetchFollowedArtists]);
 
   useEffect(() => {
     const fetchAllArtists = async () => {
@@ -147,27 +152,30 @@ const AllArtistsPage = () => {
                     </p>
                   </div>
 
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation(); // Ngăn chặn sự kiện click thẻ bọc làm nhảy trang /artist/:id
-                                            toggleFollowArtist(Number(artist.id));
-                                        }}
-                                        className={`w-full py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer flex items-center justify-center gap-1 ${
-                                            isFollowing
-                                                ? 'bg-transparent border-zinc-600 text-zinc-400 hover:border-red-500 hover:text-red-500'
-                                                : 'bg-white border-transparent text-black hover:scale-105'
-                                        }`}
-                                    >
-                                        {isFollowing ? (
-                                            <>
-                                                <UserCheck size={12} /> Following
-                                            </>
-                                        ) : (
-                                            <>
-                                                <UserPlus size={12} /> Follow
-                                            </>
-                                        )}
-                                    </button>
+                                    {/* CHỈ HIỂN THỊ NÚT FOLLOW KHI ROLE KHÔNG PHẢI LÀ ARTIST */}
+                                    {!isArtistRole && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation(); // Ngăn chặn sự kiện click thẻ bọc làm nhảy trang /artist/:id
+                                                toggleFollowArtist(Number(artist.id));
+                                            }}
+                                            className={`w-full py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer flex items-center justify-center gap-1 ${
+                                                isFollowing
+                                                    ? 'bg-transparent border-zinc-600 text-zinc-400 hover:border-red-500 hover:text-red-500'
+                                                    : 'bg-white border-transparent text-black hover:scale-105'
+                                            }`}
+                                        >
+                                            {isFollowing ? (
+                                                <>
+                                                    <UserCheck size={12} /> Đang Fl
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <UserPlus size={12} /> Fl
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
                                 </div>
                             );
                         })}

@@ -1,4 +1,4 @@
-import React, {useState, useEffect, use} from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Play, Pause, Clock, Music, ArrowLeft, Disc, ListMusic, Heart, Trash2, Plus} from 'lucide-react';
 import axiosClient from '../app/axios/axiosClient';
@@ -25,6 +25,7 @@ const AlbumDetailPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [playingTrackId, setPlayingTrackId] = useState(null);
+    const [selectedTrack, setSelectedTrack] = useState(null);
 
 
     // Tính tổng giây từ tất cả bài hát
@@ -249,19 +250,23 @@ const AlbumDetailPage = () => {
                                         {track.duration ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, '0')}` : "--:--"}
                                     </span>
 
-                                    {/* NÚT XÓA BÀI HÁT */}
-                                    {isOwner && (
+                                    <div className="flex items-center gap-2">
                                         <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDeleteTrack(track.id, track.name || track.title);
-                                            }}
-                                            className="text-slate-400 hover:text-red-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
-                                            title="Xóa bài hát khỏi Album"
+                                            onClick={(e) => { e.stopPropagation(); setSelectedTrack(track); }}
+                                            className="text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/[0.08] transition-colors bg-transparent border-none cursor-pointer"
                                         >
-                                            <Trash2 size={18}/>
+                                            <MoreHorizontal size={18} />
                                         </button>
-                                    )}
+                                        {isOwner && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteTrack(track.id, track.name); }}
+                                                className="text-slate-400 hover:text-red-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors bg-transparent border-none cursor-pointer"
+                                                title="Xóa bài hát khỏi Album"
+                                            >
+                                                <Trash2 size={18}/>
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -273,6 +278,12 @@ const AlbumDetailPage = () => {
                     </div>
                 )}
             </section>
+            {selectedTrack && (
+                <TrackEngagementModal
+                    track={selectedTrack}
+                    onClose={() => setSelectedTrack(null)}
+                />
+            )}
         </div>
     );
 };

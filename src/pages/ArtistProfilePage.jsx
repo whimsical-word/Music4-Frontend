@@ -19,7 +19,7 @@ import {
   Users,
   MessageSquare,
   TrendingUp,
-  MoreHorizontal,
+    MoreHorizontal,
 } from "lucide-react";
 import {
   BarChart,
@@ -50,33 +50,54 @@ const ArtistProfilePage = () => {
   const isOwner = role === "artist" && Number(userId) === Number(id);
   const { followedArtistIds, toggleFollowArtist, fetchFollowedArtists } =
     useFollowStore();
+    const isArtistRole = role?.toUpperCase().includes('ARTIST');
 
-  const [artistInfo, setArtistInfo] = useState(null);
-  const [albums, setAlbums] = useState([]);
-  const [tracks, setTracks] = useState([]);
-  const [stats, setStats] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [playingTrackId, setPlayingTrackId] = useState(null);
-  const [chartPeriod, setChartPeriod] = useState(7);
+    const [artistInfo, setArtistInfo] = useState(null);
+    const [albums, setAlbums] = useState([]);
+    const [tracks, setTracks] = useState([]);
+    const [stats, setStats] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [playingTrackId, setPlayingTrackId] = useState(null);
+    const [chartPeriod, setChartPeriod] = useState(7);
 
-  // Các State phục vụ cho Modal Chỉnh sửa hồ sơ
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [selectedAvatar, setSelectedAvatar] = useState(null);
-  const [previewAvatar, setPreviewAvatar] = useState(null);
-  const [selectedCover, setSelectedCover] = useState(null);
-  const [previewCover, setPreviewCover] = useState(null);
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [isBtnHovered, setIsBtnHovered] = useState(false);
-  const isFollowing = followedArtistIds.includes(Number(id));
+    // Các State phục vụ cho Modal Chỉnh sửa hồ sơ
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editName, setEditName] = useState("");
+    const [selectedAvatar, setSelectedAvatar] = useState(null);
+    const [previewAvatar, setPreviewAvatar] = useState(null);
+    const [selectedCover, setSelectedCover] = useState(null);
+    const [previewCover, setPreviewCover] = useState(null);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [isBtnHovered, setIsBtnHovered] = useState(false);
+    const isFollowing = followedArtistIds.includes(Number(id));
 
-  const [selectedTrack, setSelectedTrack] = useState(null);
+    const [selectedTrack, setSelectedTrack] = useState(null);
 
-  useEffect(() => {
-    if (userId) {
-      fetchFollowedArtists();
-    }
-  }, [userId]);
+    const [followers, setFollowers] = useState([]);
+    const [isFollowerModalOpen, setIsFollowerModalOpen] = useState(false);
+
+    useEffect(() => {
+        if (userId) {
+            fetchFollowedArtists();
+        }
+    }, [userId, fetchFollowedArtists]);
+
+    const fetchFollowers = async () => {
+        try {
+            const res = await axiosClient.get(`/artists/${id}/followers`);
+            setFollowers(res.data);
+            setIsFollowerModalOpen(true);
+        } catch (error) {
+            console.error("Lỗi lấy danh sách người theo dõi:", error);
+            alert("Không thể tải danh sách người theo dõi.");
+        }
+    };
+
+    useEffect(() => {
+        if (userId) {
+            fetchFollowedArtists();
+        }
+    }, [userId]);
 
   useEffect(() => {
     const fetchArtistData = async () => {
@@ -162,34 +183,32 @@ const ArtistProfilePage = () => {
     });
   };
 
-  const handleDeleteAlbum = async (albumId, albumName) => {
-    const isConfirm = window.confirm(
-      `❗ Bạn có chắc chắn muốn xóa album "${albumName}" không?\nCác bài hát trong album sẽ không bị xóa mà sẽ trở thành bài hát đơn lẻ.`,
-    );
-    if (!isConfirm) return;
+    const handleDeleteAlbum = async (albumId, albumName) => {
+        const isConfirm = window.confirm(
+            `❗ Bạn có chắc chắn muốn xóa album "${albumName}" không?\nCác bài hát trong album sẽ không bị xóa mà sẽ trở thành bài hát đơn lẻ.`
+        );
+        if (!isConfirm) return;
 
-    try {
-      await axiosClient.delete(`/albums/${albumId}`); // Đảm bảo URL khớp với API của bạn
-      alert("🎉 Đã xóa album thành công!");
+        try {
+            await axiosClient.delete(`/albums/${albumId}`); // Đảm bảo URL khớp với API của bạn
+            alert("🎉 Đã xóa album thành công!");
 
       setAlbums((prevAlbums) =>
         prevAlbums.filter((album) => album.id !== albumId),
       );
 
-      // Giảm số lượng album trên UI
-      if (artistInfo) {
-        setArtistInfo((prev) => ({
-          ...prev,
-          albumTotal: Math.max(0, prev.albumTotal - 1),
-        }));
-      }
-    } catch (error) {
-      console.error("Lỗi khi xóa album:", error);
-      alert(
-        `❌ Xóa album thất bại: ${error.response?.data?.message || "Vui lòng kiểm tra lại!"}`,
-      );
-    }
-  };
+            // Giảm số lượng album trên UI
+            if (artistInfo) {
+                setArtistInfo((prev) => ({
+                    ...prev,
+                    albumTotal: Math.max(0, prev.albumTotal - 1),
+                }));
+            }
+        } catch (error) {
+            console.error("Lỗi khi xóa album:", error);
+            alert(`❌ Xóa album thất bại: ${error.response?.data?.message || "Vui lòng kiểm tra lại!"}`);
+        }
+    };
 
   // Hàm xử lý xóa bài hát (Chỉ thực hiện được nếu là chính chủ)
   const handleDeleteTrack = async (trackId, trackName) => {
@@ -340,82 +359,80 @@ const ArtistProfilePage = () => {
     </div>
   );
 
-  return (
-    <div className="bg-gradient-to-b from-[#07192c] via-[#0d131a] to-[#0a0f14] min-h-screen text-white font-sans pb-32 relative">
-      {/* 1. KHU VỰC ẢNH BÌA VÀ AVATAR CỦA NGHỆ SĨ */}
-      <div className="relative h-[40vh] min-h-[350px] flex items-end p-8">
-        <div className="absolute inset-0 z-0">
-          <MusicImage
-            src={artistInfo.cover || artistInfo.img}
-            type="artist"
-            className="w-full h-full object-cover blur-md opacity-30"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0d131a] via-[#0d131a]/80 to-transparent"></div>
-        </div>
+    return (
+        <div className="bg-gradient-to-b from-[#07192c] via-[#0d131a] to-[#0a0f14] min-h-screen text-white font-sans pb-32 relative">
+            {/* 1. KHU VỰC ẢNH BÌA VÀ AVATAR CỦA NGHỆ SĨ */}
+            <div className="relative h-[40vh] min-h-[350px] flex items-end p-8">
+                <div className="absolute inset-0 z-0">
+                    <MusicImage
+                        src={artistInfo.cover || artistInfo.img}
+                        type="artist"
+                        className="w-full h-full object-cover blur-md opacity-30"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#0d131a] via-[#0d131a]/80 to-transparent"></div>
+                </div>
 
-        <div className="relative z-10 flex items-center gap-6">
-          <div className="w-48 h-48 rounded-full shadow-[0_12px_32px_rgba(0,0,0,0.6)] overflow-hidden border-4 border-white/[0.06] relative group bg-[#16222f]">
-            <MusicImage
-              src={artistInfo.img}
-              type="artist"
-              className="w-full h-full object-cover"
-            />
+                <div className="relative z-10 flex items-center gap-6">
+                    <div className="w-48 h-48 rounded-full shadow-[0_12px_32px_rgba(0,0,0,0.6)] overflow-hidden border-4 border-white/[0.06] relative group bg-[#16222f]">
+                        <MusicImage
+                            src={artistInfo.img}
+                            type="artist"
+                            className="w-full h-full object-cover"
+                        />
 
-            {/* NÚT MỞ MODAL SỬA HỒ SƠ DÀNH CHO CHÍNH CHỦ */}
-            {isOwner && (
-              <div
-                onClick={() => setIsEditModalOpen(true)}
-                className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer backdrop-blur-xs"
-              >
-                <Edit2 size={28} className="text-sky-400 mb-1" />
-                <span className="text-white text-xs font-bold tracking-wide">
-                  Sửa hồ sơ
-                </span>
-              </div>
-            )}
-          </div>
+                        {/* NÚT MỞ MODAL SỬA HỒ SƠ DÀNH CHO CHÍNH CHỦ */}
+                        {isOwner && (
+                            <div
+                                onClick={() => setIsEditModalOpen(true)}
+                                className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer backdrop-blur-xs"
+                            >
+                                <Edit2 size={28} className="text-sky-400 mb-1" />
+                                <span className="text-white text-xs font-bold tracking-wide">
+                Sửa hồ sơ
+              </span>
+                            </div>
+                        )}
+                    </div>
 
-          <div className="flex flex-col">
-            <h1 className="text-5xl md:text-7xl font-black mb-3 tracking-tighter bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
-              {artistInfo.name}
-            </h1>
-            <div className="flex items-center gap-6">
-              {!isOwner && (
-                <button
-                  onClick={handleFollowToggle}
-                  onMouseEnter={() => setIsBtnHovered(true)}
-                  onMouseLeave={() => setIsBtnHovered(false)}
-                  className={`px-6 py-2 font-bold uppercase text-xs hover:scale-105 transition-all cursor-pointer rounded-full min-w-[140px] text-center border bg-transparent ${
-                    isFollowing
-                      ? "border-sky-500 bg-sky-500/10 text-sky-400 hover:border-red-500 hover:text-red-500 hover:bg-red-500/10"
-                      : "border-white/20 text-white hover:text-sky-400 hover:border-sky-400"
-                  }`}
-                >
-                  {isFollowing
-                    ? isBtnHovered
-                      ? "Hủy theo dõi"
-                      : "Đang theo dõi"
-                    : "Theo dõi"}
-                </button>
-              )}
+                    <div className="flex flex-col">
+                        <h1 className="text-5xl md:text-7xl font-black mb-3 tracking-tighter bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                            {artistInfo.name}
+                        </h1>
+                        <div className="flex items-center gap-6">
+                            {!isOwner && !isArtistRole && (
+                                <button
+                                    onClick={handleFollowToggle}
+                                    onMouseEnter={() => setIsBtnHovered(true)}
+                                    onMouseLeave={() => setIsBtnHovered(false)}
+                                    className={`px-6 py-2 font-bold uppercase text-xs hover:scale-105 transition-all cursor-pointer rounded-full min-w-[140px] text-center border bg-transparent ${
+                                        isFollowing
+                                            ? "border-sky-500 bg-sky-500/10 text-sky-400 hover:border-red-500 hover:text-red-500 hover:bg-red-500/10"
+                                            : "border-white/20 text-white hover:text-sky-400 hover:border-sky-400"
+                                    }`}
+                                >
+                                    {isFollowing
+                                        ? isBtnHovered
+                                            ? "Hủy theo dõi"
+                                            : "Đang theo dõi"
+                                        : "Theo dõi"}
+                                </button>
+                            )}
+                        </div>
+                        <p className="text-sm text-slate-400 font-medium mt-2">
+                            {artistInfo.trackTotal || 0} Bài hát •{" "}
+                            {artistInfo.albumTotal || 0} Album
+                        </p>
+                    </div>
+                </div>
             </div>
-            <p className="text-sm text-slate-400 font-medium mt-2">
-              {artistInfo.trackTotal || 0} Bài hát •{" "}
-              {artistInfo.albumTotal || 0} Album
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <NotificationModal
-          isOpen={modalConfig.isOpen}
-          onClose={handleCloseModal}
-          type={modalConfig.type}
-          title={modalConfig.title}
-          message={modalConfig.message}
-          confirmText="Đồng ý"
-      />
-
+            <NotificationModal
+                isOpen={modalConfig.isOpen}
+                onClose={handleCloseModal}
+                type={modalConfig.type}
+                title={modalConfig.title}
+                message={modalConfig.message}
+                confirmText="Đồng ý"
+            />
       <div className="p-8 relative z-10 space-y-12">
         {/* 2. BẢNG THỐNG KÊ TỔNG QUAN (CHỈ HIỂN THỊ DÀNH RIÊNG CHO CHÍNH CHỦ) */}
         {isOwner && stats && (
@@ -446,12 +463,14 @@ const ArtistProfilePage = () => {
                 color="bg-rose-500/10 text-rose-500"
               />
 
-              <StatCard
-                title="Tổng người theo dõi"
-                value={stats.totalFollowers}
-                icon={Users}
-                color="bg-amber-500/10 text-amber-500"
-              />
+                <div onClick={fetchFollowers} className="cursor-pointer transition-transform hover:scale-[1.02]">
+                    <StatCard
+                        title="Tổng người theo dõi"
+                        value={stats.totalFollowers}
+                        icon={Users}
+                        color="bg-amber-500/10 text-amber-500"
+                    />
+                </div>
 
               <StatCard
                 title="Tổng bình luận"
@@ -774,13 +793,13 @@ const ArtistProfilePage = () => {
                           )}
                       </div>
 
-                    <div className="w-10 h-10 rounded overflow-hidden bg-[#16222f] flex-shrink-0 shadow-sm">
-                      <MusicImage
-                        src={track.img}
-                        type="track"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+                                  <div className="w-10 h-10 rounded overflow-hidden bg-[#16222f] flex-shrink-0 shadow-sm">
+                                      <MusicImage
+                                          src={track.img}
+                                          type="track"
+                                          className="w-full h-full object-cover"
+                                      />
+                                  </div>
 
                       <div className="truncate">
                           <p
@@ -791,163 +810,156 @@ const ArtistProfilePage = () => {
                               {track.name}
                           </p>
                       <p className="text-xs text-slate-400 truncate">
-                        {track.artists?.map((a) => a.name).join(", ") ||
-                          "Nghệ sĩ"}
+                          {track.artists?.map(a => a.name).join(', ') || "Nghệ sĩ"}
                       </p>
                     </div>
                   </div>
 
-                  {/* Khối bên phải: Lượt nghe, Thời lượng, Các nút thao tác */}
-                  <div className="flex items-center gap-6 ml-4">
-                    <span className="text-xs text-slate-400 hidden sm:block">
-                      {track.viewCount?.toLocaleString() || 0} lượt nghe
-                    </span>
-                    <span className="text-sm text-slate-400 hidden md:block font-mono">
-                      {track.duration
-                        ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, "0")}`
-                        : "--:--"}
-                    </span>
+                              {/* Khối bên phải: Lượt nghe, Thời lượng, Các nút thao tác */}
+                              <div className="flex items-center gap-6 ml-4">
+            <span className="text-xs text-slate-400 hidden sm:block">
+              {track.viewCount?.toLocaleString() || 0} lượt nghe
+            </span>
+                                  <span className="text-sm text-slate-400 hidden md:block font-mono">
+              {track.duration
+                  ? `${Math.floor(track.duration / 60)}:${(track.duration % 60).toString().padStart(2, "0")}`
+                  : "--:--"}
+            </span>
 
-                    {/* 🟢 NÚT BA CHẤM KÍCH HOẠT MODAL TƯƠNG TÁC (ĐÃ ĐƯỢC CHUẨN HÓA DỮ LIỆU ĐỂ TRÁNH LỖI MODAL) */}
-                    {userId && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation(); // Chặn hành vi click dòng gây phát nhạc
+                                  {/* 🟢 NÚT BA CHẤM KÍCH HOẠT MODAL TƯƠNG TÁC (ĐÃ ĐƯỢC CHUẨN HÓA DỮ LIỆU ĐỂ TRÁNH LỖI MODAL) */}
+                                  {userId && (
+                                      <button
+                                          type="button"
+                                          onClick={(e) => {
+                                              e.stopPropagation(); // Chặn hành vi click dòng gây phát nhạc
 
-                          // Ép dữ liệu chuẩn hóa gửi sang Modal (bù đắp các trường bị thiếu từ API Artist)
-                          const normalizedTrack = {
-                            ...track,
-                            // Nếu track không có artist list, tự lấy thông tin artistInfo của trang gán vào
-                            artists:
-                              track.artists && track.artists.length > 0
-                                ? track.artists
-                                : [
-                                    {
-                                      id: artistInfo.id,
-                                      name: artistInfo.name,
-                                    },
-                                  ],
-                          };
+                                              // Ép dữ liệu chuẩn hóa gửi sang Modal (bù đắp các trường bị thiếu từ API Artist)
+                                              const normalizedTrack = {
+                                                  ...track,
+                                                  // Nếu track không có artist list, tự lấy thông tin artistInfo của trang gán vào
+                                                  artists: track.artists && track.artists.length > 0
+                                                      ? track.artists
+                                                      : [{ id: artistInfo.id, name: artistInfo.name }],
+                                              };
 
-                          setSelectedTrack(normalizedTrack); // Kích hoạt mở Modal tương tác phẳng
-                        }}
-                        className="text-slate-400 hover:text-sky-400 bg-transparent border-none cursor-pointer transition-all p-2 rounded-full hover:bg-white/[0.05]"
-                        title="Mở bảng tương tác (Thích, Bình luận, Playlist)"
-                      >
-                        <MoreHorizontal size={18} />
-                      </button>
-                    )}
+                                              setSelectedTrack(normalizedTrack); // Kích hoạt mở Modal tương tác phẳng
+                                          }}
+                                          className="text-slate-400 hover:text-sky-400 bg-transparent border-none cursor-pointer transition-all p-2 rounded-full hover:bg-white/[0.05]"
+                                          title="Mở bảng tương tác (Thích, Bình luận, Playlist)"
+                                      >
+                                          <MoreHorizontal size={18} />
+                                      </button>
+                                  )}
 
-                    {/* NÚT UPDATE BÀI HÁT (Chỉ hiển thị khi là chủ sở hữu kênh) */}
-                    {track.artists?.find((a) => a.role === "MAIN") &&
-                      Number(
-                        track.artists.find((a) => a.role === "MAIN").id,
-                      ) === Number(userId) && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditTrack(track);
-                          }}
-                          className="text-slate-400 hover:text-sky-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
-                          title="Chỉnh sửa bài hát"
-                        >
-                          <Pencil size={18} />
-                        </button>
-                      )}
+                                  {/* NÚT UPDATE BÀI HÁT (Chỉ hiển thị khi là chủ sở hữu kênh) */}
+                                  {track.artists?.find((a) => a.role === "MAIN") &&
+                                      Number(
+                                          track.artists.find((a) => a.role === "MAIN").id,
+                                      ) === Number(userId) && (
+                                          <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleEditTrack(track);
+                                              }}
+                                              className="text-slate-400 hover:text-sky-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
+                                              title="Chỉnh sửa bài hát"
+                                          >
+                                              <Pencil size={18} />
+                                          </button>
+                                      )}
 
-                    {/* NÚT XÓA BÀI HÁT (Chỉ hiển thị khi là chủ sở hữu kênh) */}
-                    {track.artists?.find((a) => a.role === "MAIN") &&
-                      Number(
-                        track.artists.find((a) => a.role === "MAIN").id,
-                      ) === Number(userId) && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteTrack(track.id, track.name);
-                          }}
-                          className="text-slate-400 hover:text-red-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
-                          title="Xóa bài hát"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      )}
+                                  {/* NÚT XÓA BÀI HÁT (Chỉ hiển thị khi là chủ sở hữu kênh) */}
+                                  {track.artists?.find((a) => a.role === "MAIN") &&
+                                      Number(
+                                          track.artists.find((a) => a.role === "MAIN").id,
+                                      ) === Number(userId) && (
+                                          <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleDeleteTrack(track.id, track.name);
+                                              }}
+                                              className="text-slate-400 hover:text-red-400 p-2 rounded-full hover:bg-white/[0.08] transition-colors cursor-pointer bg-transparent border-none"
+                                              title="Xóa bài hát"
+                                          >
+                                              <Trash2 size={18} />
+                                          </button>
+                                      )}
+                              </div>
+                          </div>
+                      ))}
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-slate-400 text-sm bg-[#111a24]/20 p-4 rounded-xl border border-white/[0.04]">
-              Nghệ sĩ này chưa đăng bài hát nào.
-            </p>
-          )}
-        </section>
-
-        {/* 5. DANH SÁCH ALBUM CỦA NGHỆ SĨ */}
-        <section>
-          <h2 className="text-xl font-bold mb-6 hover:text-sky-400 transition-colors cursor-pointer inline-block">
-            Album
-          </h2>
-          {albums.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-              {albums.map((album) => (
-                <div
-                  key={album.id}
-                  className="bg-[#111a24]/40 border border-white/[0.04] p-4 rounded-xl hover:bg-white/[0.06] transition-all duration-300 group cursor-pointer shadow-md relative"
-                >
-                  {/* NÚT XÓA ALBUM - GÓC DƯỚI BÊN PHẢI */}
-                  {isOwner && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteAlbum(album.id, album.name);
-                      }}
-                      className="absolute bottom-4 right-4 z-20 p-2 bg-black/50 rounded-full text-slate-400 hover:text-red-400 hover:bg-red-500/20 transition-all cursor-pointer border-none"
-                      title="Xóa album"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-
-                  <div
-                    onClick={() => navigate(`/albums/${album.id}`)}
-                    className="relative aspect-square w-full mb-4 rounded-lg overflow-hidden bg-[#16222f] shadow-md"
-                  >
-                    <MusicImage
-                      src={album.img}
-                      type="album"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-xs">
-                      <button className="w-10 h-10 bg-sky-600 hover:bg-sky-500 rounded-full flex items-center justify-center shadow-md border-none cursor-pointer text-white transition-colors">
-                        <Play
-                          size={18}
-                          fill="currentColor"
-                          className="ml-0.5"
-                        />
-                      </button>
-                    </div>
-                  </div>
-                  <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors">
-                    {album.name}
-                  </h4>
-                  <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">
-                    {album.uploadDate
-                      ? new Date(album.uploadDate).getFullYear()
-                      : "----"}{" "}
-                    • Album
+              ) : (
+                  <p className="text-slate-400 text-sm bg-[#111a24]/20 p-4 rounded-xl border border-white/[0.04]">
+                      Nghệ sĩ này chưa đăng bài hát nào.
                   </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-slate-400 text-sm bg-[#111a24]/20 p-4 rounded-xl border border-white/[0.04]">
-              Nghệ sĩ này chưa phát hành album nào.
-            </p>
-          )}
-        </section>
+              )}
+          </section>
+
+          {/* 5. DANH SÁCH ALBUM CỦA NGHỆ SĨ */}
+          <section>
+              <h2 className="text-xl font-bold mb-6 hover:text-sky-400 transition-colors cursor-pointer inline-block">
+                  Album
+              </h2>
+              {albums.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+                      {albums.map((album) => (
+                          <div
+                              key={album.id}
+                              className="bg-[#111a24]/40 border border-white/[0.04] p-4 rounded-xl hover:bg-white/[0.06] transition-all duration-300 group cursor-pointer shadow-md relative"
+                          >
+                              {/* NÚT XÓA ALBUM - GÓC DƯỚI BÊN PHẢI */}
+                              {isOwner && (
+                                  <button
+                                      onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteAlbum(album.id, album.name);
+                                      }}
+                                      className="absolute bottom-4 right-4 z-20 p-2 bg-black/50 rounded-full text-slate-400 hover:text-red-400 hover:bg-red-500/20 transition-all cursor-pointer border-none"
+                                      title="Xóa album"
+                                  >
+                                      <Trash2 size={16} />
+                                  </button>
+                              )}
+
+                              <div
+                                  onClick={() => navigate(`/albums/${album.id}`)}
+                                  className="relative aspect-square w-full mb-4 rounded-lg overflow-hidden bg-[#16222f] shadow-md"
+                              >
+                                  <MusicImage
+                                      src={album.img}
+                                      type="album"
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                  />
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-xs">
+                                      <button className="w-10 h-10 bg-sky-600 hover:bg-sky-500 rounded-full flex items-center justify-center shadow-md border-none cursor-pointer text-white transition-colors">
+                                          <Play
+                                              size={18}
+                                              fill="currentColor"
+                                              className="ml-0.5"
+                                          />
+                                      </button>
+                                  </div>
+                              </div>
+                              <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors">
+                                  {album.name}
+                              </h4>
+                              <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">
+                                  {album.uploadDate
+                                      ? new Date(album.uploadDate).getFullYear()
+                                      : "----"}{" "}
+                                  • Album
+                              </p>
+                          </div>
+                      ))}
+                  </div>
+              ) : (
+                  <p className="text-slate-400 text-sm bg-[#111a24]/20 p-4 rounded-xl border border-white/[0.04]">
+                      Nghệ sĩ này chưa phát hành album nào.
+                  </p>
+              )}
+          </section>
       </div>
 
       {/* 6. MODAL POPUP CHỈNH SỬA THÔNG TIN */}
@@ -1067,8 +1079,48 @@ const ArtistProfilePage = () => {
           onClose={() => setSelectedTrack(null)}
         />
       )}
+        {isFollowerModalOpen && (
+            <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
+                <div className="bg-[#182232] border border-white/[0.1] w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-bold text-white">Người theo dõi</h3>
+                        <button
+                            onClick={() => setIsFollowerModalOpen(false)}
+                            className="text-slate-400 hover:text-white"
+                        >✕</button>
+                    </div>
 
-
+                    <div className="max-h-[300px] overflow-y-auto pr-2">
+                        {followers.length > 0 ? followers.map(user => (
+                            <div key={user.id} className="flex items-center gap-3 py-2 border-b border-white/[0.05]">
+                                <img
+                                    src={`http://localhost:8080/${user.img}`}
+                                    alt={user.name}
+                                    className="w-10 h-10 rounded-full object-cover bg-gray-500 flex-shrink-0"
+                                    // Bỏ cái onError lỗi thời đi, thay vào đó hãy để trình duyệt tự xử lý fallback
+                                    onError={(e) => {
+                                        // Chỉ đổi nguồn ảnh nếu lỗi, KHÔNG ẩn thẻ img (không dùng display: none)
+                                        e.target.onerror = null;
+                                        e.target.src = '/default-avatar.png';
+                                    }}
+                                />
+                                <div className="flex flex-col overflow-hidden">
+                                    <span className="text-sm font-medium text-white truncate">{user.name}</span>
+                                </div>
+                            </div>
+                        )) : (
+                            <p className="text-center text-slate-500 text-sm py-4">Chưa có ai theo dõi bạn.</p>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )}
+        {selectedTrack && (
+            <TrackEngagementModal
+                track={selectedTrack}
+                onClose={() => setSelectedTrack(null)}
+            />
+        )}
     </div>
   );
 };

@@ -4,15 +4,21 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../features/auth/useAuthStore';
 import MusicImage from './MusicImage.jsx';
 import axiosClient from "../../app/axios/axiosClient";
+import { useFavoriteStore } from '../../features/favorite/useFavoriteStore';
+import { usePlaylistStore } from '../../features/playlist/usePlaylistStore';
+import { usePlayerStore } from '../../features/player/usePlayerStore';
 
 const Navbar = () => {
     const navigate = useNavigate();
 
-    const { userId, username,name, role, img, logout, isAuthenticated } = useAuthStore();
+    const { userId, username, name, role, img, logout, isAuthenticated } = useAuthStore();
     const id = userId;
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Lấy hàm playTrack từ Zustand store
+    const playTrack = usePlayerStore((state) => state.playTrack);
 
     // CÁC STATE PHỤC VỤ THÔNG BÁO REAL-TIME
     const [notifications, setNotifications] = useState([]);
@@ -62,16 +68,37 @@ const Navbar = () => {
                 setUnreadCount((prev) => Math.max(0, prev - 1));
             }
 
+            setNotiDropdownOpen(false);
+
+            // 1. Trường hợp thông báo liên quan đến ALBUM -> Chuyển hướng sang trang chi tiết album
+            if (noti.albumId) {
+                navigate(`/albums/${noti.albumId}`); // Hoặc đường dẫn route album của bồ (ví dụ: /playlist/... hay /album/...)
+                return;
+            }
+
+            // 2. Trường hợp thông báo liên quan đến TRACK (Bài hát) -> Phát nhạc ngay lập tức
+            if (noti.track) {
+                playTrack(noti.track, [noti.track]);
+                return;
+            }
+
             if (noti.trackId) {
-                navigate(`/tracks/${noti.trackId}`);
-                setNotiDropdownOpen(false);
+                try {
+                    const res = await axiosClient.get(`/tracks/${noti.trackId}`);
+                    const trackData = res.data;
+                    if (trackData) {
+                        playTrack(trackData, [trackData]);
+                    }
+                } catch (apiErr) {
+                    console.error("Không thể lấy chi tiết bài hát từ trackId:", apiErr);
+                }
             }
         } catch (err) {
             console.error("Lỗi khi xử lý click thông báo:", err);
         }
     };
 
-    //XÓA 1 THÔNG BÁO CỤ THỂ
+    // XÓA 1 THÔNG BÁO CỤ THỂ
     const handleDeleteNoti = async (e, notiId, isRead) => {
         e.stopPropagation();
         try {
@@ -85,7 +112,7 @@ const Navbar = () => {
         }
     };
 
-    // 2. XÓA SẠCH THÔNG BÁO (Sửa endpoint khớp với @DeleteMapping("/clear-all") của Backend)
+    // XÓA SẠCH THÔNG BÁO
     const handleClearAll = async () => {
         try {
             await axiosClient.delete(`/notifications/clear-all`);
@@ -111,6 +138,8 @@ const Navbar = () => {
     };
 
     const handleLogout = () => {
+        useFavoriteStore.getState().clearLikedStore?.();
+        usePlaylistStore.getState().clearPlaylistStore?.();
         logout();
         navigate('/login');
     };
