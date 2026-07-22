@@ -65,7 +65,6 @@ const MusicPlayer = () => {
   // CÁC BIẾN REF ĐỂ THEO DÕI THỜI GIAN NGHE THỰC TẾ
   const lastTimeRef = useRef(0);
   const accumulatedTimeRef = useRef(0);
-  const hasRecordedViewRef = useRef(false);
   const hasSavedHistoryRef = useRef(false);
   const lastSyncPositionRef = useRef(0);
 
@@ -73,7 +72,7 @@ const MusicPlayer = () => {
   useEffect(() => {
     lastTimeRef.current = 0;
     accumulatedTimeRef.current = 0;
-    hasRecordedViewRef.current = false;
+    handleTrackEnded;
     hasSavedHistoryRef.current = false;
     lastSyncPositionRef.current = 0;
   }, [currentTrack?.id]);
@@ -238,7 +237,6 @@ const MusicPlayer = () => {
           console.log(
             `[DEBUG - SYNC] Chuẩn bị đồng bộ thời gian. Position hiện tại: ${currentSecond}s`,
           );
-          // Dùng then/catch thay cho await để không block luồng đếm thời gian thực của Audio
           axiosClient
             .put("/tracking/sync-time", {
               userId: userId,
@@ -263,12 +261,12 @@ const MusicPlayer = () => {
       }
       lastTimeRef.current = currentVal;
 
-      // LƯU LỊCH SỬ SAU 10 GIÂY THỰC TẾ
+      // LƯU LỊCH SỬ + CỘNG VIEW SAU 10 GIÂY THỰC TẾ (ĐIỂM GHI NHẬN DUY NHẤT)
       if (
         accumulatedTimeRef.current >= 10 && // Đã nghe thực tế đủ 10 giây
         !hasSavedHistoryRef.current // Chưa lưu lịch sử cho bài này
       ) {
-        hasSavedHistoryRef.current = true; // Khóa cờ lại
+        hasSavedHistoryRef.current = true; // Khóa cờ lại, chặn gọi trùng
 
         if (isAuthenticated && userId && currentTrack) {
           console.log("[DEBUG - TRACKING] Nghe đủ 10s. Gọi API lưu lịch sử...");
@@ -298,39 +296,6 @@ const MusicPlayer = () => {
         console.log(
           `[DEBUG - TRACKING] Tiến trình: ${Math.floor(accumulatedTimeRef.current)}s / ${Math.floor(durationReal)}s`,
         );
-      }
-
-      // Kiểm tra xem đã nghe đủ 100% thời lượng chưa
-      if (
-        durationReal > 0 &&
-        accumulatedTimeRef.current >= durationReal * 1 && // Nghe full
-        !hasRecordedViewRef.current // Chưa cộng view bao giờ
-      ) {
-        console.log(
-          "[DEBUG - TRACKING] Đã đạt đủ điều kiện thời gian nghe! Kiểm tra Auth...",
-        );
-        hasRecordedViewRef.current = true; // Khóa lại, không cộng đúp nữa
-
-        if (isAuthenticated && userId && currentTrack) {
-          console.log(
-            `[DEBUG - TRACKING] Auth hợp lệ (User: ${userId}). Gọi API tăng view...`,
-          );
-          try {
-            await axiosClient.post("/tracking/play", {
-              trackId: currentTrack.id,
-              userId: userId,
-            });
-            console.log(
-              "[SUCCESS] Đã nghe full bài hát, tăng View thành công!",
-            );
-          } catch (error) {
-            console.error("[DEBUG - ERROR] Lỗi khi gọi API tăng view:", error);
-          }
-        } else {
-          console.warn(
-            "[DEBUG - WARN] Bị chặn tăng view do: Thiếu isAuthenticated HOẶC userId HOẶC currentTrack!",
-          );
-        }
       }
     }
   };
@@ -365,7 +330,6 @@ const MusicPlayer = () => {
 
     accumulatedTimeRef.current = 0;
     hasSavedHistoryRef.current = false;
-    hasRecordedViewRef.current = false;
 
     const { repeatMode, currentIndex, queue, isFromHistory } =
       usePlayerStore.getState();
@@ -387,7 +351,6 @@ const MusicPlayer = () => {
       usePlayerStore.setState({ isPlaying: false });
       accumulatedTimeRef.current = 0;
       hasSavedHistoryRef.current = false;
-      hasRecordedViewRef.current = false;
       return;
     }
 

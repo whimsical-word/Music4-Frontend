@@ -42,13 +42,10 @@ const TrackEngagementModal = ({ track, onClose }) => {
                     engagementService.getAverageRating ? engagementService.getAverageRating(track.id) : axiosClient.get(`/ratings/average/${track.id}`).catch(() => ({ average: 0 }))
                 ]);
 
-                console.log("Dữ liệu trung bình nhận được:", avgRatingRes);
-
                 setIsLiked(likeRes.liked);
                 setComments(commentRes);
                 setMyPlaylists(playlistRes.data || playlistRes || []);
 
-                // Đã fix: Bóc tách đúng cấu trúc Axios trả về (avgRatingRes.data chứa object từ server)
                 const responseData = avgRatingRes.data ?? avgRatingRes;
                 const avgScore = responseData.average ?? responseData.data ?? 0;
                 setAverageRating(Number(avgScore));
@@ -95,7 +92,6 @@ const TrackEngagementModal = ({ track, onClose }) => {
             await engagementService.rateTrack(track.id, rating, userId);
             setSavedRating(rating);
 
-            // Cập nhật lại điểm trung bình ngay sau khi đánh giá thành công
             const avgRatingRes = engagementService.getAverageRating
                 ? await engagementService.getAverageRating(track.id)
                 : await axiosClient.get(`/ratings/average/${track.id}`).catch(() => ({ average: 0 }));
@@ -120,7 +116,12 @@ const TrackEngagementModal = ({ track, onClose }) => {
             await axiosClient.post(`/playlists/${selectedPlaylistId}/tracks`, { trackId: track.id });
             alert("Đã thêm vào playlist!");
             setSelectedPlaylistId("");
-        } finally { setIsAddingToPlaylist(false); }
+        } catch (err) {
+            const errorMsg = err.response?.data?.message || err.response?.data || "Bài hát đã có trong playlist này!";
+            alert(typeof errorMsg === 'string' ? errorMsg : "Không thể thêm bài hát vào playlist.");
+        } finally {
+            setIsAddingToPlaylist(false);
+        }
     };
 
     const handleSendComment = async (e) => {
@@ -135,8 +136,14 @@ const TrackEngagementModal = ({ track, onClose }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-            <div className="bg-[#181818] border border-[#282828] w-full max-w-md rounded-2xl p-6 relative text-white shadow-2xl">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+            onClick={onClose}
+        >
+            <div
+                className="bg-[#181818] border border-[#282828] w-full max-w-md rounded-2xl p-6 relative text-white shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+            >
                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
                     <X size={20} />
                 </button>
