@@ -294,7 +294,12 @@ const ProfilePage = () => {
                         {playlists.map(pl => (
                             <div key={pl.id} onClick={() => navigate(`/playlist/${pl.id}`)} className="bg-[#181818] p-4 rounded-xl hover:bg-[#282828] transition-all duration-300 cursor-pointer group">
                                 <div className="w-full aspect-square rounded-md overflow-hidden mb-4 shadow-lg bg-[#282828] flex items-center justify-center">
-                                    <Music size={40} className="text-[#535353]"/>
+                                    <MusicImage
+                                        src={pl.img || pl.image}
+                                        type="playlist"
+                                        alt={pl.name}
+                                        className="w-full h-full object-cover"
+                                    />
                                 </div>
                                 <h4 className="font-bold text-base truncate">{pl.name}</h4>
                                 <p className="text-sm text-[#a7a7a7] mt-1">Của {username}</p>
