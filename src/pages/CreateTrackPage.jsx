@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom"; // 🔥 Dùng cả useLocation để nhận data edit
-import axiosClient from "../app/axios/axiosClient"; // 🔥 Gọi API trực tiếp qua axiosClient
+import { useNavigate, useLocation } from "react-router-dom";
+import axiosClient from "../app/axios/axiosClient";
 import categoryService from "../features/categories/categoryService";
 import artistService from "../features/artists/artistService";
 import { useAuthStore } from "../features/auth/useAuthStore.js";
-import { Search, X } from "lucide-react";
+import { Search, X, AlertCircle } from "lucide-react";
 
 export function CreateTrackPage() {
     const navigate = useNavigate();
@@ -18,20 +18,23 @@ export function CreateTrackPage() {
     const [dbCategories, setDbCategories] = useState([]);
     const [dbArtists, setDbArtists] = useState([]);
 
-    const [isAlbumDropdownOpen, setIsAlbumDropdownOpen] = useState(false); // 🔥 Thêm dòng này
-    const [selectedAlbum, setSelectedAlbum] = useState(null); // 🔥 Thêm dòng này để lưu album được chọn
+    const [isAlbumDropdownOpen, setIsAlbumDropdownOpen] = useState(false);
+    const [selectedAlbum, setSelectedAlbum] = useState(null);
     const [dbAlbums, setDbAlbums] = useState([]);
     const albumDropdownRef = useRef(null);
 
-    // --- 2. CÁC STATE QUẢN LÝ DỮ LIỆU FORM (Khớp 100% với TrackUploadDTO) ---
+    // --- 2. CÁC STATE QUẢN LÝ DỮ LIỆU FORM ---
     const [title, setTitle] = useState(editTrackData?.title || "");
     const [albumId, setAlbumId] = useState(editTrackData?.albumId || "");
-    const [duration, setDuration] = useState(editTrackData?.duration || 0); // 🔥 Thêm duration quản lý thời lượng
+    const [duration, setDuration] = useState(editTrackData?.duration || 0);
     const [categoryIds, setCategoryIds] = useState([]);
     const [selectedFeatArtists, setSelectedFeatArtists] = useState([]);
     const [audioFile, setAudioFile] = useState(null);
     const [coverImage, setCoverImage] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    // 🔥 STATE QUẢN LÝ THÔNG BÁO LỖI UI
+    const [errorMessage, setErrorMessage] = useState("");
 
     // State phục vụ Searchable Dropdown
     const [artistSearch, setArtistSearch] = useState("");
@@ -45,7 +48,6 @@ export function CreateTrackPage() {
     const { userId, username } = useAuthStore();
 
     useEffect(() => {
-        // Nếu có prefilledAlbumId, gán luôn vào state
         if (prefilledAlbumId) {
             setSelectedAlbum({ id: prefilledAlbumId, name: prefilledAlbumName });
             setAlbumId(prefilledAlbumId);
@@ -74,18 +76,18 @@ export function CreateTrackPage() {
                 setDbArtists(Array.isArray(artistList) ? artistList : []);
             } catch (error) {
                 console.error("Lỗi khi tải dữ liệu từ hệ thống:", error);
+                setErrorMessage("Khởi tạo dữ liệu thất bại. Vui lòng thử lại sau!");
             }
         };
 
         fetchInitialData();
-    }, []);
+    }, [userId]);
 
     // --- 4. USEEFFECT LẤY CHI TIẾT BÀI HÁT CŨ NẾU LÀ CHẾ ĐỘ EDIT ---
     useEffect(() => {
         const fetchFullTrackDetails = async () => {
             if (isEditMode && editTrackData?.id) {
                 try {
-                    console.log("🛠️ Đang tải chi tiết bài hát cũ, ID:", editTrackData.id);
                     const res = await axiosClient.get(`/tracks/${editTrackData.id}`);
                     const fullTrack = res.data || res;
 
@@ -94,21 +96,19 @@ export function CreateTrackPage() {
                         setAlbumId(fullTrack.albumId || fullTrack.album?.id || "");
                         setDuration(fullTrack.duration || 0);
 
-                        // Đồng bộ danh sách ID thể loại nhạc cũ
                         if (fullTrack.categories) {
                             const ids = fullTrack.categories.map(cat => typeof cat === 'object' ? cat.id : cat);
                             setCategoryIds(ids);
                         }
 
-                        // Đồng bộ nghệ sĩ hợp tác cũ (loại bỏ chính mình ra khỏi danh sách Feat)
                         if (fullTrack.artists) {
                             const featList = fullTrack.artists.filter(artist => Number(artist.id) !== Number(userId));
                             setSelectedFeatArtists(featList);
                         }
 
                         if (fullTrack.album) {
-                            setSelectedAlbum(fullTrack.album); // Set nguyên object {id: 42, name: "mtp"...}
-                            setAlbumId(fullTrack.album.id);    // Set ID để gửi form
+                            setSelectedAlbum(fullTrack.album);
+                            setAlbumId(fullTrack.album.id);
                         } else {
                             setSelectedAlbum(null);
                             setAlbumId("");
@@ -116,6 +116,7 @@ export function CreateTrackPage() {
                     }
                 } catch (error) {
                     console.error("❌ Lỗi hiển thị dữ liệu bài hát cũ:", error);
+                    setErrorMessage("Không thể tải thông tin chi tiết bài hát!");
                 }
             }
         };
@@ -123,10 +124,9 @@ export function CreateTrackPage() {
         fetchFullTrackDetails();
     }, [editTrackData, isEditMode, userId]);
 
-    // Tự động đóng dropdown tìm kiếm nghệ sĩ khi click ra ngoài
+    // Tự động đóng dropdown khi click ra ngoài
     useEffect(() => {
         const handleClickOutside = (event) => {
-            // Sửa cái useEffect handleClickOutside cũ thành:
             if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
                 albumDropdownRef.current && !albumDropdownRef.current.contains(event.target)) {
                 setIsDropdownOpen(false);
@@ -139,6 +139,7 @@ export function CreateTrackPage() {
 
     // Logic tick chọn/bỏ chọn thể loại nhạc
     const handleCategoryChange = (catId) => {
+        setErrorMessage(""); // Xóa thông báo lỗi khi người dùng tương tác lại
         if (categoryIds.includes(catId)) {
             setCategoryIds(categoryIds.filter(item => item !== catId));
         } else {
@@ -155,62 +156,67 @@ export function CreateTrackPage() {
         setIsDropdownOpen(false);
     };
 
-    // Logic gỡ nghệ sĩ hợp tác khỏi danh sách
     const handleRemoveFeatArtist = (artistId) => {
         setSelectedFeatArtists(selectedFeatArtists.filter(a => a.id !== artistId));
     };
 
-    // Logic gỡ nghệ sĩ hợp tác khỏi danh sách
-    const handleRemoveAlbum = (albumId) => {
-        setSelectedAlbum(selectedAlbum.filter(a => a.id !== albumId));
-    };
-
-    // Lọc danh sách gợi ý nghệ sĩ dựa theo chữ nhập ô search
     const filteredArtists = dbArtists.filter(artist =>
         artist.name.toLowerCase().includes(artistSearch.toLowerCase()) &&
         !selectedFeatArtists.some(selected => selected.id === artist.id) &&
-        Number(artist.id) !== Number(userId) // Không hiển thị chính mình trong danh sách Feat
+        Number(artist.id) !== Number(userId)
     );
 
-    // --- 5. LUỒNG XỬ LÝ SUBMIT FORM (KHỚP HOÀN TOÀN VỚI TRACKUPLOADDTO) ---
+    // --- 5. LUỒNG XỬ LÝ SUBMIT FORM & THÔNG BÁO LỖI ---
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setErrorMessage(""); // Reset lỗi cũ
 
-        // 1. Kiểm tra điều kiện bắt buộc
-        if (!isEditMode && !audioFile) return alert("❌ Vui lòng chọn file âm thanh bài hát!");
-        if (!isEditMode && !coverImage) return alert("❌ Vui lòng chọn ảnh bìa bài hát!");
-        if (categoryIds.length === 0) return alert("❌ Hãy chọn ít nhất một thể loại nhạc!");
+        // 🔴 1. Check Validate ở Frontend
+        if (!title.trim()) {
+            setErrorMessage("Vui lòng nhập tên bài hát!");
+            return;
+        }
+
+        if (!isEditMode && !audioFile) {
+            setErrorMessage("Vui lòng tải lên file âm thanh cho bài hát!");
+            return;
+        }
+
+        if (!isEditMode && !coverImage) {
+            setErrorMessage("Vui lòng chọn ảnh bìa cho bài hát!");
+            return;
+        }
+
+        if (categoryIds.length === 0) {
+            setErrorMessage("Bài hát phải thuộc ít nhất 1 thể loại nhạc!");
+            return;
+        }
+
+        const artistId = userId;
+        if (!artistId || isNaN(parseInt(artistId))) {
+            setErrorMessage("Không xác định được ID nghệ sĩ. Vui lòng đăng nhập lại!");
+            return;
+        }
 
         setLoading(true);
 
         const formData = new FormData();
-        formData.append("title", title);
-
-        const artistId = userId;
-        if (artistId && !isNaN(parseInt(artistId))) {
-            formData.append("artistId", parseInt(artistId));
-        } else {
-            return alert("❌ Lỗi: Không xác định được ID nghệ sĩ!");
-        }
-
+        formData.append("title", title.trim());
+        formData.append("artistId", parseInt(artistId));
         formData.append("duration", duration ? parseInt(duration) : 0);
 
         if (albumId && albumId !== "" && !isNaN(parseInt(albumId))) {
             formData.append("albumId", parseInt(albumId));
         }
 
-        // Đóng gói categoryIds
         categoryIds.forEach(catId => formData.append("categoryIds", catId));
 
-        // 🔥 FIX LỖI ĐÓNG GÓI ARTIST IDS (FEAT)
-        if (selectedFeatArtists.length === 0) formData.append("artistIds", "");
-        if (selectedFeatArtists && selectedFeatArtists.length > 0) {
+        if (selectedFeatArtists.length === 0) {
+            formData.append("artistIds", "");
+        } else {
             selectedFeatArtists.forEach(artist => {
                 if (artist.id) formData.append("artistIds", artist.id);
             });
-        } else {
-            // Gửi một giá trị rỗng hoặc không gửi gì để Backend xử lý xóa sạch
-            // Nếu Backend yêu cầu mảng rỗng, bồ có thể bỏ qua bước này
         }
 
         if (audioFile) formData.append("audioFile", audioFile);
@@ -222,11 +228,33 @@ export function CreateTrackPage() {
                 headers: { "Content-Type": "multipart/form-data" },
             });
 
-            alert(isEditMode ? "🎉 Cập nhật thành công!" : "🎉 Tải lên thành công!");
+            alert(isEditMode ? "🎉 Cập nhật bài hát thành công!" : "🎉 Tải lên bài hát thành công!");
             navigate(`/artist/${artistId}`);
         } catch (error) {
-            console.error("❌ Lỗi xử lý:", error);
-            alert(`❌ Thất bại: ${error.response?.data?.message || "Lỗi server"}`);
+            console.error("❌ Lỗi xử lý Upload Track:", error);
+
+            // 🔴 2. Bắt và phân tích lỗi từ Backend trả về
+            let apiMessage = "Đã xảy ra lỗi hệ thống, vui lòng thử lại!";
+
+            if (error.response && error.response.data) {
+                const data = error.response.data;
+
+                // Nếu Backend trả về object dạng Validation Error (e.g. { title: "không được trống", categoryIds: "..." })
+                if (typeof data === "object" && !data.message) {
+                    const messages = Object.values(data).join(" | ");
+                    apiMessage = messages || apiMessage;
+                }
+                // Nếu Backend trả về dạng { message: "Lỗi cụ thể..." } hoặc String
+                else if (data.message) {
+                    apiMessage = data.message;
+                } else if (typeof data === "string") {
+                    apiMessage = data;
+                }
+            } else if (error.message) {
+                apiMessage = error.message;
+            }
+
+            setErrorMessage(apiMessage);
         } finally {
             setLoading(false);
         }
@@ -247,6 +275,24 @@ export function CreateTrackPage() {
                     </span>
                 </p>
 
+                {/* 🔴 KHU VỰC HIỂN THỊ THÔNG BÁO LỖI (ALERT BOX) */}
+                {errorMessage && (
+                    <div className="mb-6 p-4 rounded-lg bg-red-500/10 border border-red-500/30 flex items-start gap-3 text-red-400 text-sm animate-fadeIn">
+                        <AlertCircle size={18} className="shrink-0 mt-0.5 text-red-400" />
+                        <div className="flex-1">
+                            <strong className="font-semibold block mb-0.5">Không thể thực hiện:</strong>
+                            <span>{errorMessage}</span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setErrorMessage("")}
+                            className="text-red-400/60 hover:text-red-300 bg-transparent border-none cursor-pointer p-0"
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-5">
                     {/* 1. Tên bài hát */}
                     <div>
@@ -255,8 +301,10 @@ export function CreateTrackPage() {
                             type="text"
                             placeholder="Nhập tiêu đề bài hát..."
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            required
+                            onChange={(e) => {
+                                setTitle(e.target.value);
+                                if (errorMessage) setErrorMessage("");
+                            }}
                             className="w-full bg-white/[0.04] border border-white/[0.05] rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
                         />
                     </div>
@@ -333,11 +381,13 @@ export function CreateTrackPage() {
                         <label className="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Chọn Album</label>
                         <div
                             className={`w-full bg-white/[0.04] border border-white/[0.05] rounded-lg px-4 py-2.5 text-white flex justify-between items-center transition-colors 
-            ${prefilledAlbumId ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-sky-500"}`}
+                            ${prefilledAlbumId ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-sky-500"}`}
                             onClick={() => !prefilledAlbumId && setIsAlbumDropdownOpen(!isAlbumDropdownOpen)}
                         >
                             <span>{selectedAlbum ? selectedAlbum.name : "Chọn album cho bài hát..."}</span>
-                            {selectedAlbum && <X size={16} className="text-slate-400" onClick={(e) => { e.stopPropagation(); setSelectedAlbum(null); }} />}
+                            {selectedAlbum && !prefilledAlbumId && (
+                                <X size={16} className="text-slate-400 hover:text-white cursor-pointer" onClick={(e) => { e.stopPropagation(); setSelectedAlbum(null); setAlbumId(""); }} />
+                            )}
                         </div>
 
                         {!prefilledAlbumId && isAlbumDropdownOpen && (
@@ -351,7 +401,8 @@ export function CreateTrackPage() {
                                             onClick={() => {
                                                 setSelectedAlbum(album);
                                                 setAlbumId(album.id);
-                                                setIsAlbumDropdownOpen(false); }}
+                                                setIsAlbumDropdownOpen(false);
+                                            }}
                                             className="px-4 py-2.5 text-sm text-slate-200 hover:bg-sky-600/20 hover:text-sky-400 cursor-pointer transition-colors"
                                         >
                                             {album.name}
@@ -360,24 +411,24 @@ export function CreateTrackPage() {
                                 )}
                             </div>
                         )}
+
                         {selectedAlbum && (
                             <div className="flex flex-wrap gap-2 mt-2.5">
-                            <span className="inline-flex items-center gap-1.5 bg-sky-500/10 text-sky-400 text-xs font-semibold px-3 py-1.5 rounded-full border border-sky-500/20">
-                                Album: {selectedAlbum.name}
-                                {/* CHỈ HIỆN NÚT X NẾU KHÔNG CÓ PREFILLED ALBUM ID */}
-                                {!prefilledAlbumId && (
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setSelectedAlbum(null);
-                                            setAlbumId(""); // Nên để là chuỗi rỗng thay vì -1
-                                        }}
-                                        className="text-sky-400/60 hover:text-red-400 font-bold ml-1 text-sm bg-transparent border-none cursor-pointer p-0 flex items-center"
-                                    >
-                                        <X size={12} />
-                                    </button>
-                                )}
-                            </span>
+                                <span className="inline-flex items-center gap-1.5 bg-sky-500/10 text-sky-400 text-xs font-semibold px-3 py-1.5 rounded-full border border-sky-500/20">
+                                    Album: {selectedAlbum.name}
+                                    {!prefilledAlbumId && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedAlbum(null);
+                                                setAlbumId("");
+                                            }}
+                                            className="text-sky-400/60 hover:text-red-400 font-bold ml-1 text-sm bg-transparent border-none cursor-pointer p-0 flex items-center"
+                                        >
+                                            <X size={12} />
+                                        </button>
+                                    )}
+                                </span>
                             </div>
                         )}
                     </div>
@@ -412,8 +463,10 @@ export function CreateTrackPage() {
                         <input
                             type="file"
                             accept="audio/*"
-                            onChange={(e) => setAudioFile(e.target.files[0])}
-                            required={!isEditMode} // 🔥 CHỈ BẮT BUỘC KHI TẠO MỚI
+                            onChange={(e) => {
+                                setAudioFile(e.target.files[0]);
+                                if (errorMessage) setErrorMessage("");
+                            }}
                             className="w-full bg-white/[0.04] border border-white/[0.05] rounded-lg px-2 py-1.5 text-slate-300 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-white/[0.08] file:text-slate-200 hover:file:bg-white/[0.15] cursor-pointer transition-colors"
                         />
                     </div>
@@ -426,8 +479,10 @@ export function CreateTrackPage() {
                         <input
                             type="file"
                             accept="image/*"
-                            onChange={(e) => setCoverImage(e.target.files[0])}
-                            required={!isEditMode} // 🔥 CHỈ BẮT BUỘC KHI TẠO MỚI
+                            onChange={(e) => {
+                                setCoverImage(e.target.files[0]);
+                                if (errorMessage) setErrorMessage("");
+                            }}
                             className="w-full bg-white/[0.04] border border-white/[0.05] rounded-lg px-2 py-1.5 text-slate-300 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-white/[0.08] file:text-slate-200 hover:file:bg-white/[0.15] cursor-pointer transition-colors"
                         />
                     </div>

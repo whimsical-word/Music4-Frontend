@@ -10,7 +10,6 @@ import ProfilePage from "./pages/ProfilePage.jsx";
 import PlaylistPage from "./pages/PlaylistPage.jsx";
 import HistoryPage from "./pages/HistoryPage.jsx";
 import ArtistProfilePage from "./pages/ArtistProfilePage.jsx";
-import { CreateTrackPage } from "./pages/CreateTrackPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage.jsx";
 import CreateAlbumPage from "./pages/CreateAlbumPage.jsx";
 import AlbumDetailPage from "./pages/AlbumDetailPage.jsx";
@@ -27,6 +26,7 @@ import ForbiddenPage from "./pages/errors/ForbiddenPage.jsx";
 import NotFoundPage from "./pages/errors/NotFoundPage.jsx";
 import ProtectedRoute from "./layouts/components/ProtectedRoute.jsx";
 import { useErrorStore } from "./features/error/useErrorStore";
+import {CreateTrackPage} from "./pages/CreateTrackPage.jsx";
 
 function AppContent() {
   const errorStatus = useErrorStore((state) => state.errorStatus);
@@ -53,7 +53,7 @@ function AppContent() {
 
         {/* ARTIST and ADMIN */}
         <Route element={<ProtectedRoute allowedRoles={["ARTIST", "ADMIN"]} />}>
-          <Route path="/studio/upload" element={<CreateTrackPage />} />
+          <Route path="/studio/upload" element={<CreateTrackPage/>} />
           <Route path="/studio/album" element={<CreateAlbumPage />} />
         </Route>
 
