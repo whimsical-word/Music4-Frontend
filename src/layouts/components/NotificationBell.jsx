@@ -31,8 +31,7 @@ const NotificationBell = ({ userId }) => {
             setUnreadCount((prevCount) => prevCount + 1);
         });
 
-        // 🟢 LẮNG NGHE THÔNG BÁO CHUNG / ALBUM MỚI
-        eventSource.addEventListener("NOTIFICATION", (event) => {
+        eventSource.addEventListener("NEW_ALBUM", (event) => {
             const newNoti = JSON.parse(event.data);
             setNotifications((prevNotis) => [newNoti, ...prevNotis]);
             setUnreadCount((prevCount) => prevCount + 1);
