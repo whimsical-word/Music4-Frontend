@@ -6,7 +6,6 @@ import {
   LockKeyhole,
   ShieldAlert,
   Music2,
-  ServerCrash,
 } from "lucide-react";
 import { useErrorStore } from "../../features/error/useErrorStore";
 
@@ -31,13 +30,6 @@ const errorConfig = {
     description: "The page you're looking for doesn't exist.",
     subDescription:
       "It may have been moved, deleted, or the URL might be incorrect.",
-  },
-
-  500: {
-    icon: ServerCrash,
-    title: "Something Went Wrong",
-    description: "We're having trouble processing your request.",
-    subDescription: "Please try again later.",
   },
 };
 
