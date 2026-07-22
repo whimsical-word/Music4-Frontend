@@ -1,24 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {Play, Pause, Clock, Music, ArrowLeft, Disc, ListMusic, Heart, Trash2, Plus, MoreHorizontal} from 'lucide-react';
+import { Play, Pause, Clock, Music, ArrowLeft, Disc, ListMusic, Heart, Trash2, Plus, MoreHorizontal } from 'lucide-react';
 import axiosClient from '../app/axios/axiosClient';
 import MusicImage from "../layouts/components/MusicImage.jsx";
 import { usePlayerStore } from "../features/player/usePlayerStore.js";
-import {useAuthStore} from "../features/auth/useAuthStore.js";
-import TrackEngagementModal from "../layouts/components/TrackEngagementModal.jsx";
-// 🌟 BỒ CHÚ Ý: Nếu bồ có useAuthStore, hãy uncomment dòng dưới để lấy real data nhé:
-// import { useAuthStore } from "../features/auth/useAuthStore.js";
-
+import { useAuthStore } from "../features/auth/useAuthStore.js";
+import TrackEngagementModal from "../layouts/components/TrackEngagementModal";
 const AlbumDetailPage = () => {
     // 1. Lấy albumId từ URL Route (Ví dụ: /albums/32)
     const { albumId } = useParams();
     const navigate = useNavigate();
-    // const playTrack = usePlayerStore(state => state.playTrack);
     const { playTrack, currentTrack } = usePlayerStore();
     const S3_BASE_URL = "https://music4-v3-storage-kenz.s3.ap-southeast-1.amazonaws.com/";
     const { userId, role } = useAuthStore();
-     // Giả lập role phục vụ test UI
-
 
     // --- State quản lý dữ liệu ---
     const [tracks, setTracks] = useState([]);
@@ -27,7 +21,6 @@ const AlbumDetailPage = () => {
     const [error, setError] = useState(null);
     const [playingTrackId, setPlayingTrackId] = useState(null);
     const [selectedTrack, setSelectedTrack] = useState(null);
-
 
     // Tính tổng giây từ tất cả bài hát
     const totalDurationSeconds = tracks.reduce((sum, track) => sum + (track.duration || 0), 0);
@@ -68,20 +61,19 @@ const AlbumDetailPage = () => {
                 setIsLoading(true);
                 setError(null);
 
-                // ✅ ĐÃ SỬA: Phải truyền đúng albumId lấy từ URL để bốc đúng các bài hát của Album này!
                 const response = await axiosClient.get(`/tracks/album/${albumId}`);
-                console.log("Dữ liệu API trả về:", response.data); // 🔍 Xem cấu trúc ở đây
+                console.log("Dữ liệu API trả về:", response.data);
                 const trackData = response.data || [];
                 setTracks(trackData);
 
                 // Bóc tách thông tin Album từ bài hát đầu tiên trả về
                 if (trackData.length > 0) {
-                    const mainArtist = trackData[0].artists.find(a => a.role === 'MAIN') || trackData[0].artists[0];
+                    const mainArtist = trackData[0].artists?.find(a => a.role === 'MAIN') || trackData[0].artists?.[0];
                     setAlbumInfo({
                         albumTitle: trackData[0].albumName || "Album Kỷ Nguyên Mới",
                         artistName: mainArtist?.name || "Nghệ Sĩ",
-                        artistId: mainArtist?.id, // Giữ lại ID để so sánh với isOwner công bằng
-                        coverUrl: S3_BASE_URL + trackData[0].img || ""
+                        artistId: mainArtist?.id,
+                        coverUrl: trackData[0].img ? S3_BASE_URL + trackData[0].img : ""
                     });
                 }
             } catch (err) {
@@ -111,7 +103,7 @@ const AlbumDetailPage = () => {
             setPlayingTrackId(null);
         } else {
             setPlayingTrackId(track.id);
-            playTrack(track); // Gọi xuống trình phát nhạc tổng của dự án
+            playTrack(track, tracks);
         }
     };
 
@@ -153,7 +145,7 @@ const AlbumDetailPage = () => {
                 <div className="w-48 md:w-60 aspect-square rounded-xl overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.6)] flex-shrink-0 bg-[#16222f]">
                     <img
                         src={albumInfo?.coverUrl}
-                        alt={albumInfo?.title}
+                        alt={albumInfo?.albumTitle}
                         className="w-full h-full object-cover"
                     />
                 </div>
@@ -168,7 +160,6 @@ const AlbumDetailPage = () => {
                         </span>
                         <span className="text-slate-500">•</span>
                         <span className="text-slate-400">{tracks.length} bài hát</span>
-
                         <span className="text-slate-500">•</span>
                         <span className="text-slate-400">{formatTotalDuration(totalDurationSeconds)}</span>
                     </div>
@@ -185,12 +176,16 @@ const AlbumDetailPage = () => {
                 </button>
 
                 {/* Thay đổi nút Plus của bạn thành thế này */}
+                <button className="text-slate-400 hover:text-white transition-colors border-none bg-transparent cursor-pointer">
+                    <Heart size={28}/>
+                </button>
                 {isOwner && (
                     <button
                         onClick={() => navigate('/studio/upload', { state: { prefilledAlbumId: albumId, albumName: albumInfo?.albumTitle } })}
                         className="ml-auto w-14 h-14 bg-sky-500 hover:bg-sky-400 rounded-full flex items-center justify-center text-white shadow-[0_4px_18px_rgba(14,165,233,0.3)] hover:scale-105 active:scale-95 transition-all border-none cursor-pointer"
+                        title="Thêm bài hát mới vào album"
                     >
-                        <Plus size={20} fill="white" className="ml-1"/>
+                        <Plus size={20} className="ml-1"/>
                     </button>
                 )}
             </div>
@@ -207,7 +202,7 @@ const AlbumDetailPage = () => {
                             <div
                                 key={track.id || index}
                                 className="flex items-center justify-between p-3 rounded-lg hover:bg-white/[0.05] transition-colors group cursor-pointer"
-                                onClick={() => playTrack(track, tracks)}
+                                onClick={() => handlePlayTrack(track)}
                             >
                                 {/* Khối bên trái: Số thứ tự, Ảnh nhỏ, Tên bài hát */}
                                 <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -215,7 +210,7 @@ const AlbumDetailPage = () => {
                                         {index + 1}
                                     </span>
                                     <div className="hidden group-hover:flex text-sky-400 w-6 justify-center">
-                                        {playingTrackId === track.id ? <Pause size={16} fill="currentColor"/> : <Play size={16} fill="currentColor"/>}
+                                        {currentTrack?.id === track.id ? <Pause size={16} fill="currentColor"/> : <Play size={16} fill="currentColor"/>}
                                     </div>
 
                                     <div className="w-10 h-10 rounded overflow-hidden bg-[#16222f] flex-shrink-0 shadow-sm">
@@ -227,15 +222,15 @@ const AlbumDetailPage = () => {
                                     </div>
 
                                     <div className="truncate min-w-0">
-                                            <p
-                                                className={`font-semibold truncate transition-colors ${
-                                                    currentTrack?.id === track.id ? "text-sky-400" : "text-white group-hover:text-sky-400"
-                                                }`}
-                                            >
-                                                {track.name}
-                                            </p>
+                                        <p
+                                            className={`font-semibold truncate transition-colors ${
+                                                currentTrack?.id === track.id ? "text-sky-400" : "text-white group-hover:text-sky-400"
+                                            }`}
+                                        >
+                                            {track.name}
+                                        </p>
                                         <p className="text-xs text-slate-400 truncate">
-                                            {track.artists?.map(a => a.name).join(', ') || "Nghệ sĩ"}
+                                            {track.artists?.map(a => a.name).join(', ') || albumInfo?.artistName || "Nghệ sĩ"}
                                         </p>
                                     </div>
                                 </div>
@@ -277,6 +272,7 @@ const AlbumDetailPage = () => {
                     </div>
                 )}
             </section>
+
             {selectedTrack && (
                 <TrackEngagementModal
                     track={selectedTrack}

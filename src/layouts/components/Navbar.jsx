@@ -72,7 +72,7 @@ const Navbar = () => {
 
             // 1. Trường hợp thông báo liên quan đến ALBUM -> Chuyển hướng sang trang chi tiết album
             if (noti.albumId) {
-                navigate(`/albums/${noti.albumId}`); // Hoặc đường dẫn route album của bồ (ví dụ: /playlist/... hay /album/...)
+                navigate(`/albums/${noti.albumId}`); // Đảm bảo đúng route /album/... không có 's'
                 return;
             }
 
