@@ -174,6 +174,8 @@ const AlbumDetailPage = () => {
                 >
                     <Play size={26} fill="white" className="ml-1"/>
                 </button>
+
+                {/* Thay đổi nút Plus của bạn thành thế này */}
                 <button className="text-slate-400 hover:text-white transition-colors border-none bg-transparent cursor-pointer">
                     <Heart size={28}/>
                 </button>
