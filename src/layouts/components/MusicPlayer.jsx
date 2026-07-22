@@ -69,10 +69,16 @@ const MusicPlayer = () => {
 
   // CÁC BIẾN REF ĐỂ THEO DÕI THỜI GIAN NGHE THỰC TẾ
   const lastSyncPositionRef = useRef(0);
+  const hasListenedToEndRef = useRef(false);
+  const lastPlayedTimeRef = useRef(0);
+  const accumulatedPlayTimeRef = useRef(0);
 
   // RESET LẠI BỘ ĐẾM KHI CHUYỂN BÀI HÁT MỚI
   useEffect(() => {
     lastSyncPositionRef.current = 0;
+    hasListenedToEndRef.current = false;
+    lastPlayedTimeRef.current = 0;
+    accumulatedPlayTimeRef.current = 0;
   }, [currentTrack?.id]);
 
   const getStreamUrl = (trackId) => {
@@ -167,6 +173,12 @@ const MusicPlayer = () => {
       const currentVal = audioRef.current.currentTime;
       const durationReal = audioRef.current.duration;
 
+      const timeDiff = currentVal - lastPlayedTimeRef.current;
+      if (timeDiff > 0 && timeDiff <= 0.5) {
+        accumulatedPlayTimeRef.current += timeDiff;
+      }
+      lastPlayedTimeRef.current = currentVal;
+
       // CHẶN GUEST KHI NGHE TỚI GIÂY THỨ 30
       if (!isAuthenticated && currentVal >= PREVIEW_LIMIT) {
         audioRef.current.pause();
@@ -177,12 +189,11 @@ const MusicPlayer = () => {
       }
 
       setCurrentTime(currentVal);
-      if (durationReal) {
-        setProgress((currentVal / durationReal) * 100);
-      }
+      setProgress((currentVal / durationReal) * 100);
 
+      // Sync playback position mỗi 10 giây
       const currentSecond = Math.floor(currentVal);
-      // Nếu chạm mốc chia hết cho 10 (10, 20, 30, 40, 50...) và chưa đồng bộ mốc này
+
       if (
         currentSecond > 0 &&
         currentSecond % 10 === 0 &&
@@ -216,30 +227,41 @@ const MusicPlayer = () => {
   const handleTrackEnded = async () => {
     const audio = audioRef.current;
 
+    if (!audio) return;
+
     // Guest
     if (!isAuthenticated) {
       usePlayerStore.setState({ isPlaying: false });
-
-      if (audio) {
-        audio.currentTime = 0;
-      }
-
+      audio.currentTime = 0;
       setShowGuestModal(true);
       return;
     }
 
+    // Chỉ user thường mới được tính view
     if (isAuthenticated && userId && currentTrack && !isArtistOrAdmin) {
-      try {
-        await axiosClient.post("/tracking/history", {
-          trackId: currentTrack.id,
-          userId: userId,
-        });
+      const requiredListenTime = (audio.duration || 0) * 1;
 
+      if (
+        accumulatedPlayTimeRef.current >= requiredListenTime &&
+        !hasListenedToEndRef.current
+      ) {
+        hasListenedToEndRef.current = true; // Khóa lại tránh request lặp
+
+        try {
+          await axiosClient.post("/tracking/history", {
+            trackId: currentTrack.id,
+            userId: userId,
+          });
+          console.log(
+            "[SUCCESS] Nghe đủ thời gian thực tế -> lưu history + cộng view",
+          );
+        } catch (error) {
+          console.error("[ERROR] Lỗi ghi nhận bài hát hoàn thành:", error);
+        }
+      } else {
         console.log(
-          "[SUCCESS] Nghe hoàn thành bài -> xử lý VIEW + playback_position = 0",
+          `[ANTI-CHEAT] Bỏ qua cộng view. Thời gian nghe thực: ${Math.floor(accumulatedPlayTimeRef.current)}s, Yêu cầu: ${Math.floor(requiredListenTime)}s`,
         );
-      } catch (error) {
-        console.error("[ERROR] Lỗi ghi nhận bài hát hoàn thành:", error);
       }
     }
 
