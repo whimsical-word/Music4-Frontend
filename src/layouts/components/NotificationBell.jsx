@@ -7,7 +7,6 @@ const NotificationBell = ({ userId }) => {
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
 
-    // KHÔNG DÙNG navigate NỮA ĐỂ TRÁNH NHẢY TRANG
     const playTrack = usePlayerStore((state) => state.playTrack);
 
     useEffect(() => {
@@ -25,7 +24,15 @@ const NotificationBell = ({ userId }) => {
         // 2. THIẾT LẬP KẾT NỐI SSE
         const eventSource = new EventSource(`http://localhost:8080/api/notifications/subscribe/${userId}`);
 
+        // Lắng nghe thông báo bài hát mới
         eventSource.addEventListener("NEW_TRACK", (event) => {
+            const newNoti = JSON.parse(event.data);
+            setNotifications((prevNotis) => [newNoti, ...prevNotis]);
+            setUnreadCount((prevCount) => prevCount + 1);
+        });
+
+        // 🟢 LẮNG NGHE THÔNG BÁO CHUNG / ALBUM MỚI
+        eventSource.addEventListener("NOTIFICATION", (event) => {
             const newNoti = JSON.parse(event.data);
             setNotifications((prevNotis) => [newNoti, ...prevNotis]);
             setUnreadCount((prevCount) => prevCount + 1);
@@ -54,15 +61,17 @@ const NotificationBell = ({ userId }) => {
             // Đóng dropdown thông báo lại
             setIsOpen(false);
 
-            // 2. Lấy thông tin bài hát từ thông báo và phát nhạc ngay lập tức
-            // Nếu backend trả về đối tượng track trực tiếp (noti.track) hoặc chỉ có thông tin ID/Tên
-            const trackData = noti.track || (noti.trackId ? { id: noti.trackId, name: noti.content, ...noti } : null);
-
-            if (trackData) {
-                // Chỉ gọi playTrack để phát nhạc ở thanh dưới cùng, tuyệt đối không gọi navigate hay đổi URL
+            // 2. Phân loại xử lý khi click vào thông báo
+            if (noti.trackId || noti.track) {
+                // Nếu là thông báo về Track -> Phát nhạc luôn
+                const trackData = noti.track || { id: noti.trackId, name: noti.content, ...noti };
                 playTrack(trackData, [trackData]);
+            } else if (noti.albumId || noti.album) {
+                // Nếu là thông báo về Album -> Bồ có thể tuỳ chỉnh điều hướng sang trang chi tiết Album ở đây
+                console.log("Đã click vào thông báo Album:", noti);
+                // Ví dụ: navigate(`/albums/${noti.albumId || noti.album.id}`);
             } else {
-                console.warn("Thông báo này không chứa dữ liệu bài hát:", noti);
+                console.warn("Thông báo này không chứa dữ liệu track hoặc album:", noti);
             }
         } catch (err) {
             console.error("Lỗi khi xử lý click thông báo:", err);
@@ -94,7 +103,7 @@ const NotificationBell = ({ userId }) => {
 
     return (
         <div style={{ position: "relative", display: "inline-block" }}>
-            {/* 🔔 Icon chiếc chuông chuẩn giao diện tối */}
+            {/* 🔔 Icon chiếc chuông */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 style={{ background: "none", border: "none", cursor: "pointer", position: "relative", padding: "8px", color: "#fff" }}
@@ -109,11 +118,10 @@ const NotificationBell = ({ userId }) => {
                 )}
             </button>
 
-            {/* 📂 Menu danh sách thông báo Dropdown */}
+            {/* 📂 Menu Dropdown danh sách thông báo */}
             {isOpen && (
                 <div style={{ position: "absolute", right: 0, top: "100%", marginTop: "8px", width: "340px", backgroundColor: "#222222", border: "1px solid #333333", borderRadius: "8px", boxShadow: "0 6px 16px rgba(0,0,0,0.4)", zIndex: 100, color: "#fff" }}>
 
-                    {/* Header: "Thông báo mới nhận" + nút Xóa tất cả */}
                     <div style={{ padding: "14px 16px", borderBottom: "1px solid #333333", fontWeight: "bold", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: "15px" }}>Thông báo mới nhận</span>
                         {notifications.length > 0 && (
@@ -128,7 +136,6 @@ const NotificationBell = ({ userId }) => {
                         )}
                     </div>
 
-                    {/* Body list item */}
                     <div style={{ maxHeight: "360px", overflowY: "auto" }}>
                         {notifications.length === 0 ? (
                             <div style={{ padding: "30px", textAlign: "center", color: "#666", fontSize: "14px" }}>
@@ -161,7 +168,6 @@ const NotificationBell = ({ userId }) => {
                                         </span>
                                     </div>
 
-                                    {/* ✕ Nút xóa thông báo nhỏ ở góc phải */}
                                     <button
                                         onClick={(e) => handleDeleteNoti(e, noti.id, noti.isRead)}
                                         style={{
