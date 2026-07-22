@@ -25,7 +25,6 @@ import VerifyEmailPage from "./pages/VerifyEmailPage.jsx";
 import UnauthorizedPage from "./pages/errors/UnauthorizedPage.jsx";
 import ForbiddenPage from "./pages/errors/ForbiddenPage.jsx";
 import NotFoundPage from "./pages/errors/NotFoundPage.jsx";
-import ServerErrorPage from "./pages/errors/ErrorPage.jsx";
 import ProtectedRoute from "./layouts/components/ProtectedRoute.jsx";
 import { useErrorStore } from "./features/error/useErrorStore";
 
@@ -42,10 +41,6 @@ function AppContent() {
 
   if (errorStatus === 404) {
     return <NotFoundPage />;
-  }
-
-  if (errorStatus === 500) {
-    return <ServerErrorPage status={500} />;
   }
 
   return (
@@ -85,7 +80,6 @@ function AppContent() {
         <Route path="/401" element={<UnauthorizedPage />} />
         <Route path="/403" element={<ForbiddenPage />} />
         <Route path="/404" element={<NotFoundPage />} />
-        <Route path="/500" element={<ServerErrorPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
