@@ -59,6 +59,7 @@ const ArtistProfilePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [playingTrackId, setPlayingTrackId] = useState(null);
   const [chartPeriod, setChartPeriod] = useState(7);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Các State phục vụ cho Modal Chỉnh sửa hồ sơ
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -143,7 +144,7 @@ const ArtistProfilePage = () => {
     };
 
     fetchArtistData();
-  }, [id, isOwner]);
+  }, [id, isOwner, refreshTrigger]);
 
   const [modalConfig, setModalConfig] = useState({
     isOpen: false,
@@ -192,6 +193,8 @@ const ArtistProfilePage = () => {
       await axiosClient.delete(`/albums/${albumId}`); // Đảm bảo URL khớp với API của bạn
       alert("🎉 Đã xóa album thành công!");
 
+      setRefreshTrigger((prev) => prev + 1);
+
       setAlbums((prevAlbums) =>
         prevAlbums.filter((album) => album.id !== albumId),
       );
@@ -222,6 +225,8 @@ const ArtistProfilePage = () => {
       // Gọi API DELETE bài hát lên Back-end
       await axiosClient.delete(`/tracks/${trackId}`);
       alert("🎉 Đã xóa bài hát và dọn dẹp dữ liệu Cloud S3 thành công!");
+
+      setRefreshTrigger((prev) => prev + 1);
 
       // Cập nhật State tại chỗ để bài hát biến mất ngay lập tức trên giao diện
       setTracks((prevTracks) =>
@@ -277,7 +282,8 @@ const ArtistProfilePage = () => {
       });
 
       updateProfile(updatedName, updatedAvatar);
-      // window.location.reload();
+
+      setRefreshTrigger((prev) => prev + 1);
     } catch (error) {
       console.error("Lỗi cập nhật hồ sơ:", error);
       setModalConfig({

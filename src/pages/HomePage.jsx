@@ -95,7 +95,7 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { username, name, role, id: userId } = useAuthStore();
   const actualUserId = useAuthStore((state) => state.userId) || userId;
-
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const playTrack = usePlayerStore((state) => state.playTrack);
 
   // STATES QUẢN LÝ TRẠNG THÁI DỮ LIỆU TỪ DATABASE
@@ -168,7 +168,19 @@ const HomePage = () => {
       setIsLoading(false);
     };
     fetchHomeData();
-  }, [actualUserId, role]);
+  }, [actualUserId, role, refreshTrigger]);
+
+  useEffect(() => {
+    const handleAutoRefresh = () => {
+      setRefreshTrigger((prev) => prev + 1);
+    };
+
+    window.addEventListener("trackHistoryUpdated", handleAutoRefresh);
+
+    return () => {
+      window.removeEventListener("trackHistoryUpdated", handleAutoRefresh);
+    };
+  }, []);
 
   if (isLoading) {
     return (
@@ -575,7 +587,10 @@ const HomePage = () => {
       {selectedTrack && (
         <TrackEngagementModal
           track={selectedTrack}
-          onClose={() => setSelectedTrack(null)}
+          onClose={() => {
+            setSelectedTrack(null);
+            setRefreshTrigger((prev) => prev + 1);
+          }}
         />
       )}
     </div>
