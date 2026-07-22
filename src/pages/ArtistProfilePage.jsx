@@ -907,9 +907,10 @@ const ArtistProfilePage = () => {
                       {albums.map((album) => (
                           <div
                               key={album.id}
-                              className="bg-[#111a24]/40 border border-white/[0.04] p-4 rounded-xl hover:bg-white/[0.06] transition-all duration-300 group cursor-pointer shadow-md relative"
+                              onClick={() => navigate(`/albums/${album.id}`)}
+                              /* 🔥 Thêm class "relative" vào đây */
+                              className="relative bg-[#0f1722] p-5 rounded-2xl hover:bg-white/[0.03] transition-all duration-300 group cursor-pointer border border-white/[0.05] hover:border-sky-500/30 text-center shadow-lg shadow-black/20"
                           >
-                              {/* NÚT XÓA ALBUM - GÓC DƯỚI BÊN PHẢI */}
                               {isOwner && (
                                   <button
                                       onClick={(e) => {
@@ -922,35 +923,27 @@ const ArtistProfilePage = () => {
                                       <Trash2 size={16} />
                                   </button>
                               )}
-
-                              <div
-                                  onClick={() => navigate(`/albums/${album.id}`)}
-                                  className="relative aspect-square w-full mb-4 rounded-lg overflow-hidden bg-[#16222f] shadow-md"
-                              >
+                              {/* Giới hạn khung chứa ảnh album tương ứng với độ rộng card */}
+                              <div className="relative aspect-square w-full h-[150px] md:h-[168px] mb-4 overflow-hidden bg-white/[0.02] shadow-md flex-shrink-0">
                                   <MusicImage
                                       src={album.img}
                                       type="album"
-                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                      alt={album.name}
+                                      className="group-hover:scale-105 transition-transform duration-500"
                                   />
-                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-xs">
-                                      <button className="w-10 h-10 bg-sky-600 hover:bg-sky-500 rounded-full flex items-center justify-center shadow-md border-none cursor-pointer text-white transition-colors">
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                      <button className="w-11 h-11 bg-gradient-to-r from-sky-500 to-blue-600 rounded-full flex items-center justify-center shadow-md transform translate-y-3 group-hover:translate-y-0 transition-all duration-300 border-none cursor-pointer">
                                           <Play
-                                              size={18}
+                                              size={20}
                                               fill="currentColor"
-                                              className="ml-0.5"
+                                              className="text-white ml-0.5"
                                           />
                                       </button>
                                   </div>
                               </div>
-                              <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors">
+                              <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors" title={album.name}>
                                   {album.name}
                               </h4>
-                              <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">
-                                  {album.uploadDate
-                                      ? new Date(album.uploadDate).getFullYear()
-                                      : "----"}{" "}
-                                  • Album
-                              </p>
                           </div>
                       ))}
                   </div>

@@ -200,6 +200,12 @@ const CreateAlbumPage = () => {
       return;
     }
 
+      const invalidTrack = tracks.find((track) => track.categoryIds.length === 0);
+      if (invalidTrack) {
+          alert(`Bài hát "${invalidTrack.title}" chưa được chọn thể loại (Category). Vui lòng chọn ít nhất 1 thể loại!`);
+          return;
+      }
+
     try {
       setIsSubmitting(true);
 
@@ -581,9 +587,15 @@ const CreateAlbumPage = () => {
                       </div>
 
                     <div>
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">
-                        Thể loại phân phối
-                      </label>
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                            <span>Thể loại phân phối</span>
+                            {/* Hiển thị cảnh báo màu đỏ nếu chưa chọn */}
+                            {track.categoryIds.length === 0 && (
+                                <span className="text-red-400 font-normal normal-case text-[10px]">
+                                    * Vui lòng chọn thể loại
+                                  </span>
+                            )}
+                        </label>
                         <div className="flex flex-wrap gap-2 pt-0.5">
                             {categories.map((cat) => {
                                 const isChecked = track.categoryIds.includes(cat.id);
