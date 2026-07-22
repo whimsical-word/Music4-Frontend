@@ -1,308 +1,249 @@
 import React, { useState, useEffect } from "react";
-import { X, Heart, MessageSquare, Star, Plus, ListMusic } from "lucide-react"; // 🟢 Thêm icon ListMusic, Plus
+import { X, Heart, Star, Plus, ListMusic, MessageSquare } from "lucide-react";
 import { engagementService } from "../../features/player/engagementService";
 import { useAuthStore } from "../../features/auth/useAuthStore";
-import axiosClient from "../../app/axios/axiosClient"; // 🟢 Import axiosClient để gọi API playlist
+import axiosClient from "../../app/axios/axiosClient";
+import MusicImage from "./MusicImage.jsx";
 
 const TrackEngagementModal = ({ track, onClose }) => {
     const { userId, role } = useAuthStore();
+    const isArtist = role?.toLowerCase() === "artist";
 
+    // State cho tương tác
     const [isLiked, setIsLiked] = useState(false);
     const [rating, setRating] = useState(0);
     const [savedRating, setSavedRating] = useState(0);
     const [hoverRating, setHoverRating] = useState(0);
+    const [isRatingLoading, setIsRatingLoading] = useState(false);
+    const [averageRating, setAverageRating] = useState(0); // State lưu điểm trung bình
+
+    // State cho bình luận
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isRatingLoading, setIsRatingLoading] = useState(false);
 
-    // 🟢 STATES MỚI: Quản lý danh sách Playlist của tôi
+    // State cho playlist
     const [myPlaylists, setMyPlaylists] = useState([]);
     const [selectedPlaylistId, setSelectedPlaylistId] = useState("");
     const [isAddingToPlaylist, setIsAddingToPlaylist] = useState(false);
+    const [isCreating, setIsCreating] = useState(false);
+    const [newPlaylistName, setNewPlaylistName] = useState("");
 
     useEffect(() => {
         if (!track?.id || !userId) return;
 
         const loadModalData = async () => {
             try {
-                // Gọi đồng thời thông tin tương tác và danh sách Playlist cá nhân
-                const [likeRes, commentRes, ratingRes, playlistRes] = await Promise.all([
+                const [likeRes, commentRes, ratingRes, playlistRes, avgRatingRes] = await Promise.all([
                     engagementService.checkIsLiked(track.id),
                     engagementService.getCommentsByTrack(track.id),
                     engagementService.getTrackRating ? engagementService.getTrackRating(track.id, userId) : { rating: 0 },
-                    axiosClient.get("/playlists/my-playlists") // 🟢 endpoint lấy danh sách phát của tôi
+                    !isArtist ? axiosClient.get("/playlists/my-playlists") : { data: [] },
+                    engagementService.getAverageRating ? engagementService.getAverageRating(track.id) : axiosClient.get(`/ratings/average/${track.id}`).catch(() => ({ average: 0 }))
                 ]);
 
                 setIsLiked(likeRes.liked);
                 setComments(commentRes);
+                setMyPlaylists(playlistRes.data || playlistRes || []);
 
-                // Set mảng danh sách playlist nhận về từ backend
-                const playlistsData = playlistRes.data || playlistRes;
-                setMyPlaylists(playlistsData || []);
+                const responseData = avgRatingRes.data ?? avgRatingRes;
+                const avgScore = responseData.average ?? responseData.data ?? 0;
+                setAverageRating(Number(avgScore));
 
                 if (ratingRes) {
-                    const savedScore = ratingRes.rating !== undefined ? ratingRes.rating : ratingRes.score;
-                    if (savedScore) {
-                        setRating(savedScore);
-                        setSavedRating(savedScore);
-                    }
+                    const savedScore = ratingRes.rating ?? ratingRes.score ?? 0;
+                    setRating(savedScore);
+                    setSavedRating(savedScore);
                 }
-            } catch (error) {
-                console.error("Lỗi tải thông tin Modal:", error);
+            } catch (err) {
+                console.error("Lỗi tải dữ liệu:", err);
             }
         };
 
         loadModalData();
-    }, [track, userId]);
+    }, [track, userId, isArtist]);
 
-    // Xử lý Thích bài hát
+    const handleCreatePlaylist = async () => {
+        if (!newPlaylistName.trim()) return;
+        try {
+            await axiosClient.post("/playlists", { name: newPlaylistName });
+            setNewPlaylistName("");
+            setIsCreating(false);
+            const res = await axiosClient.get("/playlists/my-playlists");
+            setMyPlaylists(res.data || []);
+        } catch (err) {
+            alert("Không thể tạo playlist.");
+        }
+    };
+
     const handleLike = async (e) => {
+        if (isArtist) return;
         e.stopPropagation();
         try {
             await engagementService.toggleLikeTrack(track.id);
             setIsLiked(!isLiked);
-        } catch (error) {
-            alert("Không thể thực hiện thao tác Thích. Vui lòng kiểm tra lại đăng nhập!");
-        }
+        } catch (err) { alert("Lỗi thực hiện thao tác."); }
     };
 
-    // Xử lý Đánh giá sao
     const handleSaveRating = async () => {
-        if (rating === 0) return;
-
+        if (isArtist || rating === 0) return;
         setIsRatingLoading(true);
         try {
-            if (engagementService.rateTrack) {
-                await engagementService.rateTrack(track.id, rating, userId);
-                setSavedRating(rating);
-                alert("Đánh giá của bạn đã được lưu thành công!");
-            }
-        } catch (error) {
-            console.error("Lỗi đánh giá bài hát:", error);
-            alert("Không thể lưu đánh giá sao. Vui lòng thử lại!");
+            await engagementService.rateTrack(track.id, rating, userId);
+            setSavedRating(rating);
+
+            const avgRatingRes = engagementService.getAverageRating
+                ? await engagementService.getAverageRating(track.id)
+                : await axiosClient.get(`/ratings/average/${track.id}`).catch(() => ({ average: 0 }));
+
+            const responseData = avgRatingRes.data ?? avgRatingRes;
+            const avgScore = responseData.average ?? responseData.data ?? 0;
+            setAverageRating(Number(avgScore));
+
+            alert("Đánh giá thành công!");
+        } catch (err) {
+            alert("Lỗi khi gửi đánh giá.");
         } finally {
             setIsRatingLoading(false);
         }
     };
 
-    // 🟢 HÀM MỚI: Xử lý thêm bài hát vào Playlist được chọn
     const handleAddToPlaylist = async (e) => {
         e.preventDefault();
-        if (!selectedPlaylistId) return alert("Vui lòng chọn một danh sách phát!");
-
+        if (isArtist || !selectedPlaylistId) return;
         setIsAddingToPlaylist(true);
         try {
-            // Gửi request trùng khớp endpoint Backend của bồ: POST /api/playlists/{playlistId}/tracks
-            await axiosClient.post(`/playlists/${selectedPlaylistId}/tracks`, {
-                trackId: track.id
-            });
-
-            alert("🎉 Đã thêm bài hát vào playlist thành công!");
-            setSelectedPlaylistId(""); // Reset ô select về mặc định
-        } catch (error) {
-            console.error("Lỗi thêm bài hát vào playlist:", error);
-            // Nếu backend của bồ throw exception bài hát đã tồn tại, hiển thị thông báo lỗi thân thiện
-            const errorMsg = error.response?.data?.message || "Bài hát này có thể đã tồn tại trong danh sách phát hoặc lỗi kết nối.";
-            alert(errorMsg);
+            await axiosClient.post(`/playlists/${selectedPlaylistId}/tracks`, { trackId: track.id });
+            alert("Đã thêm vào playlist!");
+            setSelectedPlaylistId("");
+        } catch (err) {
+            const errorMsg = err.response?.data?.message || err.response?.data || "Bài hát đã có trong playlist này!";
+            alert(typeof errorMsg === 'string' ? errorMsg : "Không thể thêm bài hát vào playlist.");
         } finally {
             setIsAddingToPlaylist(false);
         }
     };
 
-    // Xử lý gửi bình luận
     const handleSendComment = async (e) => {
         e.preventDefault();
-        if (!newComment.trim() || isSubmitting) return;
-
+        if (isArtist || !newComment.trim() || isSubmitting) return;
         setIsSubmitting(true);
         try {
-            await engagementService.addComment(
-                track.id,
-                newComment.trim(),
-                role === "listener" ? userId : null,
-                role === "artist" ? userId : null
-            );
-
-            const newCommentObj = {
-                commentId: Date.now(),
-                commenterName: localStorage.getItem('username') || "Bạn",
-                commenterRole: "Thành viên",
-                commenterImg: null,
-                content: newComment.trim(),
-                createdAt: new Date().toISOString()
-            };
-
-            setComments([newCommentObj, ...comments]);
+            await engagementService.addComment(track.id, newComment.trim(), userId, null);
+            setComments([{ commentId: Date.now(), commenterName: "Bạn", content: newComment.trim(), createdAt: new Date().toISOString() }, ...comments]);
             setNewComment("");
-        } catch (error) {
-            alert("Gửi bình luận thất bại. Vui lòng thử lại!");
-        } finally {
-            setIsSubmitting(false);
-        }
+        } finally { setIsSubmitting(false); }
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fadeIn p-4">
-            {/* Tăng chiều cao scroll cho khối modal nếu nội dung dài ra (Sử dụng max-h-[90vh] overflow-y-auto) */}
-            <div className="bg-[#181818] border border-[#282828] w-full max-w-lg rounded-2xl p-6 relative text-white shadow-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
-
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors border-none bg-transparent cursor-pointer">
-                    <X size={22} />
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+            onClick={onClose}
+        >
+            <div
+                className="bg-[#181818] border border-[#282828] w-full max-w-md rounded-2xl p-6 relative text-white shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+                    <X size={20} />
                 </button>
 
-                <div className="flex items-center gap-4 mb-6 pb-4 border-b border-[#282828]">
-                    <img src={track.img} alt={track.name} className="w-16 h-16 object-cover rounded-md shadow-md" />
+                <div className="flex items-center gap-4 mb-6 border-b border-[#282828] pb-6">
+                    <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0">
+                        <MusicImage src={track.img} type="track" alt={track.name} className="w-14 h-14 object-cover" />
+                    </div>
                     <div>
-                        <h3 className="font-bold text-lg truncate max-w-[300px]">{track.name}</h3>
-                        <p className="text-xs text-gray-400">Tương tác bài hát</p>
+                        <h3 className="font-bold text-lg truncate">{track.name}</h3>
+                        <p className="text-xs text-gray-400">Tương tác {isArtist && "(Xem)"}</p>
                     </div>
                 </div>
 
-                {/* KHỐI RATING KIỂM SOÁT ĐỘ SÁNG CỦA NÚT GỬI */}
-                <div className="mb-4 bg-[#202020] p-4 rounded-xl text-center border border-[#2c2c2c]">
-                    <h4 className="text-xs font-bold text-gray-400 mb-2 uppercase tracking-wider">Đánh giá của bạn</h4>
-
-                    <div className="flex items-center justify-center gap-2 mb-3">
-                        {[1, 2, 3, 4, 5].map((star) => {
-                            const isStarred = star <= (hoverRating || rating);
-                            return (
-                                <button
-                                    key={star}
-                                    type="button"
-                                    onClick={() => setRating(star)}
-                                    onMouseEnter={() => setHoverRating(star)}
-                                    onMouseLeave={() => setHoverRating(0)}
-                                    className="bg-transparent border-none cursor-pointer p-1 transition-transform active:scale-110"
-                                >
-                                    <Star
-                                        size={28}
-                                        className={`transition-all duration-150 ${
-                                            isStarred
-                                                ? "text-amber-400 fill-amber-400 drop-shadow-[0_0_8px_rgba(251,191,36,0.4)]"
-                                                : "text-zinc-600"
-                                        }`}
-                                    />
-                                </button>
-                            );
-                        })}
+                <div className="mb-6 bg-[#202020] p-4 rounded-xl border border-[#2c2c2c] text-center">
+                    <div className="flex items-center justify-center gap-2 mb-4 bg-black/20 py-2 rounded-lg">
+                        <Star size={16} className="text-amber-400 fill-amber-400" />
+                        <span className="text-sm font-bold">{averageRating > 0 ? averageRating.toFixed(1) : "Chưa có"}</span>
+                        <span className="text-xs text-gray-500">/ 5.0</span>
                     </div>
-
-                    <button
-                        onClick={handleSaveRating}
-                        disabled={rating === 0 || isRatingLoading || rating === savedRating}
-                        className="bg-amber-500 hover:bg-amber-600 disabled:bg-zinc-700 disabled:text-zinc-500 text-black font-bold px-6 py-1.5 rounded-full text-xs transition-all border-none cursor-pointer uppercase tracking-tighter"
-                    >
-                        {isRatingLoading ? "Đang lưu..." : "Gửi đánh giá"}
-                    </button>
-                </div>
-
-                {/* KHỐI NHÓM: THÍCH VÀ THÊM VÀO PLAYLIST */}
-                <div className="grid grid-cols-1 gap-3 mb-4">
-                    {/* Mục Yêu Thích */}
-                    <div className="bg-[#202020] p-4 rounded-xl flex items-center justify-between border border-[#2c2c2c]">
-                        <span className="text-sm font-medium">Yêu thích bài hát này</span>
-                        <button
-                            onClick={(e) => handleLike(e)}
-                            className="flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm border-none cursor-pointer transition-all"
-                            style={{
-                                backgroundColor: isLiked ? "#ef4444" : "#282828",
-                                color: isLiked ? "#fff" : "#a7a7a7"
-                            }}
-                        >
-                            <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
-                            {isLiked ? "Đã Thích" : "Yêu thích"}
-                        </button>
-                    </div>
-
-                    {/* 🟢 KHỐI MỚI: Thêm bài hát vào Playlist cá nhân */}
-                    <div className="bg-[#202020] p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-[#2c2c2c]">
-                        <div className="flex items-center gap-2 text-sm font-medium">
-                            <ListMusic size={18} className="text-sky-400" />
-                            <span>Thêm vào Danh sách phát</span>
-                        </div>
-
-                        <form onSubmit={handleAddToPlaylist} className="flex gap-2 items-center w-full sm:w-auto flex-1 justify-end">
-                            <select
-                                value={selectedPlaylistId}
-                                onChange={(e) => setSelectedPlaylistId(e.target.value)}
-                                className="bg-[#282828] text-white border border-[#3e3e3e] focus:border-sky-500 text-xs rounded-xl px-3 py-2 outline-none max-w-[200px] flex-1 transition-all cursor-pointer"
-                            >
-                                <option value="">-- Chọn Playlist --</option>
-                                {myPlaylists.map((p) => (
-                                    <option key={p.id} value={p.id}>
-                                        {p.name}
-                                    </option>
-                                ))}
-                            </select>
-
-                            <button
-                                type="submit"
-                                disabled={!selectedPlaylistId || isAddingToPlaylist}
-                                className="bg-sky-500 hover:bg-sky-400 disabled:bg-zinc-700 disabled:text-zinc-500 text-white font-bold p-2 rounded-xl transition-all border-none cursor-pointer flex items-center justify-center"
-                                title="Xác nhận thêm"
-                            >
-                                <Plus size={16} />
+                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">Đánh giá</h4>
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                            <button key={star} type="button" disabled={isArtist} onClick={() => setRating(star)}
+                                    onMouseEnter={() => !isArtist && setHoverRating(star)} onMouseLeave={() => setHoverRating(0)}
+                                    className={`transition-transform ${isArtist ? "cursor-default" : "cursor-pointer hover:scale-110"}`}>
+                                <Star size={28} className={star <= (hoverRating || rating) ? "text-amber-400 fill-amber-400" : "text-zinc-600"} />
                             </button>
-                        </form>
+                        ))}
                     </div>
-                </div>
-
-                {/* KHỐI BÌNH LUẬN */}
-                <div>
-                    <h4 className="text-sm font-bold mb-3 flex items-center gap-2 text-gray-300">
-                        <MessageSquare size={16} /> Cộng đồng bình luận ({comments.length})
-                    </h4>
-
-                    <form onSubmit={handleSendComment} className="flex gap-2 mb-4">
-                        <input
-                            type="text"
-                            placeholder="Viết bình luận của bạn..."
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            className="flex-1 bg-[#282828] border border-transparent focus:border-blue-500 rounded-xl px-4 py-2.5 text-sm text-white outline-none transition-all"
-                        />
-                        <button
-                            type="submit"
-                            disabled={!newComment.trim() || isSubmitting}
-                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 font-bold px-4 rounded-xl text-sm transition-colors border-none cursor-pointer text-white"
-                        >
-                            Gửi
+                    {!isArtist && (
+                        <button onClick={handleSaveRating} disabled={rating === 0 || isRatingLoading} className="bg-amber-500 hover:bg-amber-600 text-black font-bold px-6 py-2 rounded-full text-xs transition-colors disabled:opacity-50">
+                            {isRatingLoading ? "Đang lưu..." : "Gửi đánh giá"}
                         </button>
-                    </form>
-
-                    <div className="space-y-3 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
-                        {comments.length > 0 ? (
-                            comments.map((comment) => (
-                                <div key={comment.commentId} className="bg-[#202020] p-3 rounded-xl border border-[#2c2c2c]">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs font-bold text-blue-400">
-                                                {comment.commenterName || "Người dùng ẩn danh"}
-                                            </span>
-                                            {comment.commenterRole && (
-                                                <span className="text-[9px] bg-white/10 px-1 rounded text-gray-400">
-                                                    {comment.commenterRole}
-                                                </span>
-                                            )}
-                                        </div>
-                                        <span className="text-[10px] text-gray-500">
-                                            {comment.createdAt ? new Date(comment.createdAt).toLocaleDateString('vi-VN') : "Vừa xong"}
-                                        </span>
-                                    </div>
-                                    <p className="text-sm text-gray-200">
-                                        {comment.content || "Nội dung trống"}
-                                    </p>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="text-center py-6 text-xs text-gray-500 border border-dashed border-[#282828] rounded-xl">
-                                Chưa có bình luận nào. Hãy là người đầu tiên!
-                            </div>
-                        )}
-                    </div>
+                    )}
                 </div>
 
+                {!isArtist && (
+                    <div className="space-y-4 mb-6">
+                        <button onClick={handleLike} className="w-full bg-[#202020] border border-[#2c2c2c] rounded-xl p-4 flex items-center justify-center gap-2 text-sm font-semibold hover:border-gray-500 transition-colors">
+                            <Heart size={18} fill={isLiked ? "currentColor" : "none"} className={isLiked ? "text-red-500" : ""} />
+                            {isLiked ? "Đã yêu thích" : "Yêu thích"}
+                        </button>
+
+                        <div className="bg-[#202020] border border-[#2c2c2c] rounded-xl p-3 space-y-3">
+                            <div className="flex items-center gap-2">
+                                <ListMusic size={18} className="text-sky-400" />
+                                <span className="text-sm font-semibold">Danh sách phát</span>
+                            </div>
+                            <div className="flex gap-2">
+                                <select
+                                    value={selectedPlaylistId}
+                                    onChange={(e) => setSelectedPlaylistId(e.target.value)}
+                                    className="flex-1 bg-[#282828] text-white text-xs rounded-lg px-2 py-2 outline-none"
+                                >
+                                    <option value="">Chọn playlist...</option>
+                                    {myPlaylists.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                </select>
+                                <button onClick={handleAddToPlaylist} disabled={!selectedPlaylistId || isAddingToPlaylist} className="bg-sky-600 hover:bg-sky-500 px-4 rounded-lg text-sm font-bold disabled:opacity-50">
+                                    Thêm
+                                </button>
+                            </div>
+                            {!isCreating ? (
+                                <button
+                                    onClick={() => setIsCreating(true)} className="text-[11px] text-sky-400 hover:text-sky-300 underline">+ Tạo playlist mới
+                                </button>) : (
+                                <div className="flex gap-2">
+                                    <input autoFocus placeholder="Tên playlist..." className="flex-1 bg-[#121212] text-xs px-3 py-2 rounded border border-[#3e3e3e] outline-none focus:border-sky-500" value={newPlaylistName} onChange={(e) => setNewPlaylistName(e.target.value)}/>
+                                    <button onClick={handleCreatePlaylist} disabled={!newPlaylistName.trim()} className={`px-3 rounded-lg text-[11px] font-bold transition-all ${
+                                        newPlaylistName.trim() ? "bg-sky-600 hover:bg-sky-500 text-white cursor-pointer" : "bg-[#2b2b2b] text-gray-500 cursor-not-allowed"
+                                    }`}
+                                    >Lưu</button>
+
+                                    <button
+                                        onClick={() => {setIsCreating(false);setNewPlaylistName("");}}
+                                        className="px-3 text-[11px] text-gray-400 hover:text-white"
+                                    >Hủy</button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                <div>
+                    <h4 className="text-sm font-bold mb-4 flex items-center gap-2"><MessageSquare size={16} /> Bình luận ({comments.length})</h4>
+                    {!isArtist && (
+                        <form onSubmit={handleSendComment} className="flex gap-2 mb-4">
+                            <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Viết bình luận..." className="flex-1 bg-[#202020] border border-[#2c2c2c] rounded-lg px-4 py-2.5 text-sm outline-none focus:border-blue-500" />
+                            <button type="submit" disabled={isSubmitting || !newComment.trim()} className="bg-blue-600 hover:bg-blue-700 px-5 rounded-lg text-sm font-semibold disabled:opacity-50">Gửi</button>
+                        </form>
+                    )}
+                    <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                        {comments.length > 0 ? comments.map((c) => (
+                            <div key={c.commentId} className="bg-[#202020] border border-[#2c2c2c] rounded-lg p-3">
+                                <div className="text-xs font-bold text-blue-400 mb-1">{c.commenterName}</div>
+                                <div className="text-sm text-gray-200">{c.content}</div>
+                            </div>
+                        )) : <p className="text-center text-gray-500 text-sm py-4">Chưa có bình luận.</p>}
+                    </div>
+                </div>
             </div>
         </div>
     );

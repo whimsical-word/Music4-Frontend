@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {NotificationModal} from "../layouts/components/Modal";
+import { NotificationModal } from "../layouts/components/Modal";
 
 import {
   Pencil,
@@ -44,12 +44,13 @@ const ArtistProfilePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   // const playTrack = usePlayerStore((state) => state.playTrack);
-    const { playTrack, currentTrack } = usePlayerStore();
+  const { playTrack, currentTrack } = usePlayerStore();
 
   const { updateProfile, userId, role } = useAuthStore();
   const isOwner = role === "artist" && Number(userId) === Number(id);
   const { followedArtistIds, toggleFollowArtist, fetchFollowedArtists } =
     useFollowStore();
+  const isArtistRole = role?.toUpperCase().includes("ARTIST");
 
   const [artistInfo, setArtistInfo] = useState(null);
   const [albums, setAlbums] = useState([]);
@@ -71,6 +72,26 @@ const ArtistProfilePage = () => {
   const isFollowing = followedArtistIds.includes(Number(id));
 
   const [selectedTrack, setSelectedTrack] = useState(null);
+
+  const [followers, setFollowers] = useState([]);
+  const [isFollowerModalOpen, setIsFollowerModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (userId) {
+      fetchFollowedArtists();
+    }
+  }, [userId, fetchFollowedArtists]);
+
+  const fetchFollowers = async () => {
+    try {
+      const res = await axiosClient.get(`/artists/${id}/followers`);
+      setFollowers(res.data);
+      setIsFollowerModalOpen(true);
+    } catch (error) {
+      console.error("Lỗi lấy danh sách người theo dõi:", error);
+      alert("Không thể tải danh sách người theo dõi.");
+    }
+  };
 
   useEffect(() => {
     if (userId) {
@@ -128,11 +149,10 @@ const ArtistProfilePage = () => {
     isOpen: false,
     type: "info",
     title: "",
-    message: ""
+    message: "",
   });
   const handleCloseModal = () => {
-    setModalConfig(prev => ({ ...prev, isOpen: false }));
-
+    setModalConfig((prev) => ({ ...prev, isOpen: false }));
   };
 
   const handleFollowToggle = async () => {
@@ -245,7 +265,7 @@ const ArtistProfilePage = () => {
         ...prev,
         name: updatedName,
         img: updatedAvatar,
-      }))
+      }));
 
       setIsEditModalOpen(false);
 
@@ -253,10 +273,8 @@ const ArtistProfilePage = () => {
         isOpen: true,
         type: "success",
         title: "Thành công!",
-        message: "Cập nhật hồ sơ Nghệ sĩ thành công!"
+        message: "Cập nhật hồ sơ Nghệ sĩ thành công!",
       });
-
-
 
       updateProfile(updatedName, updatedAvatar);
       // window.location.reload();
@@ -266,7 +284,7 @@ const ArtistProfilePage = () => {
         isOpen: true,
         type: "error",
         title: "Đã xảy ra lỗi",
-        message: error?.response?.data?.message || "Cập nhật thất bại."
+        message: error?.response?.data?.message || "Cập nhật thất bại.",
       });
     } finally {
       setIsUpdating(false);
@@ -380,7 +398,7 @@ const ArtistProfilePage = () => {
               {artistInfo.name}
             </h1>
             <div className="flex items-center gap-6">
-              {!isOwner && (
+              {!isOwner && !isArtistRole && (
                 <button
                   onClick={handleFollowToggle}
                   onMouseEnter={() => setIsBtnHovered(true)}
@@ -406,16 +424,14 @@ const ArtistProfilePage = () => {
           </div>
         </div>
       </div>
-
       <NotificationModal
-          isOpen={modalConfig.isOpen}
-          onClose={handleCloseModal}
-          type={modalConfig.type}
-          title={modalConfig.title}
-          message={modalConfig.message}
-          confirmText="Đồng ý"
+        isOpen={modalConfig.isOpen}
+        onClose={handleCloseModal}
+        type={modalConfig.type}
+        title={modalConfig.title}
+        message={modalConfig.message}
+        confirmText="Đồng ý"
       />
-
       <div className="p-8 relative z-10 space-y-12">
         {/* 2. BẢNG THỐNG KÊ TỔNG QUAN (CHỈ HIỂN THỊ DÀNH RIÊNG CHO CHÍNH CHỦ) */}
         {isOwner && stats && (
@@ -446,12 +462,17 @@ const ArtistProfilePage = () => {
                 color="bg-rose-500/10 text-rose-500"
               />
 
-              <StatCard
-                title="Tổng người theo dõi"
-                value={stats.totalFollowers}
-                icon={Users}
-                color="bg-amber-500/10 text-amber-500"
-              />
+              <div
+                onClick={fetchFollowers}
+                className="cursor-pointer transition-transform hover:scale-[1.02]"
+              >
+                <StatCard
+                  title="Tổng người theo dõi"
+                  value={stats.totalFollowers}
+                  icon={Users}
+                  color="bg-amber-500/10 text-amber-500"
+                />
+              </div>
 
               <StatCard
                 title="Tổng bình luận"
@@ -681,33 +702,35 @@ const ArtistProfilePage = () => {
 
                 <div className="space-y-4">
                   {stats.topTracks?.map((track, index) => (
-                      <div key={track.id} className="flex gap-4 items-center">
-                          {/* Số thứ tự */}
-                          <div
-                              className={`w-8 h-8 rounded flex items-center justify-center font-bold text-white shrink-0
+                    <div key={track.id} className="flex gap-4 items-center">
+                      {/* Số thứ tự */}
+                      <div
+                        className={`w-8 h-8 rounded flex items-center justify-center font-bold text-white shrink-0
       ${
-                                  index === 0
-                                      ? "bg-yellow-500"
-                                      : index === 1
-                                          ? "bg-gray-400"
-                                          : index === 2
-                                              ? "bg-amber-700"
-                                              : "bg-sky-500/20 text-sky-500"
-                              }`}
-                          >
-                              #{index + 1}
-                          </div>
-
-                          {/* Phần text: Thêm min-w-0 vào đây là xong */}
-                          <div className="flex-1 min-w-0">
-                              <p className="font-medium truncate">{track.name}</p>
-
-                              <div className="text-xs text-slate-400 mt-1 flex gap-3">
-                                  <span>{track.viewCount.toLocaleString()} lượt nghe</span>
-                                  <span>{track.favoriteCount} lượt thích</span>
-                              </div>
-                          </div>
+        index === 0
+          ? "bg-yellow-500"
+          : index === 1
+            ? "bg-gray-400"
+            : index === 2
+              ? "bg-amber-700"
+              : "bg-sky-500/20 text-sky-500"
+      }`}
+                      >
+                        #{index + 1}
                       </div>
+
+                      {/* Phần text: Thêm min-w-0 vào đây là xong */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{track.name}</p>
+
+                        <div className="text-xs text-slate-400 mt-1 flex gap-3">
+                          <span>
+                            {track.viewCount.toLocaleString()} lượt nghe
+                          </span>
+                          <span>{track.favoriteCount} lượt thích</span>
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -765,14 +788,14 @@ const ArtistProfilePage = () => {
                     <span className="text-slate-500 font-medium w-6 text-center group-hover:hidden">
                       {index + 1}
                     </span>
-                      {/* Icon Play/Pause */}
-                      <div className="hidden group-hover:flex text-sky-400 w-6 justify-center">
-                          {currentTrack?.id === track.id ? (
-                              <Pause size={16} fill="currentColor" />
-                          ) : (
-                              <Play size={16} fill="currentColor" />
-                          )}
-                      </div>
+                    {/* Icon Play/Pause */}
+                    <div className="hidden group-hover:flex text-sky-400 w-6 justify-center">
+                      {currentTrack?.id === track.id ? (
+                        <Pause size={16} fill="currentColor" />
+                      ) : (
+                        <Play size={16} fill="currentColor" />
+                      )}
+                    </div>
 
                     <div className="w-10 h-10 rounded overflow-hidden bg-[#16222f] flex-shrink-0 shadow-sm">
                       <MusicImage
@@ -782,14 +805,16 @@ const ArtistProfilePage = () => {
                       />
                     </div>
 
-                      <div className="truncate">
-                          <p
-                              className={`font-semibold truncate transition-colors ${
-                                  currentTrack?.id === track.id ? "text-sky-400" : "text-white group-hover:text-sky-400"
-                              }`}
-                          >
-                              {track.name}
-                          </p>
+                    <div className="truncate">
+                      <p
+                        className={`font-semibold truncate transition-colors ${
+                          currentTrack?.id === track.id
+                            ? "text-sky-400"
+                            : "text-white group-hover:text-sky-400"
+                        }`}
+                      >
+                        {track.name}
+                      </p>
                       <p className="text-xs text-slate-400 truncate">
                         {track.artists?.map((a) => a.name).join(", ") ||
                           "Nghệ sĩ"}
@@ -895,9 +920,10 @@ const ArtistProfilePage = () => {
               {albums.map((album) => (
                 <div
                   key={album.id}
-                  className="bg-[#111a24]/40 border border-white/[0.04] p-4 rounded-xl hover:bg-white/[0.06] transition-all duration-300 group cursor-pointer shadow-md relative"
+                  onClick={() => navigate(`/albums/${album.id}`)}
+                  /* 🔥 Thêm class "relative" vào đây */
+                  className="relative bg-[#0f1722] p-5 rounded-2xl hover:bg-white/[0.03] transition-all duration-300 group cursor-pointer border border-white/[0.05] hover:border-sky-500/30 text-center shadow-lg shadow-black/20"
                 >
-                  {/* NÚT XÓA ALBUM - GÓC DƯỚI BÊN PHẢI */}
                   {isOwner && (
                     <button
                       onClick={(e) => {
@@ -910,35 +936,30 @@ const ArtistProfilePage = () => {
                       <Trash2 size={16} />
                     </button>
                   )}
-
-                  <div
-                    onClick={() => navigate(`/albums/${album.id}`)}
-                    className="relative aspect-square w-full mb-4 rounded-lg overflow-hidden bg-[#16222f] shadow-md"
-                  >
+                  {/* Giới hạn khung chứa ảnh album tương ứng với độ rộng card */}
+                  <div className="relative aspect-square w-full h-[150px] md:h-[168px] mb-4 overflow-hidden bg-white/[0.02] shadow-md flex-shrink-0">
                     <MusicImage
                       src={album.img}
                       type="album"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      alt={album.name}
+                      className="group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-xs">
-                      <button className="w-10 h-10 bg-sky-600 hover:bg-sky-500 rounded-full flex items-center justify-center shadow-md border-none cursor-pointer text-white transition-colors">
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                      <button className="w-11 h-11 bg-gradient-to-r from-sky-500 to-blue-600 rounded-full flex items-center justify-center shadow-md transform translate-y-3 group-hover:translate-y-0 transition-all duration-300 border-none cursor-pointer">
                         <Play
-                          size={18}
+                          size={20}
                           fill="currentColor"
-                          className="ml-0.5"
+                          className="text-white ml-0.5"
                         />
                       </button>
                     </div>
                   </div>
-                  <h4 className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors">
+                  <h4
+                    className="font-bold text-white truncate text-sm mb-1 group-hover:text-sky-400 transition-colors"
+                    title={album.name}
+                  >
                     {album.name}
                   </h4>
-                  <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">
-                    {album.uploadDate
-                      ? new Date(album.uploadDate).getFullYear()
-                      : "----"}{" "}
-                    • Album
-                  </p>
                 </div>
               ))}
             </div>
@@ -1067,8 +1088,59 @@ const ArtistProfilePage = () => {
           onClose={() => setSelectedTrack(null)}
         />
       )}
+      {isFollowerModalOpen && (
+        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
+          <div className="bg-[#182232] border border-white/[0.1] w-full max-w-sm rounded-2xl p-6 shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-white">Người theo dõi</h3>
+              <button
+                onClick={() => setIsFollowerModalOpen(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
 
-
+            <div className="max-h-[300px] overflow-y-auto pr-2">
+              {followers.length > 0 ? (
+                followers.map((user) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center gap-3 py-2 border-b border-white/[0.05]"
+                  >
+                    <img
+                      src={`http://localhost:8080/${user.img}`}
+                      alt={user.name}
+                      className="w-10 h-10 rounded-full object-cover bg-gray-500 flex-shrink-0"
+                      // Bỏ cái onError lỗi thời đi, thay vào đó hãy để trình duyệt tự xử lý fallback
+                      onError={(e) => {
+                        // Chỉ đổi nguồn ảnh nếu lỗi, KHÔNG ẩn thẻ img (không dùng display: none)
+                        e.target.onerror = null;
+                        e.target.src = "/default-avatar.png";
+                      }}
+                    />
+                    <div className="flex flex-col overflow-hidden">
+                      <span className="text-sm font-medium text-white truncate">
+                        {user.name}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-slate-500 text-sm py-4">
+                  Chưa có ai theo dõi bạn.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+      {selectedTrack && (
+        <TrackEngagementModal
+          track={selectedTrack}
+          onClose={() => setSelectedTrack(null)}
+        />
+      )}
     </div>
   );
 };

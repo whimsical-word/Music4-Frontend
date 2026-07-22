@@ -38,5 +38,6 @@ export const useFavoriteStore = create((set, get) => ({
             // Nếu bỏ thích -> Lọc bỏ dựa trên trackId
             set({ likedTracks: likedTracks.filter(fav => Number(fav.trackId) !== Number(track.id)) });
         }
-    }
+    },
+    clearFavoriteStore: () => set({ likedTracks: [], isLoading: false }),
 }));

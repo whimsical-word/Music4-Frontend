@@ -118,7 +118,7 @@ export const useAuthStore = create((set) => ({
     updateProfile: (newName, newImg) => {
         set((state) => {
             if (newName) localStorage.setItem('name', newName);
-            // console.log('Updating profile with newName:', newName, 'newImg:', newImg);
+            console.log('Updating profile with newName:', newName, 'newImg:', newImg);
             if (newImg && newImg !== 'null') {
                 localStorage.setItem('userImg', newImg);
             }

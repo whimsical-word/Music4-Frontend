@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { usePlayerStore } from "../features/player/usePlayerStore";
 
 const NotificationBell = ({ userId }) => {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
-    const navigate = useNavigate();
+
+    const playTrack = usePlayerStore((state) => state.playTrack);
 
     useEffect(() => {
         if (!userId) return;
@@ -23,7 +24,14 @@ const NotificationBell = ({ userId }) => {
         // 2. THIẾT LẬP KẾT NỐI SSE
         const eventSource = new EventSource(`http://localhost:8080/api/notifications/subscribe/${userId}`);
 
+        // Lắng nghe thông báo bài hát mới
         eventSource.addEventListener("NEW_TRACK", (event) => {
+            const newNoti = JSON.parse(event.data);
+            setNotifications((prevNotis) => [newNoti, ...prevNotis]);
+            setUnreadCount((prevCount) => prevCount + 1);
+        });
+
+        eventSource.addEventListener("NEW_ALBUM", (event) => {
             const newNoti = JSON.parse(event.data);
             setNotifications((prevNotis) => [newNoti, ...prevNotis]);
             setUnreadCount((prevCount) => prevCount + 1);
@@ -40,6 +48,7 @@ const NotificationBell = ({ userId }) => {
 
     const handleNotiClick = async (noti) => {
         try {
+            // 1. Đánh dấu thông báo đã đọc
             if (!noti.isRead) {
                 await axios.put(`http://localhost:8080/api/notifications/${noti.id}/read`);
                 setNotifications((prev) =>
@@ -48,9 +57,20 @@ const NotificationBell = ({ userId }) => {
                 setUnreadCount((prev) => Math.max(0, prev - 1));
             }
 
-            if (noti.trackId) {
-                navigate(`/track/${noti.trackId}`);
-                setIsOpen(false);
+            // Đóng dropdown thông báo lại
+            setIsOpen(false);
+
+            // 2. Phân loại xử lý khi click vào thông báo
+            if (noti.trackId || noti.track) {
+                // Nếu là thông báo về Track -> Phát nhạc luôn
+                const trackData = noti.track || { id: noti.trackId, name: noti.content, ...noti };
+                playTrack(trackData, [trackData]);
+            } else if (noti.albumId || noti.album) {
+                // Nếu là thông báo về Album -> Bồ có thể tuỳ chỉnh điều hướng sang trang chi tiết Album ở đây
+                console.log("Đã click vào thông báo Album:", noti);
+                // Ví dụ: navigate(`/albums/${noti.albumId || noti.album.id}`);
+            } else {
+                console.warn("Thông báo này không chứa dữ liệu track hoặc album:", noti);
             }
         } catch (err) {
             console.error("Lỗi khi xử lý click thông báo:", err);
@@ -82,12 +102,11 @@ const NotificationBell = ({ userId }) => {
 
     return (
         <div style={{ position: "relative", display: "inline-block" }}>
-            {/* 🔔 Icon chiếc chuông chuẩn giao diện tối */}
+            {/* 🔔 Icon chiếc chuông */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
                 style={{ background: "none", border: "none", cursor: "pointer", position: "relative", padding: "8px", color: "#fff" }}
             >
-                {/* Dùng chuông nét mảnh hợp gu app nhạc hoặc bồ thích giữ icon 🔔 thì tùy ý nhé */}
                 <span style={{ fontSize: "22px" }}>🔔</span>
 
                 {/* 🔴 Số đỏ thông báo */}
@@ -98,11 +117,10 @@ const NotificationBell = ({ userId }) => {
                 )}
             </button>
 
-            {/* 📂 Menu danh sách thông báo Dropdown (Đã chuyển sang DARK MODE giống ảnh bồ gửi) */}
+            {/* 📂 Menu Dropdown danh sách thông báo */}
             {isOpen && (
-                <div style={{ position: "absolute", right: 0, top: "100%", mt: "8px", width: "340px", backgroundColor: "#222222", border: "1px solid #333333", borderRadius: "8px", boxShadow: "0 6px 16px rgba(0,0,0,0.4)", zIndex: 100, color: "#fff" }}>
+                <div style={{ position: "absolute", right: 0, top: "100%", marginTop: "8px", width: "340px", backgroundColor: "#222222", border: "1px solid #333333", borderRadius: "8px", boxShadow: "0 6px 16px rgba(0,0,0,0.4)", zIndex: 100, color: "#fff" }}>
 
-                    {/* Header: Đúng chữ "Thông báo mới nhận" + nút Xóa tất cả */}
                     <div style={{ padding: "14px 16px", borderBottom: "1px solid #333333", fontWeight: "bold", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: "15px" }}>Thông báo mới nhận</span>
                         {notifications.length > 0 && (
@@ -117,7 +135,6 @@ const NotificationBell = ({ userId }) => {
                         )}
                     </div>
 
-                    {/* Body list item */}
                     <div style={{ maxHeight: "360px", overflowY: "auto" }}>
                         {notifications.length === 0 ? (
                             <div style={{ padding: "30px", textAlign: "center", color: "#666", fontSize: "14px" }}>
@@ -131,7 +148,6 @@ const NotificationBell = ({ userId }) => {
                                     style={{
                                         padding: "14px 16px",
                                         borderBottom: "1px solid #2a2a2a",
-                                        // Chưa đọc thì nền xám sáng hơn một chút để phân biệt
                                         backgroundColor: !noti.isRead ? "#2d2d2d" : "transparent",
                                         cursor: "pointer",
                                         position: "relative",
@@ -151,7 +167,6 @@ const NotificationBell = ({ userId }) => {
                                         </span>
                                     </div>
 
-                                    {/* ✕ Nút xóa thông báo nhỏ ở góc phải */}
                                     <button
                                         onClick={(e) => handleDeleteNoti(e, noti.id, noti.isRead)}
                                         style={{
