@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Play, Pause, Clock, Music, ArrowLeft, Disc, ListMusic, Heart, Trash2, Plus} from 'lucide-react';
+import {Play, Pause, Clock, Music, ArrowLeft, Disc, ListMusic, Heart, Trash2, Plus, MoreHorizontal} from 'lucide-react';
 import axiosClient from '../app/axios/axiosClient';
 import MusicImage from "../layouts/components/MusicImage.jsx";
 import { usePlayerStore } from "../features/player/usePlayerStore.js";
 import {useAuthStore} from "../features/auth/useAuthStore.js";
+import TrackEngagementModal from "../layouts/components/TrackEngagementModal.jsx";
 // 🌟 BỒ CHÚ Ý: Nếu bồ có useAuthStore, hãy uncomment dòng dưới để lấy real data nhé:
 // import { useAuthStore } from "../features/auth/useAuthStore.js";
 
@@ -182,9 +183,7 @@ const AlbumDetailPage = () => {
                 >
                     <Play size={26} fill="white" className="ml-1"/>
                 </button>
-                <button className="text-slate-400 hover:text-white transition-colors border-none bg-transparent cursor-pointer">
-                    <Heart size={28}/>
-                </button>
+
                 {/* Thay đổi nút Plus của bạn thành thế này */}
                 {isOwner && (
                     <button
