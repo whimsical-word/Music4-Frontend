@@ -58,7 +58,8 @@ axiosClient.interceptors.response.use(
     if (
       status === 401 &&
       !originalRequest?._retry &&
-      !originalRequest?.url?.includes("/auth/refresh")
+      !originalRequest?.url?.includes("/auth/refresh") &&
+      !originalRequest?.url?.includes("/auth/logout")
     ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
@@ -134,17 +135,6 @@ axiosClient.interceptors.response.use(
       console.error("404 Not Found:", error.response?.data);
 
       useErrorStore.getState().setErrorStatus(404);
-
-      return Promise.reject(error);
-    }
-
-    // =========================================
-    // 500 - Internal Server Error
-    // =========================================
-    if (status >= 500) {
-      console.error("Server Error:", error.response?.data);
-
-      useErrorStore.getState().setErrorStatus(500);
 
       return Promise.reject(error);
     }
