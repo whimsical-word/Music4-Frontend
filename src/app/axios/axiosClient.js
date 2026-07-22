@@ -5,6 +5,7 @@ const axiosClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
 axiosClient.interceptors.request.use(
@@ -21,7 +22,6 @@ axiosClient.interceptors.request.use(
 let isRefreshing = false;
 let failedQueue = [];
 
-// 🛠️ ĐÃ SỬA: Format chuẩn lại hàm xử lý hàng đợi
 const processQueue = (error, token = null) => {
   failedQueue.forEach((prom) => {
     if (error) {

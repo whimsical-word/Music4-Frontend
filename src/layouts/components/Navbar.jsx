@@ -8,7 +8,7 @@ import axiosClient from "../../app/axios/axiosClient";
 const Navbar = () => {
     const navigate = useNavigate();
 
-    const { userId, username,name, role, img, logout, isAuthenticated } = useAuthStore();
+    const { userId, username, name, role, img, logout, isAuthenticated } = useAuthStore();
     const id = userId;
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
