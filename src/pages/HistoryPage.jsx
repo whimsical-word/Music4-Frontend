@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { ArrowLeft, Clock, Play, Pause } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axiosClient from "../app/axios/axiosClient";
@@ -19,25 +19,34 @@ const HistoryPage = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
-  useEffect(() => {
-    const fetchHistory = async (page) => {
+  const fetchHistory = useCallback(
+    async (page) => {
       if (!userId) return;
       setIsLoading(true);
       try {
-        // Gọi API lấy lịch sử nghe nhạc của User
         const response = await axiosClient.get(
-          `/tracking/history/${userId}?page=${page}&size=20`,
+          `/tracking/history/${userId}?page=${page}&size=10`,
         );
         setHistoryTracks(response.data.content);
-        setTotalPages(response.data.totalPages);
+        setTotalPages(response.data.page.totalPages);
       } catch (error) {
         console.error("Lỗi tải lịch sử nghe nhạc:", error);
       } finally {
         setIsLoading(false);
       }
-    };
+    },
+    [userId],
+  );
+
+  useEffect(() => {
     fetchHistory(currentPage);
-  }, [userId, currentPage]);
+  }, [fetchHistory, currentPage]);
+
+  useEffect(() => {
+    if (currentTrack && currentPage === 0) {
+      fetchHistory(0);
+    }
+  }, [currentTrack, fetchHistory, currentPage]);
 
   const handlePlayClick = (track) => {
     if (currentTrack && currentTrack.id === track.id) {
@@ -60,14 +69,13 @@ const HistoryPage = () => {
         Lịch sử nghe nhạc
       </h1>
 
-      {isLoading ? (
+      {isLoading && historyTracks.length === 0 ? (
         <div className="flex justify-center py-20">
           <div className="w-8 h-8 border-4 border-[#282828] border-t-blue-500 rounded-full animate-spin"></div>
         </div>
       ) : historyTracks.length > 0 ? (
         <div className="w-full text-[#a7a7a7] text-sm">
           {historyTracks.map((track, index) => {
-            // Kiểm tra xem bài hát này có đang là bài hiện tại hay không
             const isCurrentThisTrack =
               currentTrack && currentTrack.id === track.id;
 
@@ -87,7 +95,6 @@ const HistoryPage = () => {
                     type="track"
                     className="w-full h-full"
                   />
-                  {/* Hiển thị nút Play/Pause tùy theo trạng thái thực tế */}
                   <div
                     className={`absolute inset-0 bg-black/40 flex items-center justify-center transition-opacity ${
                       isCurrentThisTrack
