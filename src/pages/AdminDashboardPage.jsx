@@ -499,13 +499,6 @@ const AdminDashboardPage = () => {
                                                 <td className="p-4 text-gray-400 font-mono">USR-{u.id}</td>
                                                 <td className="p-4 text-right flex justify-end gap-2">
                                                     <button
-                                                        onClick={() => navigate(`/profile/${u.id}`)}
-                                                        className="p-2 text-gray-400 hover:text-blue-500 rounded-lg transition-colors bg-transparent border-none cursor-pointer"
-                                                        title="Xem hồ sơ người nghe"
-                                                    >
-                                                        <Eye size={18} />
-                                                    </button>
-                                                    <button
                                                         onClick={() => handleDeleteUser(u.id)}
                                                         className="p-2 text-gray-400 hover:text-red-500 rounded-lg transition-colors bg-transparent border-none cursor-pointer"
                                                         title="Xóa người dùng"
