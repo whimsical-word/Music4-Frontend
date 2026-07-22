@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { jwtDecode } from 'jwt-decode';
 
-// Hàm hỗ trợ đọc JSON an toàn từ localStorage
 const getSafeParsedJSON = (key) => {
     try {
         const item = localStorage.getItem(key);
@@ -16,7 +15,6 @@ export const useAuthStore = create((set) => ({
     userId: localStorage.getItem('userId') || null,
     username: localStorage.getItem('username') || null,
     img: localStorage.getItem('userImg') || null,
-    // ✅ Đã sửa: Dùng hàm đọc an toàn thay vì trực tiếp JSON.parse()
     name: getSafeParsedJSON('name'),
     role: localStorage.getItem('role') || 'listener',
     isAuthenticated: !!localStorage.getItem('accessToken'),
@@ -34,7 +32,6 @@ export const useAuthStore = create((set) => ({
         if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
         if (id) localStorage.setItem('userId', id);
 
-        // ✅ Chỉ stringify khi name thực sự tồn tại
         if (name) {
             localStorage.setItem('name', JSON.stringify(name));
         } else {
@@ -72,13 +69,15 @@ export const useAuthStore = create((set) => ({
     setAuthError: (errorMsg) => set({ error: errorMsg }),
     setLoading: (isLoading) => set({ isLoading }),
 
-    loginWithGoogle: (token) => {
+    loginWithGoogle: (token, refreshToken) => {
         try {
             const payload = jwtDecode(token);
             if (!payload) {
                 set({ error: "Token Google không hợp lệ." });
                 return false;
             }
+
+            if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
 
             let finalRole = (payload.role || "listener")
                 .replace("ROLE_", "")
@@ -93,7 +92,6 @@ export const useAuthStore = create((set) => ({
             if (finalUsername) localStorage.setItem("username", finalUsername);
             localStorage.setItem("accessToken", token);
 
-            // ✅ Chỉ lưu name nếu có giá trị
             if (name) {
                 localStorage.setItem("name", JSON.stringify(name));
             } else {
@@ -121,10 +119,15 @@ export const useAuthStore = create((set) => ({
 
     updateProfile: (newName, newImg) => {
         set((state) => {
-            if (newName) localStorage.setItem('username', newName);
+            if (newName) localStorage.setItem('name', newName);
+            console.log('Updating profile with newName:', newName, 'newImg:', newImg);
             if (newImg && newImg !== 'null') {
                 localStorage.setItem('userImg', newImg);
             }
+            set({
+                img: newImg && newImg !== 'null' ? newImg : state.img,
+                name: newName || state.name,
+            });
 
             return {
                 username: newName || state.username,
