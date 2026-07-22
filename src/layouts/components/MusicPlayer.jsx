@@ -239,7 +239,7 @@ const MusicPlayer = () => {
 
     // Chỉ user thường mới được tính view
     if (isAuthenticated && userId && currentTrack && !isArtistOrAdmin) {
-      const requiredListenTime = (audio.duration || 0) * 1;
+      const requiredListenTime = (audio.duration || 0) * 0.95;
 
       if (
         accumulatedPlayTimeRef.current >= requiredListenTime &&
@@ -255,6 +255,8 @@ const MusicPlayer = () => {
           console.log(
             "[SUCCESS] Nghe đủ thời gian thực tế -> lưu history + cộng view",
           );
+
+          window.dispatchEvent(new Event("trackHistoryUpdated"));
         } catch (error) {
           console.error("[ERROR] Lỗi ghi nhận bài hát hoàn thành:", error);
         }
@@ -265,6 +267,8 @@ const MusicPlayer = () => {
       }
     }
 
+    accumulatedPlayTimeRef.current = 0;
+    hasListenedToEndRef.current = false;
     lastSyncPositionRef.current = 0;
 
     const { repeatMode, currentIndex, queue, isFromHistory } =
