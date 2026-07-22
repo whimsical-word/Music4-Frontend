@@ -50,7 +50,12 @@ const MusicPlayer = () => {
     toggleRepeatMode,
   } = usePlayerStore();
 
-  const { isAuthenticated, userId } = useAuthStore();
+  const { isAuthenticated, userId, role } = useAuthStore();
+
+  const normalizedRole = role?.toUpperCase();
+
+  const isArtistOrAdmin =
+    normalizedRole === "ARTIST" || normalizedRole === "ADMIN";
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -63,18 +68,17 @@ const MusicPlayer = () => {
   const [volume, setVolume] = useState(1); // Mặc định âm lượng 100% (1.0)
 
   // CÁC BIẾN REF ĐỂ THEO DÕI THỜI GIAN NGHE THỰC TẾ
-  const lastTimeRef = useRef(0);
-  const accumulatedTimeRef = useRef(0);
-  const hasSavedHistoryRef = useRef(false);
   const lastSyncPositionRef = useRef(0);
+  const hasListenedToEndRef = useRef(false);
+  const lastPlayedTimeRef = useRef(0);
+  const accumulatedPlayTimeRef = useRef(0);
 
   // RESET LẠI BỘ ĐẾM KHI CHUYỂN BÀI HÁT MỚI
   useEffect(() => {
-    lastTimeRef.current = 0;
-    accumulatedTimeRef.current = 0;
-    handleTrackEnded;
-    hasSavedHistoryRef.current = false;
     lastSyncPositionRef.current = 0;
+    hasListenedToEndRef.current = false;
+    lastPlayedTimeRef.current = 0;
+    accumulatedPlayTimeRef.current = 0;
   }, [currentTrack?.id]);
 
   const getStreamUrl = (trackId) => {
@@ -163,52 +167,17 @@ const MusicPlayer = () => {
     }
   }, [isPlaying, currentTrack]);
 
-  // Sync Playback Position (Đồng bộ thời gian nghe mỗi 10 giây)
-  useEffect(() => {
-    let syncInterval;
-
-    // Chỉ chạy khi user đã đăng nhập, đang có bài hát, và bài hát đang play
-    if (isAuthenticated && userId && currentTrack && isPlaying) {
-      console.log(
-        `[DEBUG - PLAY] Bắt đầu interval sync-time cho bài: ${currentTrack.name}`,
-      );
-      syncInterval = setInterval(async () => {
-        if (audioRef.current) {
-          const currentPosition = Math.floor(audioRef.current.currentTime);
-          console.log(
-            `[DEBUG - SYNC] Chuẩn bị đồng bộ thời gian. Position hiện tại: ${currentPosition}s`,
-          );
-          // Chỉ gửi nếu đã nghe
-          if (currentPosition > 0) {
-            try {
-              await axiosClient.put("/tracking/sync-time", {
-                userId: userId,
-                trackId: currentTrack.id,
-                position: currentPosition,
-              });
-              console.log("[DEBUG - SYNC] Đồng bộ thời gian thành công!");
-            } catch (error) {
-              console.error("[DEBUG - ERROR] Lỗi đồng bộ thời gian:", error);
-            }
-          }
-        }
-      }, 10000);
-    }
-
-    // Cleanup function: Tự động dọn dẹp interval khi đổi bài hoặc pause
-    return () => {
-      if (syncInterval) {
-        console.log("[DEBUG - PLAY] Dọn dẹp interval sync-time.");
-        clearInterval(syncInterval);
-      }
-    };
-  }, [isAuthenticated, userId, currentTrack, isPlaying]);
-
   // THUẬT TOÁN ANTI-CHEAT & SYNC TIME
   const handleTimeUpdate = async () => {
     if (audioRef.current) {
       const currentVal = audioRef.current.currentTime;
       const durationReal = audioRef.current.duration;
+
+      const timeDiff = currentVal - lastPlayedTimeRef.current;
+      if (timeDiff > 0 && timeDiff <= 0.5) {
+        accumulatedPlayTimeRef.current += timeDiff;
+      }
+      lastPlayedTimeRef.current = currentVal;
 
       // CHẶN GUEST KHI NGHE TỚI GIÂY THỨ 30
       if (!isAuthenticated && currentVal >= PREVIEW_LIMIT) {
@@ -220,12 +189,11 @@ const MusicPlayer = () => {
       }
 
       setCurrentTime(currentVal);
-      if (durationReal) {
-        setProgress((currentVal / durationReal) * 100);
-      }
+      setProgress((currentVal / durationReal) * 100);
 
+      // Sync playback position mỗi 10 giây
       const currentSecond = Math.floor(currentVal);
-      // Nếu chạm mốc chia hết cho 10 (10, 20, 30, 40, 50...) và chưa đồng bộ mốc này
+
       if (
         currentSecond > 0 &&
         currentSecond % 10 === 0 &&
@@ -233,10 +201,11 @@ const MusicPlayer = () => {
       ) {
         lastSyncPositionRef.current = currentSecond; // Khóa lại để không gọi API trùng lặp
 
-        if (isAuthenticated && userId && currentTrack) {
+        if (isAuthenticated && userId && currentTrack && !isArtistOrAdmin) {
           console.log(
             `[DEBUG - SYNC] Chuẩn bị đồng bộ thời gian. Position hiện tại: ${currentSecond}s`,
           );
+
           axiosClient
             .put("/tracking/sync-time", {
               userId: userId,
@@ -251,52 +220,6 @@ const MusicPlayer = () => {
             );
         }
       }
-
-      // Bắt đầu tính toán thời gian nghe thực
-      const timeDifference = currentVal - lastTimeRef.current;
-
-      // Nếu nhảy < 1.5 giây tức là nhạc đang chạy bình thường (không tua)
-      if (timeDifference > 0 && timeDifference <= 0.5) {
-        accumulatedTimeRef.current += timeDifference;
-      }
-      lastTimeRef.current = currentVal;
-
-      // LƯU LỊCH SỬ + CỘNG VIEW SAU 10 GIÂY THỰC TẾ (ĐIỂM GHI NHẬN DUY NHẤT)
-      if (
-        accumulatedTimeRef.current >= 10 && // Đã nghe thực tế đủ 10 giây
-        !hasSavedHistoryRef.current // Chưa lưu lịch sử cho bài này
-      ) {
-        hasSavedHistoryRef.current = true; // Khóa cờ lại, chặn gọi trùng
-
-        if (isAuthenticated && userId && currentTrack) {
-          console.log("[DEBUG - TRACKING] Nghe đủ 10s. Gọi API lưu lịch sử...");
-          try {
-            await axiosClient.post("/tracking/history", {
-              trackId: currentTrack.id,
-              userId: userId,
-            });
-            await axiosClient.put("/tracking/sync-time", {
-              trackId: currentTrack.id,
-              userId: userId,
-              position: Math.floor(currentVal),
-            });
-
-            console.log("[SUCCESS] Đã lưu bài hát vào lịch sử!");
-          } catch (error) {
-            console.error(
-              "[DEBUG - ERROR] Lỗi khi gọi API lưu lịch sử:",
-              error,
-            );
-          }
-        }
-      }
-
-      // In log theo dõi quá trình nghe (Cứ mỗi ~5 giây in 1 lần để đỡ spam)
-      if (Math.floor(currentVal) % 5 === 0 && Math.floor(currentVal) !== 0) {
-        console.log(
-          `[DEBUG - TRACKING] Tiến trình: ${Math.floor(accumulatedTimeRef.current)}s / ${Math.floor(durationReal)}s`,
-        );
-      }
     }
   };
 
@@ -304,7 +227,9 @@ const MusicPlayer = () => {
   const handleTrackEnded = async () => {
     const audio = audioRef.current;
 
-    // Nếu là Guest mà chạy hết bài (dưới 30s) thì cũng chặn và bung Modal
+    if (!audio) return;
+
+    // Guest
     if (!isAuthenticated) {
       usePlayerStore.setState({ isPlaying: false });
       audio.currentTime = 0;
@@ -312,45 +237,48 @@ const MusicPlayer = () => {
       return;
     }
 
-    // RESET VỊ TRÍ VỀ 0 SAU KHI NGHE HẾT BÀI
-    if (isAuthenticated && userId && currentTrack) {
-      try {
-        await axiosClient.put("/tracking/sync-time", {
-          trackId: currentTrack.id,
-          userId: userId,
-          position: 0,
-        });
+    // Chỉ user thường mới được tính view
+    if (isAuthenticated && userId && currentTrack && !isArtistOrAdmin) {
+      const requiredListenTime = (audio.duration || 0) * 0.95;
+
+      if (
+        accumulatedPlayTimeRef.current >= requiredListenTime &&
+        !hasListenedToEndRef.current
+      ) {
+        hasListenedToEndRef.current = true; // Khóa lại tránh request lặp
+
+        try {
+          await axiosClient.post("/tracking/history", {
+            trackId: currentTrack.id,
+            userId: userId,
+          });
+          console.log(
+            "[SUCCESS] Nghe đủ thời gian thực tế -> lưu history + cộng view",
+          );
+
+          window.dispatchEvent(new Event("trackHistoryUpdated"));
+        } catch (error) {
+          console.error("[ERROR] Lỗi ghi nhận bài hát hoàn thành:", error);
+        }
+      } else {
         console.log(
-          "[DEBUG] Bài hát kết thúc. Đã reset playback_position về 0.",
+          `[ANTI-CHEAT] Bỏ qua cộng view. Thời gian nghe thực: ${Math.floor(accumulatedPlayTimeRef.current)}s, Yêu cầu: ${Math.floor(requiredListenTime)}s`,
         );
-      } catch (error) {
-        console.error("Lỗi reset vị trí:", error);
       }
     }
 
-    accumulatedTimeRef.current = 0;
-    hasSavedHistoryRef.current = false;
+    accumulatedPlayTimeRef.current = 0;
+    hasListenedToEndRef.current = false;
+    lastSyncPositionRef.current = 0;
 
     const { repeatMode, currentIndex, queue, isFromHistory } =
       usePlayerStore.getState();
 
-    // NẾU PHÁT TỪ TRANG LỊCH SỬ -> HẾT BÀI LÀ DỪNG
     if (isFromHistory) {
-      if (isAuthenticated && userId && currentTrack) {
-        try {
-          await axiosClient.put("/tracking/sync-time", {
-            trackId: currentTrack.id,
-            userId: userId,
-            position: 0,
-          });
-        } catch (error) {
-          console.error("Lỗi reset vị trí:", error);
-        }
-      }
+      usePlayerStore.setState({
+        isPlaying: false,
+      });
 
-      usePlayerStore.setState({ isPlaying: false });
-      accumulatedTimeRef.current = 0;
-      hasSavedHistoryRef.current = false;
       return;
     }
 
@@ -365,6 +293,7 @@ const MusicPlayer = () => {
         usePlayerStore.setState({
           isPlaying: false,
         });
+
         return;
       }
     }

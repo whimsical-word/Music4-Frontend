@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { X, Heart, Star, Plus, ListMusic, MessageSquare } from "lucide-react";
+import { X, Heart, Star, Plus, ListMusic, MessageSquare, Trash2, Edit2 } from "lucide-react";
 import { engagementService } from "../../features/player/engagementService";
 import { useAuthStore } from "../../features/auth/useAuthStore";
 import axiosClient from "../../app/axios/axiosClient";
@@ -9,20 +9,20 @@ const TrackEngagementModal = ({ track, onClose }) => {
     const { userId, role } = useAuthStore();
     const isArtist = role?.toLowerCase() === "artist";
 
-    // State cho tương tác
     const [isLiked, setIsLiked] = useState(false);
     const [rating, setRating] = useState(0);
     const [savedRating, setSavedRating] = useState(0);
     const [hoverRating, setHoverRating] = useState(0);
     const [isRatingLoading, setIsRatingLoading] = useState(false);
-    const [averageRating, setAverageRating] = useState(0); // State lưu điểm trung bình
+    const [averageRating, setAverageRating] = useState(0);
 
-    // State cho bình luận
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    // State cho playlist
+    const [editingCommentId, setEditingCommentId] = useState(null);
+    const [editContent, setEditContent] = useState("");
+
     const [myPlaylists, setMyPlaylists] = useState([]);
     const [selectedPlaylistId, setSelectedPlaylistId] = useState("");
     const [isAddingToPlaylist, setIsAddingToPlaylist] = useState(false);
@@ -129,22 +129,88 @@ const TrackEngagementModal = ({ track, onClose }) => {
         if (isArtist || !newComment.trim() || isSubmitting) return;
         setIsSubmitting(true);
         try {
-            await engagementService.addComment(track.id, newComment.trim(), userId, null);
-            setComments([{ commentId: Date.now(), commenterName: "Bạn", content: newComment.trim(), createdAt: new Date().toISOString() }, ...comments]);
+            const res = await engagementService.addComment(track.id, newComment.trim(), userId, null);
+            const createdComment = res?.data ?? res ?? {
+                commentId: Date.now(),
+                userId: userId,
+                commenterName: "Bạn",
+                content: newComment.trim(),
+                createdAt: new Date().toISOString()
+            };
+
+            setComments([createdComment, ...comments]);
             setNewComment("");
-        } finally { setIsSubmitting(false); }
+        } catch (err) {
+            alert("Không thể gửi bình luận.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDeleteComment = async (targetId) => {
+        let rawId = typeof targetId === 'object' && targetId !== null
+            ? (targetId.commentId || targetId.id)
+            : targetId;
+
+        if (rawId !== undefined && rawId !== null) {
+            rawId = String(rawId).split(':')[0];
+        }
+
+        if (!rawId) return;
+
+        if (!window.confirm("Bạn có chắc chắn muốn xóa bình luận này?")) return;
+        try {
+            await axiosClient.delete(`/comments/${rawId}`);
+            setComments(comments.filter(c => {
+                const currentId = String(c.commentId || c.id).split(':')[0];
+                return currentId !== String(rawId);
+            }));
+        } catch (err) {
+            console.error("Lỗi xóa bình luận:", err);
+            alert("Không thể xóa bình luận.");
+        }
+    };
+
+    const handleUpdateComment = async (targetId) => {
+        let rawId = typeof targetId === 'object' && targetId !== null
+            ? (targetId.commentId || targetId.id)
+            : targetId;
+
+        if (rawId !== undefined && rawId !== null) {
+            rawId = String(rawId).split(':')[0];
+        }
+
+        if (!editContent.trim() || !rawId) return;
+
+        try {
+            await axiosClient.put(`/comments/${rawId}`, { content: editContent.trim() });
+
+            setComments(comments.map(c => {
+                const currentId = String(c.commentId || c.id).split(':')[0];
+                if (currentId === String(rawId)) {
+                    return { ...c, content: editContent.trim() };
+                }
+                return c;
+            }));
+
+            setEditingCommentId(null);
+            setEditContent("");
+        } catch (err) {
+            console.error("Lỗi cập nhật bình luận:", err);
+            alert("Không thể cập nhật bình luận.");
+        }
     };
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto"
             onClick={onClose}
         >
             <div
-                className="bg-[#181818] border border-[#282828] w-full max-w-md rounded-2xl p-6 relative text-white shadow-2xl"
+                className="bg-[#181818] border border-[#282828] w-full max-w-md rounded-2xl p-6 relative text-white shadow-2xl my-auto max-h-[90vh] overflow-y-auto custom-scrollbar"
                 onClick={(e) => e.stopPropagation()}
             >
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10">
                     <X size={20} />
                 </button>
 
@@ -235,13 +301,73 @@ const TrackEngagementModal = ({ track, onClose }) => {
                             <button type="submit" disabled={isSubmitting || !newComment.trim()} className="bg-blue-600 hover:bg-blue-700 px-5 rounded-lg text-sm font-semibold disabled:opacity-50">Gửi</button>
                         </form>
                     )}
-                    <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
-                        {comments.length > 0 ? comments.map((c) => (
-                            <div key={c.commentId} className="bg-[#202020] border border-[#2c2c2c] rounded-lg p-3">
-                                <div className="text-xs font-bold text-blue-400 mb-1">{c.commenterName}</div>
-                                <div className="text-sm text-gray-200">{c.content}</div>
-                            </div>
-                        )) : <p className="text-center text-gray-500 text-sm py-4">Chưa có bình luận.</p>}
+                    <div className="space-y-3">
+                        {comments.length > 0 ? comments.map((c, index) => {
+                            let rawCId = c.commentId || c.id || index;
+                            const cId = String(rawCId).split(':')[0];
+
+                            // Xác thực quyền sở hữu động qua ID người dùng (hỗ trợ cả trường hợp DTO trả về userId hoặc khớp trực tiếp)
+                            const commentUserId = c.userId || c.commenterId;
+                            const isMyComment = commentUserId ? Number(commentUserId) === Number(userId) : (c.commenterName === "Bạn");
+                            const isEditing = editingCommentId === cId;
+
+                            return (
+                                <div key={cId} className="bg-[#202020] border border-[#2c2c2c] rounded-lg p-3">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="text-xs font-bold text-blue-400">{c.commenterName}</span>
+                                        {isMyComment && !isArtist && (
+                                            <div className="flex items-center gap-2">
+                                                {!isEditing ? (
+                                                    <>
+                                                        <button
+                                                            onClick={() => { setEditingCommentId(cId); setEditContent(c.content); }}
+                                                            className="text-gray-400 hover:text-sky-400 transition-colors"
+                                                            title="Chỉnh sửa"
+                                                        >
+                                                            <Edit2 size={14} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteComment(cId)}
+                                                            className="text-gray-400 hover:text-red-400 transition-colors"
+                                                            title="Xóa"
+                                                        >
+                                                            <Trash2 size={14} />
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => setEditingCommentId(null)}
+                                                        className="text-xs text-gray-400 hover:text-white"
+                                                    >
+                                                        Hủy
+                                                    </button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {isEditing ? (
+                                        <div className="flex gap-2 mt-2">
+                                            <input
+                                                type="text"
+                                                value={editContent}
+                                                onChange={(e) => setEditContent(e.target.value)}
+                                                className="flex-1 bg-[#121212] text-xs px-3 py-1.5 rounded border border-[#3e3e3e] outline-none focus:border-sky-500 text-white"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => handleUpdateComment(cId)}
+                                                className="bg-sky-600 hover:bg-sky-500 px-3 py-1 rounded text-xs font-bold text-white cursor-pointer"
+                                            >
+                                                Lưu
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="text-sm text-gray-200">{c.content}</div>
+                                    )}
+                                </div>
+                            );
+                        }) : <p className="text-center text-gray-500 text-sm py-4">Chưa có bình luận.</p>}
                     </div>
                 </div>
             </div>

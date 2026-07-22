@@ -52,15 +52,22 @@ axiosClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     const status = error.response?.status;
+    const requestUrl = originalRequest?.url || "";
+
+    // =========================================
+    // AUTH REQUESTS
+    // Login / Refresh / Logout
+    // Không xử lý 401 bằng logic refresh token
+    // =========================================
+    const isAuthRequest =
+      requestUrl.includes("/auth/login") ||
+      requestUrl.includes("/auth/refresh") ||
+      requestUrl.includes("/auth/logout");
 
     // =========================================
     // 401 - Access Token hết hạn
     // =========================================
-    if (
-      status === 401 &&
-      !originalRequest?._retry &&
-      !originalRequest?.url?.includes("/auth/refresh")
-    ) {
+    if (status === 401 && !originalRequest?._retry && !isAuthRequest) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({
@@ -107,8 +114,6 @@ axiosClient.interceptors.response.use(
 
         localStorage.clear();
 
-        // Không cần window.location.href
-        // Nếu muốn 401 page:
         useErrorStore.getState().setErrorStatus(401);
 
         return Promise.reject(refreshError);
@@ -135,17 +140,6 @@ axiosClient.interceptors.response.use(
       console.error("404 Not Found:", error.response?.data);
 
       useErrorStore.getState().setErrorStatus(404);
-
-      return Promise.reject(error);
-    }
-
-    // =========================================
-    // 500 - Internal Server Error
-    // =========================================
-    if (status >= 500) {
-      console.error("Server Error:", error.response?.data);
-
-      useErrorStore.getState().setErrorStatus(500);
 
       return Promise.reject(error);
     }
