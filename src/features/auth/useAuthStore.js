@@ -69,13 +69,15 @@ export const useAuthStore = create((set) => ({
     setAuthError: (errorMsg) => set({ error: errorMsg }),
     setLoading: (isLoading) => set({ isLoading }),
 
-    loginWithGoogle: (token) => {
+    loginWithGoogle: (token, refreshToken) => {
         try {
             const payload = jwtDecode(token);
             if (!payload) {
                 set({ error: "Token Google không hợp lệ." });
                 return false;
             }
+
+            if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
 
             let finalRole = (payload.role || "listener")
                 .replace("ROLE_", "")

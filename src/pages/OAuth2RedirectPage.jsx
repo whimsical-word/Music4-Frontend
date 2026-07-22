@@ -9,7 +9,8 @@ export default function OAuth2RedirectPage() {
 
   useEffect(() => {
     const token = params.get("token");
-    const ok = loginWithGoogle(token);
+    const refreshToken = params.get("refreshToken");
+    const ok = loginWithGoogle(token, refreshToken);
 
     if (ok) {
       navigate("/", { replace: true });
