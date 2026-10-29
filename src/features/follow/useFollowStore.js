@@ -42,7 +42,7 @@ export const useFollowStore = create((set, get) => ({
         }
 
         try {
-            await axiosClient.post(`/follows/toggle?userId=${userId}&artistId=${cleanArtistId}`);
+            await axiosClient.post(`/follows/toggle?artistId=${cleanArtistId}`);
         } catch (error) {
             console.error("Lỗi xử lý follow phía server:", error);
             set({ followedArtistIds }); // Hoàn tác (rollback) trạng thái nếu lỗi API

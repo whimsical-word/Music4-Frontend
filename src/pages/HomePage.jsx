@@ -121,30 +121,20 @@ const HomePage = () => {
             }),
             axiosClient.get("/artists"),
             axiosClient.get("/albums"),
-            axiosClient.get("tracks/top5-views"),
+            axiosClient.get("/tracks/top5-views"),
           ]);
 
-        setTracks(
-          tracksRes.data?.content ||
-            tracksRes.data?.data ||
-            tracksRes.data ||
-            [],
-        );
-        setArtists(
-          artistsRes.data?.content ||
-            artistsRes.data?.data ||
-            artistsRes.data ||
-            [],
-        );
-        setAlbums(
-          albumRes.data?.content || albumRes.data?.data || albumRes.data || [],
-        );
-        setTop5Tracks(
-          top5TrackRes.data?.content ||
-            top5TrackRes.data?.data ||
-            top5TrackRes.data ||
-            [],
-        );
+        const ensureArray = (resData) => {
+          if (Array.isArray(resData)) return resData;
+          if (Array.isArray(resData?.content)) return resData.content;
+          if (Array.isArray(resData?.data)) return resData.data;
+          return [];
+        };
+
+        setTracks(ensureArray(tracksRes?.data));
+        setArtists(ensureArray(artistsRes?.data));
+        setAlbums(ensureArray(albumRes?.data));
+        setTop5Tracks(ensureArray(top5TrackRes?.data));
       } catch (error) {
         console.error("Lỗi lấy dữ liệu trang chủ: ", error);
       }
@@ -154,7 +144,7 @@ const HomePage = () => {
           const aiRes = await axiosClient.get("/recommendations", {
             params: { userId: actualUserId },
           });
-          setAiRecommendations(aiRes.data || []);
+          setAiRecommendations(ensureArray(aiRes?.data));
         } catch (aiError) {
           console.warn("AI Service không khả dụng: ", aiError.message);
           setAiRecommendations([]);
@@ -432,7 +422,7 @@ const HomePage = () => {
           </div>
 
           <div className="bg-[#0f1722] border border-white/[0.05] p-6 rounded-2xl shadow-2xl">
-            {top5Tracks.length > 0 ? (
+            {Array.isArray(top5Tracks) && top5Tracks.length > 0 ? (
               <div className="flex flex-col gap-2">
                 {top5Tracks.map((track, index) => {
                   let rankColor = "text-slate-600";

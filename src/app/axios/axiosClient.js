@@ -1,7 +1,8 @@
 import axios from "axios";
+import { API_BASE } from "../config";
 
 const axiosClient = axios.create({
-  baseURL: "http://localhost:8080/api",
+  baseURL: API_BASE,
   headers: {
     "Content-Type": "application/json",
   },
@@ -63,7 +64,7 @@ axiosClient.interceptors.response.use(
         if (!oldRefreshToken) throw new Error("Không có refresh token");
 
         // Xin cấp lại cặp Token mới
-        const res = await axios.post("http://localhost:8080/api/auth/refresh", {
+        const res = await axios.post(`${API_BASE}/auth/refresh`, {
           refreshToken: oldRefreshToken,
         });
 

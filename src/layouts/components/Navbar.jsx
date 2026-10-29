@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../features/auth/useAuthStore';
 import MusicImage from './MusicImage.jsx';
 import axiosClient from "../../app/axios/axiosClient";
+import { API_BASE } from "../../app/config";
 import { useFavoriteStore } from '../../features/favorite/useFavoriteStore';
 import { usePlaylistStore } from '../../features/playlist/usePlaylistStore';
 import { usePlayerStore } from '../../features/player/usePlayerStore';
@@ -33,14 +34,15 @@ const Navbar = () => {
         // Dùng axiosClient để lấy thông báo lịch sử (tự động đính kèm Token và tránh lỗi CORS)
         axiosClient.get(`/notifications/user/${id}`)
             .then((res) => {
-                setNotifications(res.data);
-                const unread = res.data.filter((n) => !n.isRead).length;
+                const list = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.content) ? res.data.content : (Array.isArray(res.data?.data) ? res.data.data : []));
+                setNotifications(list);
+                const unread = list.filter((n) => !n.isRead).length;
                 setUnreadCount(unread);
             })
             .catch((err) => console.error("Lỗi lấy thông báo cũ:", err));
 
         // Mở kết nối SSE lắng nghe thông báo mới (SSE vẫn dùng URL tuyệt đối)
-        const eventSource = new EventSource(`http://localhost:8080/api/notifications/subscribe/${id}`);
+        const eventSource = new EventSource(`${API_BASE}/notifications/subscribe/${id}`);
 
         eventSource.addEventListener("NEW_TRACK", (event) => {
             const newNoti = JSON.parse(event.data);

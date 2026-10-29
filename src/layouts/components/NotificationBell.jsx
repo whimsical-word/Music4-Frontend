@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { API_BASE } from "../../app/config";
 import { usePlayerStore } from "../features/player/usePlayerStore";
 
 const NotificationBell = ({ userId }) => {
@@ -13,16 +14,17 @@ const NotificationBell = ({ userId }) => {
         if (!userId) return;
 
         // 1. Lấy danh sách thông báo lịch sử từ DB
-        axios.get(`http://localhost:8080/api/notifications/user/${userId}`)
+        axios.get(`${API_BASE}/notifications/user/${userId}`)
             .then((res) => {
-                setNotifications(res.data);
-                const unread = res.data.filter((n) => !n.isRead).length;
+                const list = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.content) ? res.data.content : (Array.isArray(res.data?.data) ? res.data.data : []));
+                setNotifications(list);
+                const unread = list.filter((n) => !n.isRead).length;
                 setUnreadCount(unread);
             })
             .catch((err) => console.error("Lỗi lấy thông báo cũ:", err));
 
         // 2. THIẾT LẬP KẾT NỐI SSE
-        const eventSource = new EventSource(`http://localhost:8080/api/notifications/subscribe/${userId}`);
+        const eventSource = new EventSource(`${API_BASE}/notifications/subscribe/${userId}`);
 
         // Lắng nghe thông báo bài hát mới
         eventSource.addEventListener("NEW_TRACK", (event) => {
@@ -50,7 +52,7 @@ const NotificationBell = ({ userId }) => {
         try {
             // 1. Đánh dấu thông báo đã đọc
             if (!noti.isRead) {
-                await axios.put(`http://localhost:8080/api/notifications/${noti.id}/read`);
+                await axios.put(`${API_BASE}/notifications/${noti.id}/read`);
                 setNotifications((prev) =>
                     prev.map((n) => (n.id === noti.id ? { ...n, isRead: true } : n))
                 );
@@ -80,7 +82,7 @@ const NotificationBell = ({ userId }) => {
     const handleDeleteNoti = async (e, notiId, isRead) => {
         e.stopPropagation();
         try {
-            await axios.delete(`http://localhost:8080/api/notifications/${notiId}`);
+            await axios.delete(`${API_BASE}/notifications/${notiId}`);
             setNotifications((prev) => prev.filter((n) => n.id !== notiId));
             if (!isRead) {
                 setUnreadCount((prev) => Math.max(0, prev - 1));
@@ -92,7 +94,7 @@ const NotificationBell = ({ userId }) => {
 
     const handleClearAll = async () => {
         try {
-            await axios.delete(`http://localhost:8080/api/notifications/clear-all`);
+            await axios.delete(`${API_BASE}/notifications/clear-all`);
             setNotifications([]);
             setUnreadCount(0);
         } catch (err) {

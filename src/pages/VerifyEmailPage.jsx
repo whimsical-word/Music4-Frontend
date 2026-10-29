@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { API_BASE } from '../app/config';
 
 export default function VerifyEmailPage() {
     const [searchParams] = useSearchParams();
@@ -20,7 +21,7 @@ export default function VerifyEmailPage() {
 
         const controller = new AbortController();
 
-        fetch(`http://localhost:8080/api/v1/verify-email?token=${token}`, {
+        fetch(`${API_BASE}/v1/verify-email?token=${token}`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',

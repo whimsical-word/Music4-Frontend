@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { getMediaUrl } from "../app/config";
 import {NotificationModal} from "../layouts/components/Modal";
 
 import {
@@ -1087,7 +1088,7 @@ const ArtistProfilePage = () => {
                         {followers.length > 0 ? followers.map(user => (
                             <div key={user.id} className="flex items-center gap-3 py-2 border-b border-white/[0.05]">
                                 <img
-                                    src={`http://localhost:8080/${user.img}`}
+                                    src={getMediaUrl(user.img) || '/default-avatar.png'}
                                     alt={user.name}
                                     className="w-10 h-10 rounded-full object-cover bg-gray-500 flex-shrink-0"
                                     // Bỏ cái onError lỗi thời đi, thay vào đó hãy để trình duyệt tự xử lý fallback

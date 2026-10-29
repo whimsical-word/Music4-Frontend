@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
+import { getStreamUrl } from "../../app/config";
 import {
   Play,
   Pause,
@@ -78,13 +79,7 @@ const MusicPlayer = () => {
     lastSyncPositionRef.current = 0;
   }, [currentTrack?.id]);
 
-  const getStreamUrl = (trackId) => {
-    if (!trackId) return "";
-    const baseUrl = "http://localhost:8080/api/tracks";
-    return isAuthenticated
-      ? `${baseUrl}/stream/${trackId}`
-      : `${baseUrl}/stream/preview/${trackId}`;
-  };
+  const getTrackStreamUrl = (trackId) => getStreamUrl(trackId, isAuthenticated);
 
   // Xử lý đồng bộ Volume (Chạy riêng khi volume đổi)
   useEffect(() => {
@@ -482,7 +477,7 @@ const MusicPlayer = () => {
       >
         <audio
           ref={audioRef}
-          src={currentTrack?.id ? getStreamUrl(currentTrack.id) : ""}
+          src={currentTrack?.id ? getTrackStreamUrl(currentTrack.id) : ""}
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleTrackEnded}
           onLoadedMetadata={handleLoadedMetadata}

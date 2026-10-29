@@ -49,10 +49,10 @@ export const engagementService = {
     },
 
     // 5: GỬI ĐÁNH GIÁ SAO (RATING) LÊN BACKEND
-    rateTrack: async (trackId, ratingValue, userId) => {
+    rateTrack: async (trackId, ratingValue) => {
         const res = await axiosClient.post('/ratings', {
             trackId: Number(trackId),
-            userId: Number(userId),
+            // userId is derived from the access token on the server
             ratingValue: Number(ratingValue)
         });
         return res.data || res;
