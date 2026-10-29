@@ -24,7 +24,9 @@ const NotificationBell = ({ userId }) => {
             .catch((err) => console.error("Lỗi lấy thông báo cũ:", err));
 
         // 2. THIẾT LẬP KẾT NỐI SSE
-        const eventSource = new EventSource(`${API_BASE}/notifications/subscribe/${userId}`);
+        const token = localStorage.getItem("accessToken");
+        const sseUrl = `${API_BASE}/notifications/subscribe/${userId}${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+        const eventSource = new EventSource(sseUrl);
 
         // Lắng nghe thông báo bài hát mới
         eventSource.addEventListener("NEW_TRACK", (event) => {

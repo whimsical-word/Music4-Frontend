@@ -100,10 +100,8 @@ const ProfilePage = () => {
 
                 setPlaylists(playlistRes.data || []);
 
-
-
                 console.log("Name " + profileRes.data.name);
-                console.log("Avatar " + profileRes.data.avatar);
+                console.log("Avatar " + profileRes.data.img);
 
                 setEditName(apiName);
             } catch (error) {

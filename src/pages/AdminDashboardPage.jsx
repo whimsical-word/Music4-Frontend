@@ -109,6 +109,7 @@ const AdminDashboardPage = () => {
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
     const [categoryName, setCategoryName] = useState("");
+    const [categoryError, setCategoryError] = useState("");
 
     useEffect(() => {
         const fetchData = async () => {
@@ -159,24 +160,32 @@ const AdminDashboardPage = () => {
     }, [activeTab, currentArtistPage, currentUserPage]); // 🟢 Thêm refreshTrigger vào mảng phụ thuộc // Đầy đủ dependency, ESLint sẽ im lặng ngay!
 
     const handleSaveCategory = async () => {
-        if (!categoryName.trim()) return;
+        if (!categoryName.trim()) {
+            setCategoryError("Tên thể loại không được để trống!");
+            return;
+        }
+
         try {
+            setCategoryError(""); // Xóa lỗi cũ nếu có
+
             if (editingCategory) {
                 await axiosClient.put(`/categories/${editingCategory.id}`, {
-                    name: categoryName,
+                    name: categoryName.trim(),
                 });
 
                 setCategories((prev) =>
                     prev.map((c) =>
-                        c.id === editingCategory.id ? { ...c, name: categoryName } : c,
+                        c.id === editingCategory.id ? { ...c, name: categoryName.trim() } : c,
                     ),
                 );
+                displayToast("Cập nhật thể loại thành công!", "success");
             } else {
                 const res = await axiosClient.post("/categories", {
-                    name: categoryName,
+                    name: categoryName.trim(),
                 });
                 const newCategory = res.data;
                 setCategories((prev) => [...prev, newCategory]);
+                displayToast("Thêm thể loại mới thành công!", "success");
             }
 
             setCategoryName("");
@@ -184,6 +193,14 @@ const AdminDashboardPage = () => {
             setShowCategoryModal(false);
         } catch (error) {
             console.error("Lỗi lưu thể loại:", error);
+            // Bắt câu thông báo lỗi trả về từ Backend (Response từ Spring Boot)
+            const apiErrorMessage =
+                error.response?.data?.message ||
+                (typeof error.response?.data === "string" ? error.response.data : null) ||
+                "Có lỗi xảy ra, vui lòng thử lại!";
+
+            setCategoryError(apiErrorMessage);
+            displayToast(apiErrorMessage, "error");
         }
     };
 
@@ -210,8 +227,14 @@ const AdminDashboardPage = () => {
             try {
                 await axiosClient.delete(`/categories/${id}`);
                 setCategories((prev) => prev.filter((c) => c.id !== id));
+                displayToast("Xóa thể loại thành công!", "success");
             } catch (error) {
                 console.error("Lỗi xóa thể loại:", error);
+                const apiErrorMessage =
+                    error.response?.data?.message ||
+                    (typeof error.response?.data === "string" ? error.response.data : null) ||
+                    "Xóa thể loại thất bại!";
+                displayToast(apiErrorMessage, "error");
             }
         }
     };
@@ -593,6 +616,7 @@ const AdminDashboardPage = () => {
                                         onClick={() => {
                                             setEditingCategory(null);
                                             setCategoryName("");
+                                            setCategoryError(""); // 🟢 Reset lỗi
                                             setShowCategoryModal(true);
                                         }}
                                         className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg font-semibold transition-colors cursor-pointer border-none shadow-md"
@@ -635,6 +659,7 @@ const AdminDashboardPage = () => {
                                                             onClick={() => {
                                                                 setEditingCategory(c);
                                                                 setCategoryName(c.name);
+                                                                setCategoryError(""); // 🟢 Reset lỗi
                                                                 setShowCategoryModal(true);
                                                             }}
                                                             className="p-2 text-gray-400 hover:text-blue-500 rounded-lg transition-colors bg-transparent border-none cursor-pointer"
@@ -678,16 +703,34 @@ const AdminDashboardPage = () => {
                         <h3 className="text-xl font-bold text-white mb-4">
                             {editingCategory ? "Sửa Thể Loại" : "Thêm Thể Loại Mới"}
                         </h3>
+
                         <input
                             type="text"
                             value={categoryName}
-                            onChange={(e) => setCategoryName(e.target.value)}
+                            onChange={(e) => {
+                                setCategoryName(e.target.value);
+                                if (categoryError) setCategoryError(""); // Tự tắt báo lỗi khi người dùng gõ lại
+                            }}
                             placeholder="Nhập tên thể loại..."
-                            className="w-full p-3 rounded-lg bg-[#282828] text-white border border-[#2d2d30] focus:border-blue-500 outline-none mb-6"
+                            className={`w-full p-3 rounded-lg bg-[#282828] text-white border outline-none ${
+                                categoryError ? "border-red-500 focus:border-red-500" : "border-[#2d2d30] focus:border-blue-500"
+                            }`}
                         />
-                        <div className="flex justify-end gap-3">
+
+                        {/* 🔴 HIỂN THỊ DÒNG THÔNG BÁO LỖI */}
+                        {categoryError && (
+                            <p className="text-red-400 text-xs mt-2 flex items-center gap-1">
+                                <AlertTriangle size={14} />
+                                <span>{categoryError}</span>
+                            </p>
+                        )}
+
+                        <div className="flex justify-end gap-3 mt-6">
                             <button
-                                onClick={() => setShowCategoryModal(false)}
+                                onClick={() => {
+                                    setShowCategoryModal(false);
+                                    setCategoryError("");
+                                }}
                                 className="px-4 py-2 rounded-lg text-[#a7a7a7] hover:text-white font-medium"
                             >
                                 Hủy
