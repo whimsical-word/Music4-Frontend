@@ -210,7 +210,7 @@ const Navbar = () => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={handleSearch}
-          placeholder="B├ái h├ít, nghß╗ç s─⌐..."
+          placeholder="Bài hát, nghệ sĩ..."
           className="bg-transparent border-none outline-none text-sm text-white w-full placeholder-[#535353]"
         />
       </div>
