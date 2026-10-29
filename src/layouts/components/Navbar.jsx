@@ -28,23 +28,23 @@ const Navbar = () => {
   const dropdownRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Lß║Ñy h├ám playTrack tß╗½ Zustand store
+  // Lấy hàm playTrack từ Zustand store
   const playTrack = usePlayerStore((state) => state.playTrack);
 
-  // C├üC STATE PHß╗ñC Vß╗ñ TH├öNG B├üO REAL-TIME
+  // CÁC STATE PHỤC VỤ THÔNG BÁO REAL-TIME
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notiDropdownOpen, setNotiDropdownOpen] = useState(false);
   const notiDropdownRef = useRef(null);
 
-  // LOGIC Kß║╛T Nß╗ÉI REAL-TIME V├Ç Lß║ñY TH├öNG B├üO C┼¿
+ // LOGIC KẾT NỐI REAL-TIME VÀ LẤY THÔNG BÁO CŨ
   useEffect(() => {
     if (!isAuthenticated || !id) return;
 
-    // D├╣ng axiosClient ─æß╗â lß║Ñy th├┤ng b├ío lß╗ïch sß╗¡ (tß╗▒ ─æß╗Öng ─æ├¡nh k├¿m Token v├á tr├ính lß╗ùi CORS)
+        // Dùng axiosClient để lấy thông báo lịch sử (tự động đính kèm Token và tránh lỗi CORS)
     axiosClient
       .get(`/notifications/user/${id}`)
-      .then((res) => {
+      .then((res) => {f
         const list = Array.isArray(res.data)
           ? res.data
           : Array.isArray(res.data?.content)
@@ -90,13 +90,13 @@ const Navbar = () => {
 
       setNotiDropdownOpen(false);
 
-      // 1. Tr╞░ß╗¥ng hß╗úp th├┤ng b├ío li├¬n quan ─æß║┐n ALBUM -> Chuyß╗ân h╞░ß╗¢ng sang trang chi tiß║┐t album
+      // 1. Trường hợp thông báo liên quan đến ALBUM -> Chuyển hướng sang trang chi tiết album
       if (noti.albumId) {
-        navigate(`/albums/${noti.albumId}`); // Hoß║╖c ─æ╞░ß╗¥ng dß║½n route album cß╗ºa bß╗ô (v├¡ dß╗Ñ: /playlist/... hay /album/...)
+                navigate(`/albums/${noti.albumId}`); // Hoặc đường dẫn route album của bồ (ví dụ: /playlist/... hay /album/...)
         return;
       }
 
-      // 2. Tr╞░ß╗¥ng hß╗úp th├┤ng b├ío li├¬n quan ─æß║┐n TRACK (B├ái h├ít) -> Ph├ít nhß║íc ngay lß║¡p tß╗⌐c
+            // 2. Trường hợp thông báo liên quan đến TRACK (Bài hát) -> Phát nhạc ngay lập tức
       if (noti.track) {
         playTrack(noti.track, [noti.track]);
         return;
@@ -110,15 +110,15 @@ const Navbar = () => {
             playTrack(trackData, [trackData]);
           }
         } catch (apiErr) {
-          console.error("Kh├┤ng thß╗â lß║Ñy chi tiß║┐t b├ái h├ít tß╗½ trackId:", apiErr);
+            console.error("Không thể lấy chi tiết bài hát từ trackId:", apiErr);
         }
       }
     } catch (err) {
-      console.error("Lß╗ùi khi xß╗¡ l├╜ click th├┤ng b├ío:", err);
+        console.error("Lỗi khi xử lý click thông báo:", err);
     }
   };
 
-  // X├ôA 1 TH├öNG B├üO Cß╗ñ THß╗é
+    // XÓA 1 THÔNG BÁO CỤ THỂ
   const handleDeleteNoti = async (e, notiId, isRead) => {
     e.stopPropagation();
     try {
@@ -128,22 +128,22 @@ const Navbar = () => {
         setUnreadCount((prev) => Math.max(0, prev - 1));
       }
     } catch (err) {
-      console.error("Lß╗ùi khi x├│a th├┤ng b├ío:", err);
+        console.error("Lỗi khi xóa thông báo:", err);
     }
   };
 
-  // X├ôA Sß║áCH TH├öNG B├üO
+   // XÓA SẠCH THÔNG BÁO
   const handleClearAll = async () => {
     try {
       await axiosClient.delete(`/notifications/clear-all`);
       setNotifications([]);
       setUnreadCount(0);
     } catch (err) {
-      console.error("Lß╗ùi khi x├│a tß║Ñt cß║ú th├┤ng b├ío:", err);
+        console.error("Lỗi khi xóa tất cả thông báo:", err);
     }
   };
 
-  // H├ÇM Xß╗¼ L├¥ ─É├üNH Dß║ñU ─É├â ─Éß╗îC
+    // HÀM XỬ LÝ ĐÁNH DẤU ĐÃ ĐỌC
   const handleMarkAsRead = async (e, notiId) => {
     e.stopPropagation();
     try {
@@ -153,7 +153,7 @@ const Navbar = () => {
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
-      console.error("Lß╗ùi cß║¡p nhß║¡t trß║íng th├íi ─æ├ú ─æß╗ìc:", err);
+        console.error("Lỗi cập nhật trạng thái đã đọc:", err);
     }
   };
 
@@ -202,7 +202,7 @@ const Navbar = () => {
 
   return (
     <header className="h-20 flex items-center justify-between px-8 bg-[#09090b] border-b border-[#282828] sticky top-0 z-50 font-sans text-white">
-      {/* Thanh t├¼m kiß║┐m */}
+            {/* Thanh tìm kiếm */}
       <div className="flex items-center bg-[#121212] rounded-full px-5 py-2.5 w-80 border border-[#282828] focus-within:border-blue-500 transition-all">
         <Search className="text-[#a7a7a7] mr-3" size={20} />
         <input
@@ -233,20 +233,20 @@ const Navbar = () => {
             {notiDropdownOpen && (
               <div className="absolute right-0 mt-2 w-80 bg-[#282828] border border-[#3e3e3e] rounded-lg shadow-2xl py-1 z-50 animate-fadeIn text-sm">
                 <div className="px-4 py-3 border-b border-[#3e3e3e] font-bold bg-[#1e1e1e]/50 rounded-t-lg flex justify-between items-center">
-                  <span>Th├┤ng b├ío mß╗¢i nhß║¡n</span>
+                   <span>Thông báo mới nhận</span>
                   {notifications.length > 0 && (
                     <button
                       onClick={handleClearAll}
                       className="text-xs text-gray-400 hover:text-red-400 bg-transparent border-none cursor-pointer font-normal transition-colors"
                     >
-                      X├│a tß║Ñt cß║ú
+                      Xóa tất cả
                     </button>
                   )}
                 </div>
                 <div className="max-h-80 overflow-y-auto custom-scrollbar">
                   {notifications.length === 0 ? (
                     <div className="px-4 py-6 text-center text-[#a7a7a7] text-xs">
-                      Kh├┤ng c├│ th├┤ng b├ío n├áo ß╗ƒ ─æ├óy cß║ú.
+                      Không có thông báo nào ở đây cả.
                     </div>
                   ) : (
                     notifications.map((noti) => (
@@ -260,7 +260,7 @@ const Navbar = () => {
                             handleDeleteNoti(e, noti.id, noti.isRead)
                           }
                           className="absolute right-3 top-3 p-1 text-gray-500 hover:text-red-400 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="X├│a th├┤ng b├ío"
+                          title="Xóa thông báo"
                         >
                           <X size={14} />
                         </button>
@@ -285,7 +285,7 @@ const Navbar = () => {
                               className="text-[11px] text-blue-400 hover:text-blue-300 flex items-center gap-1 bg-transparent border-none cursor-pointer font-medium"
                             >
                               <Check size={12} />
-                              ─Éß╗ìc xong
+                              Đọc xong
                             </button>
                           )}
                         </div>
@@ -343,10 +343,10 @@ const Navbar = () => {
                     </p>
                     <p className="text-[10px] text-[#a7a7a7] uppercase tracking-widest mt-0.5">
                       {role === "admin"
-                        ? "Quß║ún trß╗ï vi├¬n"
+                        ? "Quản trị viên"
                         : role === "artist"
-                          ? "Nghß╗ç s─⌐"
-                          : "Ng╞░ß╗¥i nghe"}
+                          ? "Nghệ sĩ"
+                          : "Người nghe"}
                     </p>
                   </div>
 
