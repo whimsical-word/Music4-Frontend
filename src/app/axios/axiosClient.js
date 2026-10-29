@@ -1,8 +1,9 @@
 import axios from "axios";
+import { API_BASE } from "../config";
 import { useErrorStore } from "../../features/error/useErrorStore";
 
 const axiosClient = axios.create({
-  baseURL: "http://localhost:8080/api",
+  baseURL: API_BASE,
   headers: {
     "Content-Type": "application/json",
   },
@@ -92,7 +93,7 @@ axiosClient.interceptors.response.use(
           throw new Error("No refresh token available");
         }
 
-        const res = await axios.post("http://localhost:8080/api/auth/refresh", {
+        const res = await axios.post(`${API_BASE}/auth/refresh`, {
           refreshToken: oldRefreshToken,
         });
 

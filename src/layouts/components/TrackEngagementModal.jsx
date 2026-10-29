@@ -89,7 +89,7 @@ const TrackEngagementModal = ({ track, onClose }) => {
         if (isArtist || rating === 0) return;
         setIsRatingLoading(true);
         try {
-            await engagementService.rateTrack(track.id, rating, userId);
+            await engagementService.rateTrack(track.id, rating);
             setSavedRating(rating);
 
             const avgRatingRes = engagementService.getAverageRating

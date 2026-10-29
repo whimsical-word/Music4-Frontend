@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Music, Lock, User, Eye, EyeOff } from "lucide-react";
 import axiosClient from "../app/axios/axiosClient";
 import { useAuthStore } from "../features/auth/useAuthStore";
+import { API_URL } from "../app/config";
 
 // Cụm style đặc trị để chống trình duyệt tự tô màu nền trắng khi Autofill
 const autofillStyle = {
@@ -18,7 +19,7 @@ const LoginPage = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const BASE_API_URL = import.meta.env.VITE_API_BASE_URL;
+  const BASE_API_URL = API_URL;
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Play, Pause, Clock, Music, ArrowLeft, Disc, ListMusic, Heart, Trash2, Plus, MoreHorizontal } from 'lucide-react';
 import axiosClient from '../app/axios/axiosClient';
+import { getMediaUrl } from '../app/config';
 import MusicImage from "../layouts/components/MusicImage.jsx";
 import { usePlayerStore } from "../features/player/usePlayerStore.js";
 import { useAuthStore } from "../features/auth/useAuthStore.js";
@@ -11,7 +12,7 @@ const AlbumDetailPage = () => {
     const { albumId } = useParams();
     const navigate = useNavigate();
     const { playTrack, currentTrack } = usePlayerStore();
-    const S3_BASE_URL = "https://music4-v3-storage-kenz.s3.ap-southeast-1.amazonaws.com/";
+    const toMediaUrl = (key) => getMediaUrl(key);
     const { userId, role } = useAuthStore();
 
     // --- State quản lý dữ liệu ---
@@ -73,7 +74,7 @@ const AlbumDetailPage = () => {
                         albumTitle: trackData[0].albumName || "Album Kỷ Nguyên Mới",
                         artistName: mainArtist?.name || "Nghệ Sĩ",
                         artistId: mainArtist?.id,
-                        coverUrl: trackData[0].img ? S3_BASE_URL + trackData[0].img : ""
+                        coverUrl: trackData[0].img ? toMediaUrl(trackData[0].img) : ""
                     });
                 }
             } catch (err) {

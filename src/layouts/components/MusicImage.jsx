@@ -1,7 +1,7 @@
 import React from 'react';
 
 // Cấu hình URL gốc từ S3 bucket của bạn
-const S3_BASE_URL = "https://music4-v3-storage-kenz.s3.ap-southeast-1.amazonaws.com/";
+import { getMediaUrl } from '../../app/config';
 
 const MusicImage = ({ src, type = 'track', className = '', alt = 'Music Art', style = {} }) => {
 
@@ -17,7 +17,7 @@ const MusicImage = ({ src, type = 'track', className = '', alt = 'Music Art', st
             return src;
         }
 
-        return `${S3_BASE_URL}${src}`;
+        return getMediaUrl(src);
     };
 
     const fallbackImage = type === 'artist'

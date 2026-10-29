@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import trackService from '../features/tracks/trackService';
+import { getMediaUrl } from '../app/config';
 import TrackEngagementModal from "../layouts/components/TrackEngagementModal";
 import axiosClient from "../app/axios/axiosClient.js";
 import { ArrowLeft, User as UserIcon, ChevronLeft, ChevronRight, Play, MessageSquare } from 'lucide-react';
@@ -14,7 +15,7 @@ const AllTracksPage = () => {
     // 🟢 STATE MỚI: Theo dõi bài hát nào đang được chọn để mở Modal tương tác
     const [selectedTrack, setSelectedTrack] = useState(null);
 
-    const S3_BASE_URL = "https://music4-v3-storage-kenz.s3.ap-southeast-1.amazonaws.com/";
+
     const playTrack = usePlayerStore((state) => state.playTrack);
 
     // --- 1. BỔ SUNG CÁC STATE PHÂN TRANG ---
@@ -164,7 +165,7 @@ const AllTracksPage = () => {
                             <td className="p-4">
                                 <div className="flex items-center gap-3">
                                     <img
-                                        src={track.img ? `${S3_BASE_URL}${track.img}` : 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&q=80'}
+                                        src={track.img ? getMediaUrl(track.img) : 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&q=80'}
                                         alt={track.name}
                                         className="w-11 h-11 object-cover rounded-lg shadow-md border border-white/[0.05]"
                                         onError={(e) => {
@@ -251,7 +252,7 @@ const AllTracksPage = () => {
                                         // Chuẩn hóa lại object track để đảm bảo có đầy đủ .img hợp lệ gửi vào modal
                                         const normalizedTrack = {
                                             ...track,
-                                            img: track.img ? `${S3_BASE_URL}${track.img}` : 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&q=80'
+                                            img: track.img ? getMediaUrl(track.img) : 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=100&q=80'
                                         };
                                         setSelectedTrack(normalizedTrack);
                                     }}

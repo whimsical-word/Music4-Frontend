@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../../features/auth/useAuthStore";
 import MusicImage from "./MusicImage.jsx";
 import axiosClient from "../../app/axios/axiosClient";
+import { API_BASE } from "../../app/config";
 import { useFavoriteStore } from "../../features/favorite/useFavoriteStore";
 import { usePlaylistStore } from "../../features/playlist/usePlaylistStore";
 import { usePlayerStore } from "../../features/player/usePlayerStore";
@@ -36,23 +37,30 @@ const Navbar = () => {
   const [notiDropdownOpen, setNotiDropdownOpen] = useState(false);
   const notiDropdownRef = useRef(null);
 
-  // LOGIC KẾT NỐI REAL-TIME VÀ LẤY THÔNG BÁO CŨ
+ // LOGIC KẾT NỐI REAL-TIME VÀ LẤY THÔNG BÁO CŨ
   useEffect(() => {
     if (!isAuthenticated || !id) return;
 
-    // Dùng axiosClient để lấy thông báo lịch sử (tự động đính kèm Token và tránh lỗi CORS)
+        // Dùng axiosClient để lấy thông báo lịch sử (tự động đính kèm Token và tránh lỗi CORS)
     axiosClient
       .get(`/notifications/user/${id}`)
-      .then((res) => {
-        setNotifications(res.data);
-        const unread = res.data.filter((n) => !n.isRead).length;
+      .then((res) => {f
+        const list = Array.isArray(res.data)
+          ? res.data
+          : Array.isArray(res.data?.content)
+            ? res.data.content
+            : Array.isArray(res.data?.data)
+              ? res.data.data
+              : [];
+        setNotifications(list);
+        const unread = list.filter((n) => !n.isRead).length;
         setUnreadCount(unread);
       })
       .catch((err) => console.error("Lỗi lấy thông báo cũ:", err));
 
     // Mở kết nối SSE lắng nghe thông báo mới (SSE vẫn dùng URL tuyệt đối)
     const eventSource = new EventSource(
-      `http://localhost:8080/api/notifications/subscribe/${id}`,
+      `${API_BASE}/notifications/subscribe/${id}`,
     );
 
     eventSource.addEventListener("NEW_TRACK", (event) => {
@@ -62,7 +70,7 @@ const Navbar = () => {
     });
 
     eventSource.onerror = (err) => {
-      console.error("Lỗi kết nối SSE:", err);
+      console.error("Lß╗ùi kß║┐t nß╗æi SSE:", err);
     };
 
     return () => {
@@ -84,11 +92,11 @@ const Navbar = () => {
 
       // 1. Trường hợp thông báo liên quan đến ALBUM -> Chuyển hướng sang trang chi tiết album
       if (noti.albumId) {
-        navigate(`/albums/${noti.albumId}`); // Hoặc đường dẫn route album của bồ (ví dụ: /playlist/... hay /album/...)
+                navigate(`/albums/${noti.albumId}`); // Hoặc đường dẫn route album của bồ (ví dụ: /playlist/... hay /album/...)
         return;
       }
 
-      // 2. Trường hợp thông báo liên quan đến TRACK (Bài hát) -> Phát nhạc ngay lập tức
+            // 2. Trường hợp thông báo liên quan đến TRACK (Bài hát) -> Phát nhạc ngay lập tức
       if (noti.track) {
         playTrack(noti.track, [noti.track]);
         return;
@@ -102,15 +110,15 @@ const Navbar = () => {
             playTrack(trackData, [trackData]);
           }
         } catch (apiErr) {
-          console.error("Không thể lấy chi tiết bài hát từ trackId:", apiErr);
+            console.error("Không thể lấy chi tiết bài hát từ trackId:", apiErr);
         }
       }
     } catch (err) {
-      console.error("Lỗi khi xử lý click thông báo:", err);
+        console.error("Lỗi khi xử lý click thông báo:", err);
     }
   };
 
-  // XÓA 1 THÔNG BÁO CỤ THỂ
+    // XÓA 1 THÔNG BÁO CỤ THỂ
   const handleDeleteNoti = async (e, notiId, isRead) => {
     e.stopPropagation();
     try {
@@ -120,22 +128,22 @@ const Navbar = () => {
         setUnreadCount((prev) => Math.max(0, prev - 1));
       }
     } catch (err) {
-      console.error("Lỗi khi xóa thông báo:", err);
+        console.error("Lỗi khi xóa thông báo:", err);
     }
   };
 
-  // XÓA SẠCH THÔNG BÁO
+   // XÓA SẠCH THÔNG BÁO
   const handleClearAll = async () => {
     try {
       await axiosClient.delete(`/notifications/clear-all`);
       setNotifications([]);
       setUnreadCount(0);
     } catch (err) {
-      console.error("Lỗi khi xóa tất cả thông báo:", err);
+        console.error("Lỗi khi xóa tất cả thông báo:", err);
     }
   };
 
-  // HÀM XỬ LÝ ĐÁNH DẤU ĐÃ ĐỌC
+    // HÀM XỬ LÝ ĐÁNH DẤU ĐÃ ĐỌC
   const handleMarkAsRead = async (e, notiId) => {
     e.stopPropagation();
     try {
@@ -145,7 +153,7 @@ const Navbar = () => {
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
-      console.error("Lỗi cập nhật trạng thái đã đọc:", err);
+        console.error("Lỗi cập nhật trạng thái đã đọc:", err);
     }
   };
 
@@ -194,7 +202,7 @@ const Navbar = () => {
 
   return (
     <header className="h-20 flex items-center justify-between px-8 bg-[#09090b] border-b border-[#282828] sticky top-0 z-50 font-sans text-white">
-      {/* Thanh tìm kiếm */}
+            {/* Thanh tìm kiếm */}
       <div className="flex items-center bg-[#121212] rounded-full px-5 py-2.5 w-80 border border-[#282828] focus-within:border-blue-500 transition-all">
         <Search className="text-[#a7a7a7] mr-3" size={20} />
         <input
@@ -225,7 +233,7 @@ const Navbar = () => {
             {notiDropdownOpen && (
               <div className="absolute right-0 mt-2 w-80 bg-[#282828] border border-[#3e3e3e] rounded-lg shadow-2xl py-1 z-50 animate-fadeIn text-sm">
                 <div className="px-4 py-3 border-b border-[#3e3e3e] font-bold bg-[#1e1e1e]/50 rounded-t-lg flex justify-between items-center">
-                  <span>Thông báo mới nhận</span>
+                   <span>Thông báo mới nhận</span>
                   {notifications.length > 0 && (
                     <button
                       onClick={handleClearAll}
@@ -357,10 +365,20 @@ const Navbar = () => {
 
                   {role !== "admin" && (
                     <button
-                      onClick={() => {
+                      onClick={async () => {
                         setDropdownOpen(false);
-                        if (role === "artist") navigate(`/artist/${id}`);
-                        else navigate(`/profile/${id}`);
+                        if (role === "artist") {
+                          try {
+                            const meRes = await axiosClient.get("/artists/me");
+                            if (meRes.data?.id) {
+                              navigate(`/artist/${meRes.data.id}`);
+                              return;
+                            }
+                          } catch (e) {
+                            console.error("Lỗi lấy thông tin nghệ sĩ:", e);
+                          }
+                        }
+                        navigate(`/profile/${id}`);
                       }}
                       className="w-full text-left px-4 py-2.5 text-sm font-medium text-white hover:bg-[#3e3e3e] flex items-center gap-2.5 transition-colors bg-transparent border-none cursor-pointer"
                     >

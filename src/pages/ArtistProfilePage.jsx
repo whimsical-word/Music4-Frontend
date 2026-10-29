@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { NotificationModal } from "../layouts/components/Modal";
+import { getMediaUrl } from "../app/config";
+import {NotificationModal} from "../layouts/components/Modal";
 
 import {
   Pencil,
@@ -47,12 +48,14 @@ const ArtistProfilePage = () => {
   const { playTrack, currentTrack } = usePlayerStore();
 
   const { updateProfile, userId, role } = useAuthStore();
-  const isOwner = role === "artist" && Number(userId) === Number(id);
+  const [artistInfo, setArtistInfo] = useState(null);
+  const isOwner =
+    (role === "artist" || role?.toUpperCase().includes("ARTIST")) &&
+    artistInfo?.userId !== undefined &&
+    Number(userId) === Number(artistInfo.userId);
   const { followedArtistIds, toggleFollowArtist, fetchFollowedArtists } =
     useFollowStore();
   const isArtistRole = role?.toUpperCase().includes("ARTIST");
-
-  const [artistInfo, setArtistInfo] = useState(null);
   const [albums, setAlbums] = useState([]);
   const [tracks, setTracks] = useState([]);
   const [stats, setStats] = useState(null);
@@ -131,11 +134,21 @@ const ArtistProfilePage = () => {
         }
         setTracks(Array.isArray(trackList) ? trackList : []);
 
-        const statsRes = await axiosClient.get(
-          `/analytics/artist/${id}/overview`,
-        );
-        console.log(JSON.stringify(statsRes.data, null, 2));
-        setStats(statsRes.data);
+        const isCurrentOwner =
+          (role === "artist" || role?.toUpperCase().includes("ARTIST")) &&
+          artistRes.data?.userId !== undefined &&
+          Number(userId) === Number(artistRes.data.userId);
+
+        if (isCurrentOwner || role === "admin") {
+          try {
+            const statsRes = await axiosClient.get(
+              `/analytics/artist/${id}/overview`,
+            );
+            setStats(statsRes.data);
+          } catch (statErr) {
+            console.warn("Không thể tải thống kê nghệ sĩ:", statErr);
+          }
+        }
       } catch (error) {
         console.error("Lỗi tải thông tin nghệ sĩ, album hoặc bài hát:", error);
       } finally {
@@ -1115,12 +1128,10 @@ const ArtistProfilePage = () => {
                     className="flex items-center gap-3 py-2 border-b border-white/[0.05]"
                   >
                     <img
-                      src={`http://localhost:8080/${user.img}`}
+                      src={getMediaUrl(user.img) || "/default-avatar.png"}
                       alt={user.name}
                       className="w-10 h-10 rounded-full object-cover bg-gray-500 flex-shrink-0"
-                      // Bỏ cái onError lỗi thời đi, thay vào đó hãy để trình duyệt tự xử lý fallback
                       onError={(e) => {
-                        // Chỉ đổi nguồn ảnh nếu lỗi, KHÔNG ẩn thẻ img (không dùng display: none)
                         e.target.onerror = null;
                         e.target.src = "/default-avatar.png";
                       }}
