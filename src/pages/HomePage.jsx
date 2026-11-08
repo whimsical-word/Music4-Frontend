@@ -326,6 +326,7 @@ const HomePage = () => {
           renderItem={(track) => (
             <div
               key={track.id}
+              onClick={() => playTrack(track, tracks)}
               className="w-[160px] md:w-[200px] flex-shrink-0 snap-start bg-[#0f1722] p-4 rounded-xl hover:bg-white/[0.04] transition-all duration-300 group cursor-pointer border border-transparent hover:border-white/[0.1] relative"
             >
               <div className="relative w-full h-[150px] md:h-[168px] mb-4 rounded-md overflow-hidden bg-white/[0.02] shadow-md flex-shrink-0">

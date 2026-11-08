@@ -5,6 +5,7 @@ import categoryService from "../features/categories/categoryService";
 import artistService from "../features/artists/artistService";
 import { useAuthStore } from "../features/auth/useAuthStore.js";
 import { Search, X, AlertCircle } from "lucide-react";
+import { validateAudioFile, validateImageFile, getApiErrorMessage } from "../utils/fileValidation";
 
 export function CreateTrackPage() {
     const navigate = useNavigate();
@@ -172,8 +173,13 @@ export function CreateTrackPage() {
         setErrorMessage(""); // Reset lỗi cũ
 
         // 🔴 1. Check Validate ở Frontend
-        if (!title.trim()) {
+        if (!title || !title.trim()) {
             setErrorMessage("Vui lòng nhập tên bài hát!");
+            return;
+        }
+
+        if (title.trim().length > 100) {
+            setErrorMessage("Tên bài hát không được vượt quá 100 ký tự!");
             return;
         }
 
@@ -182,12 +188,28 @@ export function CreateTrackPage() {
             return;
         }
 
+        if (audioFile) {
+            const audioCheck = validateAudioFile(audioFile);
+            if (!audioCheck.valid) {
+                setErrorMessage(audioCheck.error);
+                return;
+            }
+        }
+
         if (!isEditMode && !coverImage) {
             setErrorMessage("Vui lòng chọn ảnh bìa cho bài hát!");
             return;
         }
 
-        if (categoryIds.length === 0) {
+        if (coverImage) {
+            const coverCheck = validateImageFile(coverImage, 5, "Ảnh bìa bài hát");
+            if (!coverCheck.valid) {
+                setErrorMessage(coverCheck.error);
+                return;
+            }
+        }
+
+        if (!categoryIds || categoryIds.length === 0) {
             setErrorMessage("Bài hát phải thuộc ít nhất 1 thể loại nhạc!");
             return;
         }
@@ -232,28 +254,7 @@ export function CreateTrackPage() {
             navigate(`/artist/${artistId}`);
         } catch (error) {
             console.error("❌ Lỗi xử lý Upload Track:", error);
-
-            // 🔴 2. Bắt và phân tích lỗi từ Backend trả về
-            let apiMessage = "Đã xảy ra lỗi hệ thống, vui lòng thử lại!";
-
-            if (error.response && error.response.data) {
-                const data = error.response.data;
-
-                // Nếu Backend trả về object dạng Validation Error (e.g. { title: "không được trống", categoryIds: "..." })
-                if (typeof data === "object" && !data.message) {
-                    const messages = Object.values(data).join(" | ");
-                    apiMessage = messages || apiMessage;
-                }
-                // Nếu Backend trả về dạng { message: "Lỗi cụ thể..." } hoặc String
-                else if (data.message) {
-                    apiMessage = data.message;
-                } else if (typeof data === "string") {
-                    apiMessage = data;
-                }
-            } else if (error.message) {
-                apiMessage = error.message;
-            }
-
+            const apiMessage = getApiErrorMessage(error, "Đã xảy ra lỗi hệ thống khi tải lên bài hát, vui lòng thử lại!");
             setErrorMessage(apiMessage);
         } finally {
             setLoading(false);
@@ -462,10 +463,20 @@ export function CreateTrackPage() {
                         </label>
                         <input
                             type="file"
-                            accept="audio/*"
+                            accept="audio/mpeg, audio/mp3, audio/wav, .mp3, .wav"
                             onChange={(e) => {
-                                setAudioFile(e.target.files[0]);
-                                if (errorMessage) setErrorMessage("");
+                                const file = e.target.files[0];
+                                if (file) {
+                                    const check = validateAudioFile(file);
+                                    if (!check.valid) {
+                                        setErrorMessage(check.error);
+                                        e.target.value = "";
+                                        setAudioFile(null);
+                                        return;
+                                    }
+                                    setAudioFile(file);
+                                    setErrorMessage("");
+                                }
                             }}
                             className="w-full bg-white/[0.04] border border-white/[0.05] rounded-lg px-2 py-1.5 text-slate-300 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-white/[0.08] file:text-slate-200 hover:file:bg-white/[0.15] cursor-pointer transition-colors"
                         />
@@ -474,14 +485,24 @@ export function CreateTrackPage() {
                     {/* 6. File Ảnh bìa bài hát */}
                     <div>
                         <label className="block text-xs font-bold text-slate-400 mb-1.5 uppercase tracking-wider">
-                            Ảnh bìa bài hát {isEditMode && <span className="text-amber-500/80 font-normal text-xs lowercase">(Không chọn nếu giữ ảnh cũ)</span>}
+                            Ảnh bìa bài hát (.jpg, .png, .webp) {isEditMode && <span className="text-amber-500/80 font-normal text-xs lowercase">(Không chọn nếu giữ ảnh cũ)</span>}
                         </label>
                         <input
                             type="file"
-                            accept="image/*"
+                            accept="image/jpeg, image/png, image/webp, image/gif, .jpg, .jpeg, .png, .webp, .gif"
                             onChange={(e) => {
-                                setCoverImage(e.target.files[0]);
-                                if (errorMessage) setErrorMessage("");
+                                const file = e.target.files[0];
+                                if (file) {
+                                    const check = validateImageFile(file, 5, "Ảnh bìa bài hát");
+                                    if (!check.valid) {
+                                        setErrorMessage(check.error);
+                                        e.target.value = "";
+                                        setCoverImage(null);
+                                        return;
+                                    }
+                                    setCoverImage(file);
+                                    setErrorMessage("");
+                                }
                             }}
                             className="w-full bg-white/[0.04] border border-white/[0.05] rounded-lg px-2 py-1.5 text-slate-300 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-white/[0.08] file:text-slate-200 hover:file:bg-white/[0.15] cursor-pointer transition-colors"
                         />

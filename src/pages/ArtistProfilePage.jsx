@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getMediaUrl } from "../app/config";
 import {NotificationModal} from "../layouts/components/Modal";
+import { validateImageFile, getApiErrorMessage } from "../utils/fileValidation";
 
 import {
   Pencil,
@@ -109,8 +110,9 @@ const ArtistProfilePage = () => {
       try {
         // 1. Lấy thông tin chi tiết của nghệ sĩ
         const artistRes = await axiosClient.get(`/artists/${id}`);
-        setArtistInfo(artistRes.data);
-        setEditName(artistRes.data.name);
+        const rawArtist = artistRes.data?.artist || artistRes.data;
+        setArtistInfo(rawArtist);
+        setEditName(rawArtist?.name || "");
 
         // 2. Lấy danh sách Album và bóc tách dữ liệu an toàn (Chống lỗi Page/Object wrap)
         const albumsRes = await axiosClient.get(`/albums/artist/${id}`);
@@ -120,6 +122,9 @@ const ArtistProfilePage = () => {
             albumsRes.data.content || albumsRes.data.data || albumsRes.data;
         } else {
           albumList = albumsRes.content || albumsRes;
+        }
+        if (!Array.isArray(albumList) || albumList.length === 0) {
+          albumList = artistRes.data?.albums || [];
         }
         setAlbums(Array.isArray(albumList) ? albumList : []);
 
@@ -132,12 +137,16 @@ const ArtistProfilePage = () => {
         } else {
           trackList = tracksRes.content || tracksRes;
         }
+        if (!Array.isArray(trackList) || trackList.length === 0) {
+          trackList = artistRes.data?.tracks || [];
+        }
         setTracks(Array.isArray(trackList) ? trackList : []);
 
         const isCurrentOwner =
           (role === "artist" || role?.toUpperCase().includes("ARTIST")) &&
-          artistRes.data?.userId !== undefined &&
-          Number(userId) === Number(artistRes.data.userId);
+          rawArtist?.userId !== undefined &&
+          rawArtist?.userId !== null &&
+          Number(userId) === Number(rawArtist.userId);
 
         if (isCurrentOwner || role === "admin") {
           try {
@@ -264,10 +273,57 @@ const ArtistProfilePage = () => {
   // Hàm xử lý cập nhật thông tin hồ sơ nghệ sĩ
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
+
+    if (!editName || !editName.trim()) {
+      setModalConfig({
+        isOpen: true,
+        type: "error",
+        title: "Thông tin không hợp lệ",
+        message: "Tên nghệ sĩ không được để trống!",
+      });
+      return;
+    }
+
+    if (editName.trim().length > 100) {
+      setModalConfig({
+        isOpen: true,
+        type: "error",
+        title: "Thông tin không hợp lệ",
+        message: "Tên nghệ sĩ không được vượt quá 100 ký tự!",
+      });
+      return;
+    }
+
+    if (selectedAvatar) {
+      const check = validateImageFile(selectedAvatar, 5, "Ảnh đại diện");
+      if (!check.valid) {
+        setModalConfig({
+          isOpen: true,
+          type: "error",
+          title: "File không hợp lệ",
+          message: check.error,
+        });
+        return;
+      }
+    }
+
+    if (selectedCover) {
+      const check = validateImageFile(selectedCover, 5, "Ảnh bìa");
+      if (!check.valid) {
+        setModalConfig({
+          isOpen: true,
+          type: "error",
+          title: "File không hợp lệ",
+          message: check.error,
+        });
+        return;
+      }
+    }
+
     setIsUpdating(true);
     try {
       const formData = new FormData();
-      formData.append("name", editName);
+      formData.append("name", editName.trim());
       if (selectedAvatar) formData.append("img", selectedAvatar);
       if (selectedCover) formData.append("cover", selectedCover);
 
@@ -276,13 +332,14 @@ const ArtistProfilePage = () => {
       });
 
       const updatedArtist = res.data;
-      const updatedName = updatedArtist.name || editName;
+      const updatedName = updatedArtist.name || editName.trim();
       const updatedAvatar = updatedArtist.img || selectedAvatar;
 
       setArtistInfo((prev) => ({
         ...prev,
         name: updatedName,
         img: updatedAvatar,
+        cover: updatedArtist.cover || prev.cover,
       }));
 
       setIsEditModalOpen(false);
@@ -299,11 +356,12 @@ const ArtistProfilePage = () => {
       setRefreshTrigger((prev) => prev + 1);
     } catch (error) {
       console.error("Lỗi cập nhật hồ sơ:", error);
+      const apiMessage = getApiErrorMessage(error, "Cập nhật hồ sơ thất bại, vui lòng thử lại sau!");
       setModalConfig({
         isOpen: true,
         type: "error",
         title: "Đã xảy ra lỗi",
-        message: error?.response?.data?.message || "Cập nhật thất bại.",
+        message: apiMessage,
       });
     } finally {
       setIsUpdating(false);
@@ -1028,10 +1086,16 @@ const ArtistProfilePage = () => {
                   <input
                     type="file"
                     className="hidden"
-                    accept="image/*"
+                    accept="image/jpeg, image/png, image/webp, image/gif, .jpg, .jpeg, .png, .webp, .gif"
                     onChange={(e) => {
                       const file = e.target.files[0];
                       if (file) {
+                        const check = validateImageFile(file, 5, "Ảnh bìa");
+                        if (!check.valid) {
+                          alert(check.error);
+                          e.target.value = "";
+                          return;
+                        }
                         setSelectedCover(file);
                         setPreviewCover(URL.createObjectURL(file));
                       }
@@ -1065,10 +1129,16 @@ const ArtistProfilePage = () => {
                   <input
                     type="file"
                     className="hidden"
-                    accept="image/*"
+                    accept="image/jpeg, image/png, image/webp, image/gif, .jpg, .jpeg, .png, .webp, .gif"
                     onChange={(e) => {
                       const file = e.target.files[0];
                       if (file) {
+                        const check = validateImageFile(file, 5, "Ảnh đại diện");
+                        if (!check.valid) {
+                          alert(check.error);
+                          e.target.value = "";
+                          return;
+                        }
                         setSelectedAvatar(file);
                         setPreviewAvatar(URL.createObjectURL(file));
                       }

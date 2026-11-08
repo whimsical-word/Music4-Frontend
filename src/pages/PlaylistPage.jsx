@@ -6,6 +6,7 @@ import axiosClient from "../app/axios/axiosClient";
 import MusicImage from "../layouts/components/MusicImage";
 import { Play, ArrowLeft, Clock, Trash2, Camera, X, Music, MoreHorizontal } from "lucide-react"; // Đã thêm MoreHorizontal
 import TrackEngagementModal from "../layouts/components/TrackEngagementModal.jsx";
+import { validateImageFile, getApiErrorMessage } from "../utils/fileValidation";
 
 const PlaylistPage = () => {
   const { id } = useParams();
@@ -70,43 +71,69 @@ const PlaylistPage = () => {
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      const check = validateImageFile(file, 5, "Ảnh bìa playlist");
+      if (!check.valid) {
+        alert(check.error);
+        e.target.value = "";
+        return;
+      }
       setEditAvatar(file);
       setAvatarPreview(URL.createObjectURL(file));
     }
   };
 
   // Xử lý submit lưu thông tin (Tên, Mô tả, Ảnh) lên Backend thông qua store
-    const handleSave = async (e) => {
-        e.preventDefault();
-        if (!editName.trim()) return alert("Tên playlist không được để trống!");
+  const handleSave = async (e) => {
+    e.preventDefault();
+    if (!editName || !editName.trim()) {
+      return alert("Tên playlist không được để trống!");
+    }
+    if (editName.trim().length > 100) {
+      return alert("Tên playlist không được vượt quá 100 ký tự!");
+    }
 
-        try {
+    if (editAvatar) {
+      const check = validateImageFile(editAvatar, 5, "Ảnh bìa playlist");
+      if (!check.valid) {
+        return alert(check.error);
+      }
+    }
 
-            await axiosClient.put(`/playlists/${id}`, {
-                name: editName,
-                description: editDescription
-            });
+    try {
+      await axiosClient.put(`/playlists/${id}`, {
+        name: editName.trim(),
+        description: editDescription,
+      });
 
-            // BƯỚC 2: Nếu có ảnh mới, cập nhật ảnh (gọi API PUT /{id}/image)
-            if (editAvatar) {
-                const formData = new FormData();
-                formData.append("file", editAvatar); // PHẢI KHỚP VỚI @RequestParam("file") trong Controller
+      // BƯỚC 2: Nếu có ảnh mới, upload file ảnh trước qua media/tracks rồi cập nhật image key
+      if (editAvatar) {
+        const uploadFormData = new FormData();
+        uploadFormData.append("file", editAvatar);
+        uploadFormData.append("type", "images");
 
-                await axiosClient.put(`/playlists/${id}/image`, formData, {
-                    headers: { "Content-Type": "multipart/form-data" }
-                });
-            }
+        const uploadRes = await axiosClient.post("/tracks/upload-temp", uploadFormData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
 
-            setIsEditModalOpen(false);
-            alert(" Cập nhật playlist thành công!");
-
-            // Refresh lại dữ liệu và ép load lại ảnh bằng cách thêm timestamp
-            await fetchPlaylistDetails();
-        } catch (error) {
-            console.error(error);
-            alert(" Cập nhật thất bại!");
+        const imageKey = uploadRes.data?.s3Key || uploadRes.data?.objectKey;
+        if (imageKey) {
+          await axiosClient.put(`/playlists/${id}/image`, {
+            img: imageKey,
+          });
         }
-    };
+      }
+
+      setIsEditModalOpen(false);
+      alert("🎉 Cập nhật playlist thành công!");
+
+      // Refresh lại dữ liệu và ép load lại ảnh bằng cách thêm timestamp
+      await fetchPlaylistDetails();
+    } catch (error) {
+      console.error(error);
+      const apiMessage = getApiErrorMessage(error, "Cập nhật thất bại!");
+      alert(`❌ ${apiMessage}`);
+    }
+  };
 
   // Xử lý xóa bài hát khỏi Playlist
   const handleRemoveTrack = async (e, trackId, trackName) => {
@@ -329,7 +356,7 @@ const PlaylistPage = () => {
                   </div>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg, image/png, image/webp, image/gif, .jpg, .jpeg, .png, .webp, .gif"
                     className="hidden"
                     onChange={handleAvatarChange}
                   />
