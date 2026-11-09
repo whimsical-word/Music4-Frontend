@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Music, Lock, User, Eye, EyeOff } from 'lucide-react';
 import axiosClient from '../app/axios/axiosClient';
 import { useAuthStore } from '../features/auth/useAuthStore';
+import { API_BASE_URL } from '../app/config';
 
 // Cụm style đặc trị để chống trình duyệt tự tô màu nền trắng khi Autofill
 const autofillStyle = {
@@ -17,7 +18,6 @@ const LoginPage = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    const BASE_API_URL = import.meta.env.VITE_API_BASE_URL;
 
 
     const handleSubmit = async (e) => {
@@ -29,7 +29,7 @@ const LoginPage = () => {
             const response = await axiosClient.post('/auth/login', { username, password });
 
             // Trích xuất các trường cơ bản từ phản hồi Backend
-            const { accessToken, refreshToken, id, img } = response.data;
+            const { accessToken, refreshToken, id, img, artistId } = response.data;
 
             // --- XỬ LÝ TRÍCH XUẤT AN TOÀN FRONTEND: GIẢI MÃ TOKEN ---
             const base64Url = accessToken.split('.')[1];
@@ -53,7 +53,7 @@ const LoginPage = () => {
             if (finalRole === 'user') finalRole = 'listener';
 
             // Đồng bộ trạng thái kiên cố vào Zustand Store
-            loginSuccess(accessToken, refreshToken, id, finalUsername, img, finalRole);
+            loginSuccess(accessToken, refreshToken, id, finalUsername, img, finalRole, artistId ?? decodedToken.artistId ?? null);
             if (finalRole === 'admin') {
                 navigate('/admin'); // Nếu là admin, đẩy thẳng vào Dashboard
             } else {
@@ -141,7 +141,7 @@ const LoginPage = () => {
                 <div className="mt-4 text-center text-xs text-[#a7a7a7]" >
                     <button
                         onClick={() => {
-                            window.location.href = `${BASE_API_URL}/oauth2/authorization/google`;
+                            window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
                         }}
                         className="google-btn flex items-center justify-center mx-auto"
                     >

@@ -5,7 +5,7 @@ import axiosClient from '../app/axios/axiosClient';
 import MusicImage from "../layouts/components/MusicImage.jsx";
 import { usePlayerStore } from "../features/player/usePlayerStore.js";
 // 🌟 BỒ CHÚ Ý: Nếu bồ có useAuthStore, hãy uncomment dòng dưới để lấy real data nhé:
-// import { useAuthStore } from "../features/auth/useAuthStore.js";
+import { useAuthStore } from "../features/auth/useAuthStore.js";
 
 const AlbumDetailPage = () => {
     // 1. Lấy albumId từ URL Route (Ví dụ: /albums/32)
@@ -14,11 +14,8 @@ const AlbumDetailPage = () => {
     const playTrack = usePlayerStore(state => state.playTrack);
     const S3_BASE_URL = "https://music4-v3-storage-kenz.s3.ap-southeast-1.amazonaws.com/";
 
-    // 2. Lấy thông tin đăng nhập để phân quyền xóa bài (Xóa hardcode khi ráp AuthStore của bồ)
-    // const { user, role } = useAuthStore();
-    // const loggedInId = user?.id;
-    const role = 'artist';      // Giả lập role phục vụ test UI
-    const loggedInId = 22;      // Giả lập ID nghệ sĩ hiện tại (Ví dụ: 22 của Obito)
+    // 2. Thông tin đăng nhập thật để phân quyền (artistId lấy từ kết quả đăng nhập)
+    const { artistId: loggedInId, role } = useAuthStore();
 
     // --- State quản lý dữ liệu ---
     const [tracks, setTracks] = useState([]);
@@ -28,7 +25,7 @@ const AlbumDetailPage = () => {
     const [playingTrackId, setPlayingTrackId] = useState(null);
 
     // --- Quyền sở hữu album: Nghệ sĩ đăng nhập phải trùng với chủ Album ---
-    const isOwner = role === 'artist' && Number(loggedInId) === Number(albumInfo?.artistId || tracks[0]?.artistId);
+    const isOwner = role === 'artist' && loggedInId != null && Number(loggedInId) === Number(albumInfo?.artistId || tracks[0]?.artistId);
 
     // Tính tổng giây từ tất cả bài hát
     const totalDurationSeconds = tracks.reduce((sum, track) => sum + (track.duration || 0), 0);

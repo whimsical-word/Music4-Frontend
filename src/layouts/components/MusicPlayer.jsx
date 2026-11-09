@@ -19,6 +19,7 @@ import { useAuthStore } from "../../features/auth/useAuthStore";
 import axiosClient from "../../app/axios/axiosClient";
 import MusicImage from "./MusicImage.jsx";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL, getAccessToken } from "../../app/config";
 
 const MusicPlayer = () => {
     const navigate = useNavigate();
@@ -70,9 +71,10 @@ const MusicPlayer = () => {
 
     const getStreamUrl = (trackId) => {
         if (!trackId) return "";
-        const baseUrl = "http://localhost:8080/api/tracks";
+        const baseUrl = `${API_BASE_URL}/tracks`;
+        // <audio> không gửi được header Authorization nên truyền token qua query
         return isAuthenticated
-            ? `${baseUrl}/stream/${trackId}`
+            ? `${baseUrl}/stream/${trackId}?token=${encodeURIComponent(getAccessToken() || "")}`
             : `${baseUrl}/stream/preview/${trackId}`;
     };
 

@@ -1,51 +1,22 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axiosClient from "../../app/axios/axiosClient";
+import { useNotifications } from "../../features/notifications/useNotifications";
 
 const NotificationBell = ({ userId }) => {
-    const [notifications, setNotifications] = useState([]);
-    const [unreadCount, setUnreadCount] = useState(0);
+    // Dùng chung 1 kết nối SSE với Navbar (xem useNotifications)
+    const [notifications, setNotifications] = useNotifications(userId);
+    const unreadCount = notifications.filter((n) => !n.isRead).length;
     const [isOpen, setIsOpen] = useState(false);
     const navigate = useNavigate();
-
-    useEffect(() => {
-        if (!userId) return;
-
-        // 1. Lấy danh sách thông báo lịch sử từ DB
-        axios.get(`http://localhost:8080/api/notifications/user/${userId}`)
-            .then((res) => {
-                setNotifications(res.data);
-                const unread = res.data.filter((n) => !n.isRead).length;
-                setUnreadCount(unread);
-            })
-            .catch((err) => console.error("Lỗi lấy thông báo cũ:", err));
-
-        // 2. THIẾT LẬP KẾT NỐI SSE
-        const eventSource = new EventSource(`http://localhost:8080/api/notifications/subscribe/${userId}`);
-
-        eventSource.addEventListener("NEW_TRACK", (event) => {
-            const newNoti = JSON.parse(event.data);
-            setNotifications((prevNotis) => [newNoti, ...prevNotis]);
-            setUnreadCount((prevCount) => prevCount + 1);
-        });
-
-        eventSource.onerror = (err) => {
-            console.error("Lỗi kết nối SSE:", err);
-        };
-
-        return () => {
-            eventSource.close();
-        };
-    }, [userId]);
 
     const handleNotiClick = async (noti) => {
         try {
             if (!noti.isRead) {
-                await axios.put(`http://localhost:8080/api/notifications/${noti.id}/read`);
+                await axiosClient.put(`/notifications/${noti.id}/read`);
                 setNotifications((prev) =>
                     prev.map((n) => (n.id === noti.id ? { ...n, isRead: true } : n))
                 );
-                setUnreadCount((prev) => Math.max(0, prev - 1));
             }
 
             if (noti.trackId) {
@@ -57,14 +28,11 @@ const NotificationBell = ({ userId }) => {
         }
     };
 
-    const handleDeleteNoti = async (e, notiId, isRead) => {
+    const handleDeleteNoti = async (e, notiId) => {
         e.stopPropagation();
         try {
-            await axios.delete(`http://localhost:8080/api/notifications/${notiId}`);
+            await axiosClient.delete(`/notifications/${notiId}`);
             setNotifications((prev) => prev.filter((n) => n.id !== notiId));
-            if (!isRead) {
-                setUnreadCount((prev) => Math.max(0, prev - 1));
-            }
         } catch (err) {
             console.error("Lỗi khi xóa thông báo:", err);
         }
@@ -72,9 +40,8 @@ const NotificationBell = ({ userId }) => {
 
     const handleClearAll = async () => {
         try {
-            await axios.delete(`http://localhost:8080/api/notifications/clear-all`);
+            await axiosClient.delete(`/notifications/clear-all`);
             setNotifications([]);
-            setUnreadCount(0);
         } catch (err) {
             console.error("Lỗi khi xóa tất cả thông báo:", err);
         }
@@ -153,7 +120,7 @@ const NotificationBell = ({ userId }) => {
 
                                     {/* ✕ Nút xóa thông báo nhỏ ở góc phải */}
                                     <button
-                                        onClick={(e) => handleDeleteNoti(e, noti.id, noti.isRead)}
+                                        onClick={(e) => handleDeleteNoti(e, noti.id)}
                                         style={{
                                             position: "absolute",
                                             right: "12px",

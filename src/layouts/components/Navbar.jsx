@@ -4,53 +4,22 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../features/auth/useAuthStore';
 import MusicImage from './MusicImage.jsx';
 import axiosClient from "../../app/axios/axiosClient";
+import { useNotifications } from "../../features/notifications/useNotifications";
 
 const Navbar = () => {
     const navigate = useNavigate();
 
-    const { userId, username, role, img, logout, isAuthenticated } = useAuthStore();
+    const { userId, artistId, username, role, img, logout, isAuthenticated } = useAuthStore();
     const id = userId;
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
     const [searchQuery, setSearchQuery] = useState('');
 
-    // CÁC STATE PHỤC VỤ THÔNG BÁO REAL-TIME
-    const [notifications, setNotifications] = useState([]);
-    const [unreadCount, setUnreadCount] = useState(0);
+    // THÔNG BÁO REAL-TIME (1 kết nối SSE dùng chung, token gắn trong hook)
+    const [notifications, setNotifications] = useNotifications(id, isAuthenticated);
+    const unreadCount = notifications.filter((n) => !n.isRead).length;
     const [notiDropdownOpen, setNotiDropdownOpen] = useState(false);
     const notiDropdownRef = useRef(null);
-
-    // LOGIC KẾT NỐI REAL-TIME VÀ LẤY THÔNG BÁO CŨ
-    useEffect(() => {
-        if (!isAuthenticated || !id) return;
-
-        // Dùng axiosClient để lấy thông báo lịch sử (tự động đính kèm Token và tránh lỗi CORS)
-        axiosClient.get(`/notifications/user/${id}`)
-            .then((res) => {
-                setNotifications(res.data);
-                const unread = res.data.filter((n) => !n.isRead).length;
-                setUnreadCount(unread);
-            })
-            .catch((err) => console.error("Lỗi lấy thông báo cũ:", err));
-
-        // Mở kết nối SSE lắng nghe thông báo mới (SSE vẫn dùng URL tuyệt đối)
-        const eventSource = new EventSource(`http://localhost:8080/api/notifications/subscribe/${id}`);
-
-        eventSource.addEventListener("NEW_TRACK", (event) => {
-            const newNoti = JSON.parse(event.data);
-            setNotifications((prev) => [newNoti, ...prev]);
-            setUnreadCount((prev) => prev + 1);
-        });
-
-        eventSource.onerror = (err) => {
-            console.error("Lỗi kết nối SSE:", err);
-        };
-
-        return () => {
-            eventSource.close();
-        };
-    }, [isAuthenticated, id]);
-
 
     const handleNotiClick = async (noti) => {
         try {
@@ -59,7 +28,6 @@ const Navbar = () => {
                 setNotifications((prev) =>
                     prev.map((n) => (n.id === noti.id ? { ...n, isRead: true } : n))
                 );
-                setUnreadCount((prev) => Math.max(0, prev - 1));
             }
 
             if (noti.trackId) {
@@ -72,14 +40,11 @@ const Navbar = () => {
     };
 
     //XÓA 1 THÔNG BÁO CỤ THỂ
-    const handleDeleteNoti = async (e, notiId, isRead) => {
+    const handleDeleteNoti = async (e, notiId) => {
         e.stopPropagation();
         try {
             await axiosClient.delete(`/notifications/${notiId}`);
             setNotifications((prev) => prev.filter((n) => n.id !== notiId));
-            if (!isRead) {
-                setUnreadCount((prev) => Math.max(0, prev - 1));
-            }
         } catch (err) {
             console.error("Lỗi khi xóa thông báo:", err);
         }
@@ -90,7 +55,6 @@ const Navbar = () => {
         try {
             await axiosClient.delete(`/notifications/clear-all`);
             setNotifications([]);
-            setUnreadCount(0);
         } catch (err) {
             console.error("Lỗi khi xóa tất cả thông báo:", err);
         }
@@ -104,7 +68,6 @@ const Navbar = () => {
             setNotifications((prev) =>
                 prev.map((n) => (n.id === notiId ? { ...n, isRead: true } : n))
             );
-            setUnreadCount((prev) => Math.max(0, prev - 1));
         } catch (err) {
             console.error("Lỗi cập nhật trạng thái đã đọc:", err);
         }
@@ -194,7 +157,7 @@ const Navbar = () => {
                                             >
                                                 {/* Nút ✕ nhỏ góc phải hiện lên khi hover vào thông báo */}
                                                 <button
-                                                    onClick={(e) => handleDeleteNoti(e, noti.id, noti.isRead)}
+                                                    onClick={(e) => handleDeleteNoti(e, noti.id)}
                                                     className="absolute right-3 top-3 p-1 text-gray-500 hover:text-red-400 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
                                                     title="Xóa thông báo"
                                                 >
@@ -282,7 +245,7 @@ const Navbar = () => {
                                         <button
                                             onClick={() => {
                                                 setDropdownOpen(false);
-                                                if (role === 'artist') navigate(`/artist/${id}`);
+                                                if (role === 'artist') navigate(`/artist/${artistId}`);
                                                 else navigate('/profile');
                                             }}
                                             className="w-full text-left px-4 py-2.5 text-sm font-medium text-white hover:bg-[#3e3e3e] flex items-center gap-2.5 transition-colors bg-transparent border-none cursor-pointer"

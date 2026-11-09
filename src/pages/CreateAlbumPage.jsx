@@ -15,7 +15,7 @@ import { useAuthStore } from "../features/auth/useAuthStore";
 
 const CreateAlbumPage = () => {
   const navigate = useNavigate();
-  const { userId } = useAuthStore();
+  const { artistId } = useAuthStore();
 
   // --- State quản lý thông tin Album ---
   const [albumName, setAlbumName] = useState("");
@@ -81,7 +81,7 @@ const CreateAlbumPage = () => {
     const filteredArtists = dbArtists.filter(artist =>
         artist.name.toLowerCase().includes(artistSearch.toLowerCase()) &&
         !selectedFeatArtists.some(selected => selected.id === artist.id) &&
-        Number(artist.id) !== Number(userId) // Không hiển thị chính mình trong danh sách Feat
+        Number(artist.id) !== Number(artistId) // Không hiển thị chính mình trong danh sách Feat
     );
 
     const handleSelectArtist = (artistObj) => {
@@ -142,7 +142,7 @@ const CreateAlbumPage = () => {
               title: file.name.replace(/\.[^/.]+$/, ""),
               file: file,
               duration: 0,
-              artistId: userId || 7,
+              artistId: artistId,
               artistIds: [],      // Dùng để gửi ID lên Backend
               featArtists: [],    // 🔥 THÊM TRƯỜNG NÀY: Dùng để lưu Object {id, name} hiển thị trên UI
               categoryIds: [],
@@ -294,7 +294,7 @@ const CreateAlbumPage = () => {
       // 1. Tạo Album lấy albumId
       const albumFormData = new FormData();
       albumFormData.append("albumTitle", albumName);
-      albumFormData.append("artistId", userId);
+      albumFormData.append("artistId", artistId);
       albumFormData.append("coverImageKey", finalCoverKey);
 
       const albumRes = await axiosClient.post("/albums", albumFormData, {
@@ -314,7 +314,7 @@ const CreateAlbumPage = () => {
       alert(
         "🎉 Album và toàn bộ danh sách nhạc đã được phát hành thành công!",
       );
-      navigate(`/artist/${userId}`);
+      navigate(`/artist/${artistId}`);
     } catch (error) {
       console.error("Lỗi trong quá trình phát hành:", error);
       alert(

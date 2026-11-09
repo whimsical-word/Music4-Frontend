@@ -43,8 +43,8 @@ const ArtistProfilePage = () => {
   const navigate = useNavigate();
   const playTrack = usePlayerStore((state) => state.playTrack);
 
-  const { userId, role } = useAuthStore();
-  const isOwner = role === "artist" && Number(userId) === Number(id);
+  const { userId, artistId, role } = useAuthStore();
+  const isOwner = role === "artist" && artistId != null && Number(artistId) === Number(id);
   const { followedArtistIds, toggleFollowArtist, fetchFollowedArtists } =
     useFollowStore();
 
@@ -793,7 +793,7 @@ const ArtistProfilePage = () => {
                     {track.artists?.find((a) => a.role === "MAIN") &&
                       Number(
                         track.artists.find((a) => a.role === "MAIN").id,
-                      ) === Number(userId) && (
+                      ) === Number(artistId) && (
                         <button
                           type="button"
                           onClick={(e) => {
@@ -811,7 +811,7 @@ const ArtistProfilePage = () => {
                     {track.artists?.find((a) => a.role === "MAIN") &&
                       Number(
                         track.artists.find((a) => a.role === "MAIN").id,
-                      ) === Number(userId) && (
+                      ) === Number(artistId) && (
                         <button
                           type="button"
                           onClick={(e) => {

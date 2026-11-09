@@ -39,7 +39,7 @@ export function CreateTrackPage() {
     const dropdownRef = useRef(null);
 
     // Lấy thông tin nghệ sĩ đang đăng nhập từ AuthStore
-    const { userId, username } = useAuthStore();
+    const { artistId, username } = useAuthStore();
 
     // --- 3. USEEFFECT: LOAD DANH SÁCH THỂ LOẠI & NGHỆ SĨ KHI MỞ TRANG ---
     useEffect(() => {
@@ -48,7 +48,7 @@ export function CreateTrackPage() {
                 const [categoriesRes, artistsRes, albumsRes] = await Promise.all([
                     categoryService.getAllCategories(),
                     artistService.getAllArtistsNoPageable(),
-                    axiosClient.get(`/albums/artist/${userId}`)
+                    axiosClient.get(`/albums/artist/${artistId}`)
                 ]);
 
                 setDbCategories(categoriesRes.data || categoriesRes);
@@ -91,7 +91,7 @@ export function CreateTrackPage() {
 
                         // Đồng bộ nghệ sĩ hợp tác cũ (loại bỏ chính mình ra khỏi danh sách Feat)
                         if (fullTrack.artists) {
-                            const featList = fullTrack.artists.filter(artist => Number(artist.id) !== Number(userId));
+                            const featList = fullTrack.artists.filter(artist => Number(artist.id) !== Number(artistId));
                             setSelectedFeatArtists(featList);
                         }
 
@@ -110,7 +110,7 @@ export function CreateTrackPage() {
         };
 
         fetchFullTrackDetails();
-    }, [editTrackData, isEditMode, userId]);
+    }, [editTrackData, isEditMode, artistId]);
 
     // Tự động đóng dropdown tìm kiếm nghệ sĩ khi click ra ngoài
     useEffect(() => {
@@ -158,7 +158,7 @@ export function CreateTrackPage() {
     const filteredArtists = dbArtists.filter(artist =>
         artist.name.toLowerCase().includes(artistSearch.toLowerCase()) &&
         !selectedFeatArtists.some(selected => selected.id === artist.id) &&
-        Number(artist.id) !== Number(userId) // Không hiển thị chính mình trong danh sách Feat
+        Number(artist.id) !== Number(artistId) // Không hiển thị chính mình trong danh sách Feat
     );
 
     // --- 5. LUỒNG XỬ LÝ SUBMIT FORM (KHỚP HOÀN TOÀN VỚI TRACKUPLOADDTO) ---
@@ -175,7 +175,6 @@ export function CreateTrackPage() {
         const formData = new FormData();
         formData.append("title", title);
 
-        const artistId = userId;
         if (artistId && !isNaN(parseInt(artistId))) {
             formData.append("artistId", parseInt(artistId));
         } else {
@@ -421,7 +420,7 @@ export function CreateTrackPage() {
                     <div className="flex justify-end gap-3 pt-4 border-t border-white/[0.05]">
                         <button
                             type="button"
-                            onClick={() => navigate(`/artist/${userId}`)}
+                            onClick={() => navigate(`/artist/${artistId}`)}
                             disabled={loading}
                             className="px-5 py-2 rounded-full text-sm font-medium bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] transition-colors border-none cursor-pointer"
                         >

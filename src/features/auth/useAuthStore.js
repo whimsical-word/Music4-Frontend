@@ -10,6 +10,7 @@ const decodeJwt = (token) => {
 
 export const useAuthStore = create((set) => ({
     userId: localStorage.getItem('userId') || null,
+    artistId: localStorage.getItem('artistId') || null,
     username: localStorage.getItem('username') || null,
     img: localStorage.getItem('userImg') || null,
     role: localStorage.getItem('role') || 'listener',
@@ -17,19 +18,22 @@ export const useAuthStore = create((set) => ({
     isLoading: false,
     error: null,
 
-    loginSuccess: (accessToken, refreshToken, id, username, img, role) => {
+    loginSuccess: (accessToken, refreshToken, id, username, img, role, artistId = null) => {
         let finalRole = role.replace('ROLE_', '').toLowerCase();
         if (finalRole === 'user') finalRole = 'listener';
 
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('userId', id);
+        if (artistId != null) localStorage.setItem('artistId', artistId);
+        else localStorage.removeItem('artistId');
         localStorage.setItem('username', username);
         localStorage.setItem('role', finalRole);
         if (img && img !== 'null') localStorage.setItem('userImg', img);
 
         set({
             userId: id,
+            artistId: artistId != null ? String(artistId) : null,
             username: username,
             img: img && img !== 'null' ? img : null,
             role: finalRole,
@@ -42,6 +46,7 @@ export const useAuthStore = create((set) => ({
         localStorage.clear();
         set({
             userId: null,
+            artistId: null,
             username: null,
             img: null,
             role: 'listener',
@@ -68,7 +73,10 @@ export const useAuthStore = create((set) => ({
         const finalUserId = payload.id ? String(payload.id) : null;
         const finalUsername = payload.sub || null;
 
+        const finalArtistId = payload.artistId != null ? String(payload.artistId) : null;
         if (finalUserId) localStorage.setItem("userId", finalUserId);
+        if (finalArtistId) localStorage.setItem("artistId", finalArtistId);
+        else localStorage.removeItem("artistId");
         if (finalUsername) localStorage.setItem("username", finalUsername);
         localStorage.setItem("accessToken", token);
         localStorage.setItem("role", finalRole);
@@ -76,6 +84,7 @@ export const useAuthStore = create((set) => ({
 
         set({
             userId: finalUserId,
+            artistId: finalArtistId,
             username: finalUsername,
             img: payload.img && payload.img !== 'null' ? payload.img : null,
             role: finalRole,
