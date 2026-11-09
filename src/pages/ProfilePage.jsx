@@ -168,7 +168,7 @@ const ProfilePage = () => {
                 uploadFormData.append("file", selectedFile);
                 uploadFormData.append("type", "images");
 
-                const uploadRes = await axiosClient.post("/tracks/upload-temp", uploadFormData, {
+                const uploadRes = await axiosClient.post("/media/upload", uploadFormData, {
                     headers: { "Content-Type": "multipart/form-data" },
                 });
                 uploadedKey = uploadRes.data?.s3Key || uploadRes.data?.objectKey;
