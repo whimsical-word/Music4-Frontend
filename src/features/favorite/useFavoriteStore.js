@@ -20,7 +20,7 @@ export const useFavoriteStore = create((set, get) => ({
 
     // 2. Kiểm tra trạng thái thích của một trackId (Dựa trên Local State)
     isTrackLiked: (trackId) => {
-        return get().likedTracks.some(fav => Number(fav.trackId) === Number(trackId));
+        return get().likedTracks.some(fav => Number(fav.id || fav.trackId) === Number(trackId));
     },
 
     // 3. Đảo trạng thái trực tiếp trên UI ngay khi bấm nút (Không cần F5)
@@ -29,14 +29,17 @@ export const useFavoriteStore = create((set, get) => ({
         if (isLiked) {
             // Nếu được thích -> Map dữ liệu sang cấu trúc FavoriteResponseDTO rồi đẩy vào mảng
             const newFav = {
+                id: track.id,
+                name: track.name,
                 trackId: track.id,
                 trackName: track.name,
-                img: track.img
+                img: track.img,
+                artists: track.artists
             };
             set({ likedTracks: [newFav, ...likedTracks] });
         } else {
             // Nếu bỏ thích -> Lọc bỏ dựa trên trackId
-            set({ likedTracks: likedTracks.filter(fav => Number(fav.trackId) !== Number(track.id)) });
+            set({ likedTracks: likedTracks.filter(fav => Number(fav.id || fav.trackId) !== Number(track.id)) });
         }
     },
     clearFavoriteStore: () => set({ likedTracks: [], isLoading: false }),

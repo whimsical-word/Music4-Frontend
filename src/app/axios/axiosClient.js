@@ -140,7 +140,15 @@ axiosClient.interceptors.response.use(
     if (status === 404) {
       console.error("404 Not Found:", error.response?.data);
 
-      useErrorStore.getState().setErrorStatus(404);
+      const isBackgroundRequest =
+        requestUrl.includes("/tracking") ||
+        requestUrl.includes("/analytics") ||
+        requestUrl.includes("/notifications") ||
+        requestUrl.includes("/recommendations");
+
+      if (!isBackgroundRequest) {
+        useErrorStore.getState().setErrorStatus(404);
+      }
 
       return Promise.reject(error);
     }

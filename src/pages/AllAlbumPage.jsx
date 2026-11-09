@@ -84,12 +84,12 @@ const AllAlbumPage = () => {
                     <ArrowLeft size={18} className="group-hover/btn:-translate-x-1 transition-transform" /> Quay lại trang chủ
                 </button>
 
-                <h2 className="text-3xl font-black text-white mb-8 tracking-tight">Nghệ sĩ phổ biến</h2>
+                <h2 className="text-3xl font-black text-white mb-8 tracking-tight">Tất cả Album</h2>
 
                 {/* Kiểm tra nếu không có nghệ sĩ nào */}
                 {artists.length === 0 ? (
                     <div className="text-center py-20 bg-[#0f1722]/50 rounded-2xl border border-dashed border-white/[0.05] text-slate-500 my-20">
-                        Không tìm thấy nghệ sĩ nào trong hệ thống.
+                        Không tìm thấy album nào trong hệ thống.
                     </div>
                 ) : (
                     /* Lưới hiển thị danh sách nghệ sĩ */
@@ -122,7 +122,7 @@ const AllAlbumPage = () => {
                                     {artist.name}
                                 </h4>
                                 <p className="text-[11px] text-slate-400 font-medium tracking-wider uppercase truncate">
-                                    {artist.artist?.name || 'Nghệ sĩ'}
+                                    {artist.artistName || artist.artist?.name || 'Album'}
                                 </p>
                             </div>
                         ))}
