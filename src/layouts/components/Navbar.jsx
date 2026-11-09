@@ -59,8 +59,10 @@ const Navbar = () => {
       .catch((err) => console.error("Lỗi lấy thông báo cũ:", err));
 
     // Mở kết nối SSE lắng nghe thông báo mới (SSE vẫn dùng URL tuyệt đối)
+    // EventSource không gửi được header Authorization nên truyền token qua query
+    const token = localStorage.getItem("accessToken");
     const eventSource = new EventSource(
-      `${API_BASE}/notifications/subscribe/${id}`,
+      `${API_BASE}/notifications/subscribe/${id}${token ? `?token=${encodeURIComponent(token)}` : ""}`,
     );
 
     eventSource.addEventListener("NEW_TRACK", (event) => {

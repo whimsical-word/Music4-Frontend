@@ -1,5 +1,6 @@
 // Hỗ trợ cả VITE_API_URL lẫn VITE_API_BASE_URL, fallback http://localhost:8080 nếu biến môi trường chưa được set
 const rawEnvUrl =
+  import.meta.env.VITE_API_ORIGIN ||
   import.meta.env.VITE_API_URL ||
   import.meta.env.VITE_API_BASE_URL ||
   "http://localhost:8080";
