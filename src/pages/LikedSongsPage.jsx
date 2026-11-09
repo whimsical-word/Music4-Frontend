@@ -24,18 +24,26 @@ const LikedSongsPage = () => {
 
     const handlePlayLikedTrack = (currentTrack) => {
         // Chuẩn hóa danh sách phát để khớp với định dạng Store
-        const normalizedPlaylist = likedTracks.map(track => ({
-            ...track,
-            id: track.trackId,
-            name: track.trackName,
-            img: track.img,
-            artists: track.artistName
-                ? [{ name: track.artistName }]
-                : []
-        }));
+        const normalizedPlaylist = likedTracks.map(track => {
+            const id = track.id || track.trackId;
+            const name = track.name || track.trackName;
+            const artists = Array.isArray(track.artists) && track.artists.length > 0
+                ? track.artists
+                : track.artistName
+                    ? [{ name: track.artistName }]
+                    : [];
+            return {
+                ...track,
+                id,
+                name,
+                img: track.img,
+                artists
+            };
+        });
 
         // Tìm bài hiện tại trong danh sách đã chuẩn hóa để phát
-        const trackToPlay = normalizedPlaylist.find(t => t.id === currentTrack.trackId);
+        const targetId = currentTrack.id || currentTrack.trackId;
+        const trackToPlay = normalizedPlaylist.find(t => t.id === targetId) || currentTrack;
         playTrack(trackToPlay, normalizedPlaylist);
     };
 
@@ -55,12 +63,15 @@ const LikedSongsPage = () => {
             <div className="bg-[#0f1722] border border-white/[0.05] p-6 rounded-2xl shadow-2xl space-y-1">
                 {likedTracks.length > 0 ? (
                     likedTracks.map((fav, index) => {
-                        const trackTitle = fav.trackName;
-                        const artistName = fav.artistName;
+                        const trackTitle = fav.name || fav.trackName || "Bài hát không tên";
+                        const artistName = Array.isArray(fav.artists) && fav.artists.length > 0
+                            ? fav.artists.map(a => a.artistName || a.name).filter(Boolean).join(", ")
+                            : fav.artistName || "";
+                        const trackId = fav.id || fav.trackId;
 
                         return (
                             <div
-                                key={fav.favoriteId}
+                                key={fav.favoriteId || trackId || index}
                                 onClick={() => handlePlayLikedTrack(fav)}
                                 className="flex items-center justify-between p-3 rounded-xl hover:bg-white/[0.04] transition-all duration-300 group cursor-pointer"
                             >
@@ -108,7 +119,13 @@ const LikedSongsPage = () => {
                 <TrackEngagementModal
                     track={{
                         ...selectedTrack,
-                        id: selectedTrack.trackId,
+                        id: selectedTrack.id || selectedTrack.trackId,
+                        name: selectedTrack.name || selectedTrack.trackName,
+                        artists: Array.isArray(selectedTrack.artists) && selectedTrack.artists.length > 0
+                            ? selectedTrack.artists
+                            : selectedTrack.artistName
+                                ? [{ name: selectedTrack.artistName }]
+                                : [],
                         isLiked: true
                     }}
                     onClose={() => {

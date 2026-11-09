@@ -6,6 +6,7 @@ import { useFollowStore } from '../features/follow/useFollowStore';
 import axiosClient from '../app/axios/axiosClient';
 import MusicImage from '../layouts/components/MusicImage';
 import {NotificationModal} from "../layouts/components/Modal";
+import { validateImageFile, getApiErrorMessage } from '../utils/fileValidation';
 
 
 const ProfilePage = () => {
@@ -118,6 +119,17 @@ const ProfilePage = () => {
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
+            const check = validateImageFile(file, 5, "Ảnh đại diện");
+            if (!check.valid) {
+                setModalConfig({
+                    isOpen: true,
+                    type: "error",
+                    title: "File không hợp lệ",
+                    message: check.error,
+                });
+                e.target.value = "";
+                return;
+            }
             setSelectedFile(file);
             setPreviewImg(URL.createObjectURL(file));
         }
@@ -125,20 +137,52 @@ const ProfilePage = () => {
 
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
-        console.log("Current userId:", userId);
+        if (editName && editName.trim().length > 100) {
+            setModalConfig({
+                isOpen: true,
+                type: "error",
+                title: "Thông tin không hợp lệ",
+                message: "Tên hiển thị không được vượt quá 100 ký tự!",
+            });
+            return;
+        }
+
+        if (selectedFile) {
+            const check = validateImageFile(selectedFile, 5, "Ảnh đại diện");
+            if (!check.valid) {
+                setModalConfig({
+                    isOpen: true,
+                    type: "error",
+                    title: "File không hợp lệ",
+                    message: check.error,
+                });
+                return;
+            }
+        }
+
         setIsUpdating(true);
         try {
-            const formData = new FormData();
-            if (editName && editName.trim() !== '') {
-                formData.append('name', editName.trim());
+            let uploadedKey = null;
+            if (selectedFile) {
+                const uploadFormData = new FormData();
+                uploadFormData.append("file", selectedFile);
+                uploadFormData.append("type", "images");
+
+                const uploadRes = await axiosClient.post("/tracks/upload-temp", uploadFormData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                });
+                uploadedKey = uploadRes.data?.s3Key || uploadRes.data?.objectKey;
             }
 
-            if (selectedFile) {
-                formData.append('img', selectedFile);
+            const payload = {};
+            if (editName && editName.trim() !== "") {
+                payload.name = editName.trim();
             }
-            const res = await axiosClient.patch(`/users/${userId}`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            if (uploadedKey) {
+                payload.img = uploadedKey;
+            }
+
+            const res = await axiosClient.patch(`/users/${userId}`, payload);
 
             const updatedUser = res.data;
             const updatedAvatarUrl = updatedUser.img || profile.avatar;
@@ -146,14 +190,14 @@ const ProfilePage = () => {
 
             setProfile({
                 name: updatedName,
-                avatar: updatedAvatarUrl
+                avatar: updatedAvatarUrl,
             });
 
             setModalConfig({
                 isOpen: true,
                 type: "success",
                 title: "Thành công!",
-                message: "Chỉnh sửa hồ sơ thành công."
+                message: "Chỉnh sửa hồ sơ thành công.",
             });
 
             setIsEditModalOpen(false);
@@ -167,11 +211,12 @@ const ProfilePage = () => {
             }
         } catch (error) {
             console.error("Lỗi cập nhật:", error);
+            const apiMessage = getApiErrorMessage(error, "Chỉnh sửa hồ sơ thất bại, vui lòng thử lại sau.");
             setModalConfig({
                 isOpen: true,
                 type: "error",
                 title: "Đã xảy ra lỗi",
-                message: "Chỉnh sửa hồ sơ thất bại. Detais:" + error?.response?.data?.message || "Vui lòng thử lại sau."
+                message: apiMessage,
             });
         } finally {
             setIsUpdating(false);
@@ -326,7 +371,7 @@ const ProfilePage = () => {
                                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 rounded-full">
                                         <Camera size={28} className="text-white"/>
                                     </div>
-                                    <input type="file" className="hidden" accept="image/*" onChange={handleFileChange}/>
+                                    <input type="file" className="hidden" accept="image/jpeg, image/png, image/webp, image/gif, .jpg, .jpeg, .png, .webp, .gif" onChange={handleFileChange}/>
                                 </label>
                             </div>
                             <div>

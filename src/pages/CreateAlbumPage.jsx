@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import axiosClient from "../app/axios/axiosClient";
 import { useAuthStore } from "../features/auth/useAuthStore";
+import { validateAudioFile, validateImageFile, getApiErrorMessage } from "../utils/fileValidation";
 
 const CreateAlbumPage = () => {
     const navigate = useNavigate();
@@ -132,34 +133,65 @@ const CreateAlbumPage = () => {
         fetchArtists();
     }, []);
 
-    // 🌟 BƯỚC 1: Chọn ảnh bìa -> CHỈ LƯU LẠI FILE VÀ PREVIEW, CHƯA UPLOAD
+    // 🌟 BƯỚC 1: Chọn ảnh bìa -> Kiểm tra validate chặt chẽ trước khi preview
     const handleAlbumCoverChange = (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        setErrorMessage(""); // Clear error when selecting a new cover
+        const check = validateImageFile(file, 5, "Ảnh bìa Album");
+        if (!check.valid) {
+            setErrorMessage(check.error);
+            e.target.value = "";
+            setAlbumCoverFile(null);
+            setAlbumCoverPreview(null);
+            return;
+        }
+
+        setErrorMessage(""); // Clear error when selecting a new valid cover
         setAlbumCoverFile(file);
         setAlbumCoverPreview(URL.createObjectURL(file));
         setAlbumCoverProgress(0); // Reset tiến trình về 0
     };
 
-    // 🌟 BƯỚC 2: Chọn nhiều file nhạc -> CHỈ NẠP VÀO MẢNG STATE, CHƯA UPLOAD
+    // 🌟 BƯỚC 2: Chọn nhiều file nhạc -> Kiểm tra dung lượng & định dạng từng file
     const handleMusicFilesSelect = (e) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
 
-        setErrorMessage(""); // Clear error when selecting new tracks
-        const newTracksEntries = files.map((file) => {
+        const invalidFiles = [];
+        const validFiles = [];
+
+        files.forEach((file) => {
+            const check = validateAudioFile(file);
+            if (!check.valid) {
+                invalidFiles.push(check.error);
+            } else {
+                validFiles.push(file);
+            }
+        });
+
+        if (invalidFiles.length > 0) {
+            setErrorMessage(`Phát hiện file không hợp lệ: ${invalidFiles.join(" | ")}`);
+        } else {
+            setErrorMessage("");
+        }
+
+        if (validFiles.length === 0) {
+            e.target.value = "";
+            return;
+        }
+
+        const newTracksEntries = validFiles.map((file) => {
             const trackId = Math.random().toString(36).substring(2, 9);
 
             return {
                 id: trackId,
-                title: file.name.replace(/\.[^/.]+$/, ""),
+                title: file.name.replace(/\.[^/.]+$/, "").substring(0, 100),
                 file: file,
                 duration: 0,
                 artistId: userId || 7,
                 artistIds: [],      // Dùng để gửi ID lên Backend
-                featArtists: [],    // 🔥 THÊM TRƯỜNG NÀY: Dùng để lưu Object {id, name} hiển thị trên UI
+                featArtists: [],    // Dùng để lưu Object {id, name} hiển thị trên UI
                 categoryIds: [],
                 fileName: file.name,
                 progress: 0,
@@ -168,6 +200,7 @@ const CreateAlbumPage = () => {
         });
 
         setTracks((prev) => [...prev, ...newTracksEntries]);
+        e.target.value = "";
     };
 
     // 🌟 BƯỚC 3: Cập nhật thông tin chữ nghĩa tự do khi người dùng chỉnh sửa trên UI
@@ -209,8 +242,24 @@ const CreateAlbumPage = () => {
         setErrorMessage(""); // Reset thông báo lỗi cũ
 
         // 🔴 Validation 1: Tên album & Ảnh bìa
-        if (!albumName.trim() || !albumCoverFile) {
-            setErrorMessage("Vui lòng điền tên Album và chọn ảnh bìa!");
+        if (!albumName || !albumName.trim()) {
+            setErrorMessage("Vui lòng điền tên Album!");
+            return;
+        }
+
+        if (albumName.trim().length > 100) {
+            setErrorMessage("Tên album không được vượt quá 100 ký tự!");
+            return;
+        }
+
+        if (!albumCoverFile) {
+            setErrorMessage("Vui lòng chọn ảnh bìa cho Album!");
+            return;
+        }
+
+        const coverCheck = validateImageFile(albumCoverFile, 5, "Ảnh bìa Album");
+        if (!coverCheck.valid) {
+            setErrorMessage(coverCheck.error);
             return;
         }
 
@@ -220,18 +269,25 @@ const CreateAlbumPage = () => {
             return;
         }
 
-        // 🔴 Validation 3: Tiêu đề từng bài hát
-        const emptyTitleTrack = tracks.find((track) => !track.title || track.title.trim() === "");
-        if (emptyTitleTrack) {
-            setErrorMessage(`Vui lòng nhập tên cho bài hát có tệp: ${emptyTitleTrack.fileName}!`);
-            return;
-        }
-
-        // 🔴 Validation 4: Thể loại nhạc từng bài
-        const invalidTrack = tracks.find((track) => track.categoryIds.length === 0);
-        if (invalidTrack) {
-            setErrorMessage(`Bài hát "${invalidTrack.title}" chưa được chọn thể loại (Category). Vui lòng chọn ít nhất 1 thể loại!`);
-            return;
+        // 🔴 Validation 3: Tiêu đề & Thể loại từng bài hát
+        for (const track of tracks) {
+            if (!track.title || !track.title.trim()) {
+                setErrorMessage(`Vui lòng nhập tên cho bài hát có tệp: ${track.fileName || "chưa đặt tên"}!`);
+                return;
+            }
+            if (track.title.trim().length > 100) {
+                setErrorMessage(`Tên bài hát "${track.title}" không được vượt quá 100 ký tự!`);
+                return;
+            }
+            const audioCheck = validateAudioFile(track.file);
+            if (!audioCheck.valid) {
+                setErrorMessage(audioCheck.error);
+                return;
+            }
+            if (!track.categoryIds || track.categoryIds.length === 0) {
+                setErrorMessage(`Bài hát "${track.title}" chưa được chọn thể loại. Vui lòng chọn ít nhất 1 thể loại!`);
+                return;
+            }
         }
 
         try {
@@ -320,14 +376,15 @@ const CreateAlbumPage = () => {
                             t.id === track.id ? { ...t, status: "error", progress: 0 } : t,
                         ),
                     );
-                    throw new Error(`Lỗi khi tải bài hát: ${track.fileName}`);
+                    const errorDetail = getApiErrorMessage(trackError, "Lỗi khi tải file âm thanh");
+                    throw new Error(`Lỗi khi tải bài hát "${track.title}": ${errorDetail}`);
                 }
             }
 
             // === PHẦN III: TẠO ALBUM TRONG DATABASE VÀ HOÀN TẤT ===
             // 1. Tạo Album lấy albumId
             const albumFormData = new FormData();
-            albumFormData.append("albumTitle", albumName);
+            albumFormData.append("albumTitle", albumName.trim());
             albumFormData.append("artistId", userId);
             albumFormData.append("coverImageKey", finalCoverKey);
 
@@ -351,22 +408,7 @@ const CreateAlbumPage = () => {
             navigate(`/artist/${userId}`);
         } catch (error) {
             console.error("Lỗi trong quá trình phát hành:", error);
-
-            // 🔴 Bắt và phân tích phản hồi lỗi từ Backend
-            let apiMessage = "Phát hành thất bại, vui lòng kiểm tra lại kết nối mạng hệ thống nha!";
-            if (error.response && error.response.data) {
-                const data = error.response.data;
-                if (typeof data === "object" && !data.message) {
-                    apiMessage = Object.values(data).join(" | ");
-                } else if (data.message) {
-                    apiMessage = data.message;
-                } else if (typeof data === "string") {
-                    apiMessage = data;
-                }
-            } else if (error.message) {
-                apiMessage = error.message;
-            }
-
+            const apiMessage = getApiErrorMessage(error, "Phát hành thất bại, vui lòng kiểm tra lại hệ thống!");
             setErrorMessage(apiMessage);
         } finally {
             setIsSubmitting(false);
@@ -442,7 +484,7 @@ const CreateAlbumPage = () => {
                                 )}
                                 <input
                                     type="file"
-                                    accept="image/*"
+                                    accept="image/jpeg, image/png, image/webp, image/gif, .jpg, .jpeg, .png, .webp, .gif"
                                     disabled={isSubmitting}
                                     onChange={handleAlbumCoverChange}
                                     className="absolute inset-0 opacity-0 cursor-pointer"
@@ -486,7 +528,7 @@ const CreateAlbumPage = () => {
                                 <input
                                     type="file"
                                     multiple
-                                    accept="audio/*"
+                                    accept="audio/mpeg, audio/mp3, audio/wav, .mp3, .wav"
                                     disabled={isSubmitting}
                                     onChange={handleMusicFilesSelect}
                                     className="absolute inset-0 opacity-0 cursor-pointer"

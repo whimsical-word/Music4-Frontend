@@ -10,7 +10,12 @@ export const usePlayerStore = create((set, get) => ({
   isFromHistory: false,
 
   playTrack: (track, queueParam = [], fromHistory = false) => {
-    const finalQueue = queueParam.length > 0 ? queueParam : [track];
+    const rawList = Array.isArray(queueParam)
+      ? queueParam
+      : Array.isArray(queueParam?.content)
+        ? queueParam.content
+        : [track];
+    const finalQueue = rawList.length > 0 ? rawList : [track];
     const targetIndex = finalQueue.findIndex((t) => t.id === track.id);
 
     set({

@@ -21,18 +21,21 @@ const withToken = (url) => {
   return token ? `${url}${url.includes("?") ? "&" : "?"}token=${encodeURIComponent(token)}` : url;
 };
 
-// Ảnh / file media: luôn đi qua /api/media/<key>
+// Ảnh / file media: gọi qua /api/media/file?key=<key> (công khai không cần token)
 export const getMediaUrl = (key) => {
   if (!key || key === "null") return "";
   if (/^https?:\/\//i.test(key)) return key;
-  return withToken(`${MEDIA_BASE}/${String(key).replace(/^\/+/, "")}`);
+  const cleanKey = String(key).replace(/^\/+/, "");
+  return `${MEDIA_BASE}/file?key=${encodeURIComponent(cleanKey)}`;
 };
 
 // Stream nhạc: thẻ <audio> không gửi Bearer header nên đính kèm ?token=<access_token>
+// Gọi qua content-service (/api/tracks/stream/<id>), service sẽ 302 redirect sang media-service stream S3
 export const getStreamUrl = (trackId, authenticated = true) => {
   if (!trackId) return "";
+  const baseUrl = `${API_BASE}/tracks/stream`;
   const url = authenticated
-    ? `${MEDIA_BASE}/stream/${trackId}`
-    : `${MEDIA_BASE}/stream/preview/${trackId}`;
+    ? `${baseUrl}/${trackId}`
+    : `${baseUrl}/preview/${trackId}`;
   return withToken(url);
 };
