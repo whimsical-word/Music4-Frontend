@@ -149,7 +149,7 @@ const HomePage = () => {
       if (actualUserId && !isArtist) {
         try {
           const aiRes = await axiosClient.get("/recommendations", {
-            params: { userId: actualUserId },
+            params: { userId: actualUserId, size: 10 },
           });
           setAiRecommendations(ensureArray(aiRes?.data));
         } catch (aiError) {
