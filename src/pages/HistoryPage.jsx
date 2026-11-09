@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ArrowLeft, Clock, Play, Pause, RefreshCw } from "lucide-react"; // Import thêm RefreshCw
 import { useNavigate } from "react-router-dom";
 import axiosClient from "../app/axios/axiosClient";
@@ -20,11 +20,15 @@ const HistoryPage = () => {
   const [totalPages, setTotalPages] = useState(0);
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  // true khi refresh do nghe xong bài: cập nhật ngầm, không hiện spinner
+  const silentRefreshRef = useRef(false);
 
   const fetchHistory = useCallback(
     async (page) => {
       if (!userId) return;
-      setIsLoading(true);
+      const silent = silentRefreshRef.current;
+      silentRefreshRef.current = false;
+      if (!silent) setIsLoading(true);
       try {
         const response = await axiosClient.get(
           `/tracking/history/${userId}?page=${page}&size=10`,
@@ -54,7 +58,8 @@ const HistoryPage = () => {
 
   useEffect(() => {
     const handleAutoRefresh = () => {
-      // Tăng trigger lên 1 để useEffect fetch data tự động chạy lại
+      // Tăng trigger lên 1 để useEffect fetch data tự động chạy lại (ngầm)
+      silentRefreshRef.current = true;
       setRefreshTrigger((prev) => prev + 1);
     };
 

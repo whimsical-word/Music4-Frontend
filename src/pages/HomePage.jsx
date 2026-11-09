@@ -96,6 +96,8 @@ const HomePage = () => {
   const { username, name, role, id: userId } = useAuthStore();
   const actualUserId = useAuthStore((state) => state.userId) || userId;
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  // true khi refresh do nghe xong bài: cập nhật ngầm, không hiện spinner
+  const silentRefreshRef = useRef(false);
   const playTrack = usePlayerStore((state) => state.playTrack);
 
   // STATES QUẢN LÝ TRẠNG THÁI DỮ LIỆU TỪ DATABASE
@@ -112,7 +114,9 @@ const HomePage = () => {
   // FETCH DATA TỪ SPRING BOOT
   useEffect(() => {
     const fetchHomeData = async () => {
-      setIsLoading(true);
+      const silent = silentRefreshRef.current;
+      silentRefreshRef.current = false;
+      if (!silent) setIsLoading(true);
       try {
         const [tracksRes, artistsRes, albumRes, top5TrackRes] =
           await Promise.all([
@@ -162,6 +166,7 @@ const HomePage = () => {
 
   useEffect(() => {
     const handleAutoRefresh = () => {
+      silentRefreshRef.current = true;
       setRefreshTrigger((prev) => prev + 1);
     };
 
