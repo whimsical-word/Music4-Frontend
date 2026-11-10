@@ -119,21 +119,37 @@ const SearchPage = () => {
         fetchResults();
     }, [query, currentType, currentPage]);
 
-    // BÓC TÁCH DỮ LIỆU
-    const tracks = searchResults?.tracks?.content || [];
-    const artists = searchResults?.artists?.content || [];
-    const albums = searchResults?.albums?.content || [];
+    // BÓC TÁCH DỮ LIỆU (Chuẩn hóa id từ trackId/artistId/albumId và danh sách nghệ sĩ)
+    const tracks = (searchResults?.tracks?.content || []).map((t) => ({
+        ...t,
+        id: t.id ?? t.trackId,
+        artists: Array.isArray(t.artists) && t.artists.length > 0
+            ? t.artists
+            : Array.isArray(t.artistNames)
+                ? t.artistNames.map((name, idx) => ({ id: t.artistId ?? idx, name }))
+                : []
+    }));
+    const artists = (searchResults?.artists?.content || []).map((a) => ({
+        ...a,
+        id: a.id ?? a.artistId
+    }));
+    const albums = (searchResults?.albums?.content || []).map((al) => ({
+        ...al,
+        id: al.id ?? al.albumId
+    }));
     const playlists = searchResults?.playlists?.content || [];
     const categories = searchResults?.categories?.content || [];
 
-    // BÓC TÁCH DỮ LIỆU TOTAL PAGES (Đã sửa lại đường dẫn có thêm .page)
+    // BÓC TÁCH DỮ LIỆU TOTAL PAGES (Hỗ trợ cả cấu trúc .page.totalPages và .totalPages trực tiếp)
     let totalPages = 0;
     if (searchResults) {
-        if (currentType === 'track') totalPages = searchResults.tracks?.page?.totalPages;
-        else if (currentType === 'artist') totalPages = searchResults.artists?.page?.totalPages;
-        else if (currentType === 'album') totalPages = searchResults.albums?.page?.totalPages;
-        else if (currentType === 'playlist') totalPages = searchResults.playlists?.page?.totalPages;
-        else if (currentType === 'category') totalPages = searchResults.categories?.page?.totalPages;
+        const getPages = (sec) =>
+            sec?.page?.totalPages ?? sec?.totalPages ?? (sec?.size ? Math.ceil((sec?.totalElements || 0) / sec.size) : 0);
+        if (currentType === 'track') totalPages = getPages(searchResults.tracks);
+        else if (currentType === 'artist') totalPages = getPages(searchResults.artists);
+        else if (currentType === 'album') totalPages = getPages(searchResults.albums);
+        else if (currentType === 'playlist') totalPages = getPages(searchResults.playlists);
+        else if (currentType === 'category') totalPages = getPages(searchResults.categories);
     }
 
     // Đảm bảo kiểu dữ liệu là số, nếu undefined thì cho về 0
